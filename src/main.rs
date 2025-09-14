@@ -27,7 +27,7 @@ fn main() {
     match io::stdin().read_line(&mut input) {
         // _ подчеркиваение выключает предупреждение неиспользуемой переменной
         Ok(_n) => {
-            println!("<{}>: command not found", input.trim());
+            println!("{}: command not found", input.trim());
         }
         Err(error) => {
             println!("error: {error}");
