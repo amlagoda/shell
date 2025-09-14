@@ -8,8 +8,8 @@ use std::io::{self, Write};
 
 fn main() {
     // пока не разобрался
-    //print!("$ ");
-    //io::stdout().flush().unwrap();
+    print!("$ ");
+    io::stdout().flush().unwrap();
 
     // изменяемая строка в памяти кучи
     let mut input = String::new();
