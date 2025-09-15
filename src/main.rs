@@ -7,9 +7,14 @@
 use std::io::{self, Write};
 
 fn main() {
-    // пока не разобрался
     print!("$ ");
-    io::stdout().flush().unwrap();
+    // stdout() - создание дескриптора стандартного вывода текущего процесса
+    // std::io::Stdout
+    // flush() - немедленный вывод буферизованной строки
+    match io::stdout().flush() {
+        Ok(_n) => {}
+        Err(_error) => {}
+    }
 
     // изменяемая строка в памяти кучи
     let mut input = String::new();
