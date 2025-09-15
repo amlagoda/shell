@@ -5,8 +5,11 @@
 // Write - трейт записи
 // {self, Write} - видимо короткая форма записи
 use std::io::{self, Write};
+// коды состояния возвращаемые текущим процессом своему родителю при
+// нормальном завершении
+use std::process::ExitCode;
 
-fn main() {
+fn main() -> ExitCode {
     loop {
         print!("$ ");
         // stdout() - создание дескриптора стандартного вывода текущего процесса
@@ -33,6 +36,9 @@ fn main() {
         match io::stdin().read_line(&mut input) {
             // _ подчеркиваение выключает предупреждение неиспользуемой переменной
             Ok(_n) => {
+                if input.trim() == "exit 0" {
+                    break;
+                }
                 println!("{}: command not found", input.trim());
             }
             Err(error) => {
@@ -40,4 +46,5 @@ fn main() {
             }
         }
     }
+    ExitCode::SUCCESS
 }
