@@ -41,23 +41,21 @@ fn main() -> ExitCode {
         match io::stdin().read_line(&mut input) {
             // _ подчеркивание выключает предупреждение неиспользуемой переменной
             Ok(_len) => {
-                let command: &str = input.trim();
+                let input: &str = input.trim();
 
-                if command == "exit 0" {
+                if input == "exit 0" {
                     break;
                 }
                 // split_whitespace() - разбивает строку по пробелам считая
                 // не одиночный за один std::str::SplitWhitespace
                 let mut iter = input.split_whitespace();
                 // next() - std::str::SplitWhitespace
-                let mut output = format!("{}: command not found", command);
+                let mut output = format!("{}: command not found", input);
 
                 match iter.next() {
-                    Some(cmd) => {
-                        if cmd == "echo" {
-                            output = format!(
-                                "{}", iter.collect::<Vec<&str>>().join(" ")
-                            );
+                    Some(command) => {
+                        if command == "echo" {
+                            output = format!("{}", iter.collect::<Vec<&str>>().join(" "));
                         }
                     }
                     None => {}
