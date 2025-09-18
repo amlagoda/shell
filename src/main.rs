@@ -50,22 +50,26 @@ fn main() -> ExitCode {
                 // не одиночный за один std::str::SplitWhitespace
                 let mut iter = input.split_whitespace();
                 // next() - std::str::SplitWhitespace
+                let mut output = format!("{}: command not found", command);
+
                 match iter.next() {
                     Some(cmd) => {
                         if cmd == "echo" {
-                            println!("{}", iter.collect::<Vec<&str>>().join(" "));
-                            continue;
+                            output = format!(
+                                "{}", iter.collect::<Vec<&str>>().join(" ")
+                            );
                         }
                     }
                     None => {}
                 }
 
-                println!("{}: command not found", command);
+                println!("{}", output);
             }
             Err(_error) => {
                 return ExitCode::FAILURE;
             }
         }
     }
+
     ExitCode::SUCCESS
 }
