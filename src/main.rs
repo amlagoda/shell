@@ -80,9 +80,9 @@ fn main() -> ExitCode {
 fn command_type(mut iter: SplitWhitespace) -> String {
     match iter.next() {
         Some(command) => match command {
-            "type" => String::from("type: is a shell builtin"),
-            "echo" => String::from("echo: is a shell builtin"),
-            "exit" => String::from("exit: is a shell builtin"),
+            "type" => String::from("type is a shell builtin"),
+            "echo" => String::from("echo is a shell builtin"),
+            "exit" => String::from("exit is a shell builtin"),
             another => {
                 format!("{}: not found", another)
             }
