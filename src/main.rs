@@ -10,35 +10,40 @@ use std::io::{self, Write};
 use std::process::ExitCode;
 
 fn main() -> ExitCode {
+    // изменяемая строка в памяти кучи
+    let mut input = String::new();
+
     loop {
+        // очистка буфера
+        input.clear();
+        // буфферизация вывода
         print!("$ ");
+
         // stdout() - создание дескриптора стандартного вывода текущего процесса
         // std::io::Stdout
         // flush() - немедленный вывод буферизованной строки
         match io::stdout().flush() {
             Ok(_n) => {}
-            Err(_error) => {}
+            Err(_error) => {
+                return ExitCode::FAILURE;
+            }
         }
 
-        // изменяемая строка в памяти кучи
-        let mut input = String::new();
         // stdin() - создание дескриптора стандартного потока ввода std::io::Stdin
-
         // read_line(&mut input) - блокирует дескриптор, считывает сроку и
         // помещает в буффер переданный в параметре. Строка считывается до
         // достижения новой строки, которое определяется наличием байта 0xA.
         // Поэтому нужно ставить ограничение с помощью std::io::Read::take, на
         // случай если байт не передан
-
         // Добавляется к уже имеющейся строке буффера, поэтому буффер нужно
         // очищать с помощью std::String::clear
 
         match io::stdin().read_line(&mut input) {
-            // _ подчеркиваение выключает предупреждение неиспользуемой переменной
+            // _ подчеркивание выключает предупреждение неиспользуемой переменной
             Ok(_len) => {
-                let input: &str = input.trim();
+                let command: &str = input.trim();
 
-                if input == "exit 0" {
+                if command == "exit 0" {
                     break;
                 }
                 // split_whitespace() - разбивает строку по пробелам считая
@@ -46,19 +51,19 @@ fn main() -> ExitCode {
                 let mut iter = input.split_whitespace();
                 // next() - std::str::SplitWhitespace
                 match iter.next() {
-                    None => {}
-                    Some(command) => {
-                        if command == "echo" {
+                    Some(cmd) => {
+                        if cmd == "echo" {
                             println!("{}", iter.collect::<Vec<&str>>().join(" "));
                             continue;
                         }
                     }
+                    None => {}
                 }
 
-                println!("{}: command not found", input);
+                println!("{}: command not found", command);
             }
-            Err(error) => {
-                println!("error: {error}");
+            Err(_error) => {
+                return ExitCode::FAILURE;
             }
         }
     }
