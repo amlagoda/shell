@@ -8,6 +8,7 @@ use std::io::{self, Write};
 // коды состояния возвращаемые текущим процессом своему родителю при
 // нормальном завершении
 use std::process::ExitCode;
+use std::str::SplitWhitespace;
 
 fn main() -> ExitCode {
     // изменяемая строка в памяти кучи
@@ -53,11 +54,15 @@ fn main() -> ExitCode {
                 let mut output = format!("{}: command not found", input);
 
                 match iter.next() {
-                    Some(command) => {
-                        if command == "echo" {
-                            output = format!("{}", iter.collect::<Vec<&str>>().join(" "));
+                    Some(command) => match command {
+                        "type" => {
+                            output = command_type(iter);
                         }
-                    }
+                        "echo" => {
+                            output = command_echo(iter);
+                        }
+                        _ => {}
+                    },
                     None => {}
                 }
 
@@ -70,4 +75,22 @@ fn main() -> ExitCode {
     }
 
     ExitCode::SUCCESS
+}
+
+fn command_type(mut iter: SplitWhitespace) -> String {
+    match iter.next() {
+        Some(command) => match command {
+            "type" => String::from("type: is a shell builtin"),
+            "echo" => String::from("echo: is a shell builtin"),
+            "exit" => String::from("exit: is a shell builtin"),
+            another => {
+                format!("{}: not found", another)
+            }
+        },
+        None => String::from(": not found"),
+    }
+}
+
+fn command_echo(iter: SplitWhitespace) -> String {
+    format!("{}", iter.collect::<Vec<&str>>().join(" "))
 }
