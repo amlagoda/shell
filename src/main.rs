@@ -95,7 +95,9 @@ fn command_from_path(name: &str, args: SplitWhitespace) -> String {
         return format!("{}: command not found", name);
     }
 
-    let mut command = Command::new(path);
+    // нужно чтобы передаваемое название name было в PATH
+    // иначе передавать path
+    let mut command = Command::new(name);
 
     for arg in args {
         command.arg(arg);
