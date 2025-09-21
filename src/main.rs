@@ -7,8 +7,13 @@
 use std::io::{self, Write};
 // коды состояния возвращаемые текущим процессом своему родителю при
 // нормальном завершении
+use std::env;
+use std::fs;
 use std::process::ExitCode;
 use std::str::SplitWhitespace;
+// без этого не работает permissions().mode()
+use std::fs::DirEntry;
+use std::os::unix::fs::PermissionsExt;
 
 fn main() -> ExitCode {
     // изменяемая строка в памяти кучи
@@ -25,7 +30,7 @@ fn main() -> ExitCode {
         // flush() - немедленный вывод буферизованной строки
         match io::stdout().flush() {
             Ok(_n) => {}
-            Err(_error) => {
+            Err(_) => {
                 return ExitCode::FAILURE;
             }
         }
@@ -68,7 +73,7 @@ fn main() -> ExitCode {
 
                 println!("{}", output);
             }
-            Err(_error) => {
+            Err(_) => {
                 return ExitCode::FAILURE;
             }
         }
@@ -86,7 +91,7 @@ fn command_type(mut iter: SplitWhitespace) -> String {
                 return format!("{} is a shell builtin", command);
             }
 
-            let path = search_command(&command);
+            let path = search_path(&command);
 
             if path.len() > 0 {
                 return format!("{} is {}", command, path);
@@ -102,6 +107,60 @@ fn command_echo(iter: SplitWhitespace) -> String {
     format!("{}", iter.collect::<Vec<&str>>().join(" "))
 }
 
-fn search_command(command: &str) -> String {
-    String::from("path")
+fn search_path(command: &str) -> String {
+    for path in paths() {
+        match fs::read_dir(path) {
+            // проверено: существует, каталог, доступен
+            Ok(dir) => {
+                for entry in dir {
+                    match entry {
+                        Ok(entry) => {
+                            if !is_executable_file(&entry) {
+                                continue;
+                            }
+
+                            let file_name = match entry.file_name().into_string() {
+                                Ok(file_name) => file_name,
+                                Err(_) => String::new(),
+                            };
+
+                            if command == file_name {
+                                return match entry.path().to_str() {
+                                    Some(path) => String::from(path),
+                                    None => String::new(),
+                                };
+                            }
+                        }
+                        Err(_) => {}
+                    }
+                }
+            }
+            Err(_) => {}
+        };
+    }
+
+    String::new()
+}
+
+fn paths() -> Vec<String> {
+    match env::var("PATH") {
+        Ok(path) => path
+            .split(':')
+            .map(|path| String::from(path))
+            .collect::<Vec<String>>(),
+        Err(_) => Vec::new(),
+    }
+}
+
+fn is_executable_file(entry: &DirEntry) -> bool {
+    match entry.metadata() {
+        Ok(meta) => {
+            if meta.is_dir() {
+                return false;
+            }
+
+            meta.permissions().mode() & 0o111 != 0
+        }
+        Err(_) => false,
+    }
 }
