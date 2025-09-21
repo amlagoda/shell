@@ -78,15 +78,16 @@ fn main() -> ExitCode {
 }
 
 fn command_type(mut iter: SplitWhitespace) -> String {
+    let commands = ["type", "echo", "exit"];
+
     match iter.next() {
-        Some(command) => match command {
-            "type" => String::from("type is a shell builtin"),
-            "echo" => String::from("echo is a shell builtin"),
-            "exit" => String::from("exit is a shell builtin"),
-            another => {
-                format!("{}: not found", another)
+        Some(command) => {
+            if commands.contains(&command) {
+                format!("{} is a shell builtin", command)
+            } else {
+                format!("{}: not found", command)
             }
-        },
+        }
         None => String::from(": not found"),
     }
 }
