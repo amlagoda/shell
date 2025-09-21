@@ -83,10 +83,16 @@ fn command_type(mut iter: SplitWhitespace) -> String {
     match iter.next() {
         Some(command) => {
             if commands.contains(&command) {
-                format!("{} is a shell builtin", command)
-            } else {
-                format!("{}: not found", command)
+                return format!("{} is a shell builtin", command);
             }
+
+            let path = search_command(&command);
+
+            if path.len() > 0 {
+                return format!("{} is {}", command, path);
+            }
+
+            format!("{}: not found", command)
         }
         None => String::from(": not found"),
     }
@@ -94,4 +100,8 @@ fn command_type(mut iter: SplitWhitespace) -> String {
 
 fn command_echo(iter: SplitWhitespace) -> String {
     format!("{}", iter.collect::<Vec<&str>>().join(" "))
+}
+
+fn search_command(command: &str) -> String {
+    String::from("path")
 }
