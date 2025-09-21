@@ -9,11 +9,14 @@ use std::io::{self, Write};
 // нормальном завершении
 use std::env;
 use std::fs;
+use std::fs::DirEntry;
 use std::process::ExitCode;
 use std::str::SplitWhitespace;
 // без этого не работает permissions().mode()
-use std::fs::DirEntry;
 use std::os::unix::fs::PermissionsExt;
+use std::process::{Command, Stdio};
+// для чтения output дочернего процесса
+use std::io::Read;
 
 fn main() -> ExitCode {
     // изменяемая строка в памяти кучи
@@ -56,6 +59,7 @@ fn main() -> ExitCode {
                 // не одиночный за один std::str::SplitWhitespace
                 let mut iter = input.split_whitespace();
                 // next() - std::str::SplitWhitespace
+                // для пустого ввода
                 let mut output = format!("{}: command not found", input);
 
                 match iter.next() {
@@ -66,7 +70,9 @@ fn main() -> ExitCode {
                         "echo" => {
                             output = command_echo(iter);
                         }
-                        _ => {}
+                        another => {
+                            output = command_from_path(another, iter);
+                        }
                     },
                     None => {}
                 }
@@ -80,6 +86,42 @@ fn main() -> ExitCode {
     }
 
     ExitCode::SUCCESS
+}
+
+fn command_from_path(name: &str, args: SplitWhitespace) -> String {
+    let path = search_path(name);
+
+    if path.len() == 0 {
+        return format!("{}: command not found", name);
+    }
+
+    let mut command = Command::new(path);
+
+    for arg in args {
+        command.arg(arg);
+    }
+
+    match command.stdout(Stdio::piped()).spawn() {
+        Ok(command) => {
+            // ограничение take?
+            match command.stdout {
+                Some(mut stdout) => {
+                    let mut output = String::new();
+
+                    match stdout.read_to_string(&mut output) {
+                        Ok(_) => {}
+                        Err(_) => {
+                            return format!("{}: failed to run command", name);
+                        }
+                    };
+
+                    String::from(output.as_str().trim())
+                }
+                None => String::new(),
+            }
+        }
+        Err(_) => format!("{}: failed to run command", name),
+    }
 }
 
 fn command_type(mut iter: SplitWhitespace) -> String {
@@ -158,7 +200,7 @@ fn is_executable_file(entry: &DirEntry) -> bool {
             if meta.is_dir() {
                 return false;
             }
-
+            // windows?
             meta.permissions().mode() & 0o111 != 0
         }
         Err(_) => false,
