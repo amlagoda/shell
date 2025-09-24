@@ -70,6 +70,9 @@ fn main() -> ExitCode {
                         "echo" => {
                             output = command_echo(iter);
                         }
+                        "pwd" => {
+                            output = command_pwd(command);
+                        }
                         another => {
                             output = command_from_path(another, iter);
                         }
@@ -86,6 +89,16 @@ fn main() -> ExitCode {
     }
 
     ExitCode::SUCCESS
+}
+
+fn command_pwd(name: &str) -> String {
+    match env::current_exe() {
+        Ok(path) => match path.to_str() {
+            Some(path) => String::from(path),
+            None => String::new(),
+        },
+        Err(_) => format!("{}: failed to run command", name),
+    }
 }
 
 fn command_from_path(name: &str, args: SplitWhitespace) -> String {
