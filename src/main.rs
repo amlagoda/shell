@@ -97,10 +97,20 @@ fn main() -> ExitCode {
 }
 
 fn command_cd(name: &str, mut args: SplitWhitespace) -> String {
-    let path = match args.next() {
+    let mut path = match args.next() {
         Some(path) => String::from(path),
         None => String::new(),
     };
+
+    if path == "~" {
+        path = match env::home_dir() {
+            Some(path) => match path.to_str() {
+                Some(path) => String::from(path),
+                None => String::new(),
+            },
+            None => String::new(),
+        };
+    }
 
     if !is_dir_exists(&path) {
         return format!("{}: {}: No such file or directory", name, path);
