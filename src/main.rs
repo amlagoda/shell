@@ -140,7 +140,7 @@ fn command_from_path(name: &str, args: SplitWhitespace) -> String {
 }
 
 fn command_type(mut iter: SplitWhitespace) -> String {
-    let commands = ["type", "echo", "exit"];
+    let commands = ["type", "echo", "exit", "pwd"];
 
     match iter.next() {
         Some(command) => {
