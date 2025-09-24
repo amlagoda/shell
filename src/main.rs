@@ -92,7 +92,7 @@ fn main() -> ExitCode {
 }
 
 fn command_pwd(name: &str) -> String {
-    match env::current_exe() {
+    match env::current_dir() {
         Ok(path) => match path.to_str() {
             Some(path) => String::from(path),
             None => String::new(),
