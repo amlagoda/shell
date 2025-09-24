@@ -73,6 +73,9 @@ fn main() -> ExitCode {
                         "pwd" => {
                             output = command_pwd(command);
                         }
+                        "cd" => {
+                            output = command_cd(command, iter);
+                        }
                         another => {
                             output = command_from_path(another, iter);
                         }
@@ -80,7 +83,9 @@ fn main() -> ExitCode {
                     None => {}
                 }
 
-                println!("{}", output);
+                if output.len() > 0 {
+                    println!("{}", output);
+                }
             }
             Err(_) => {
                 return ExitCode::FAILURE;
@@ -89,6 +94,30 @@ fn main() -> ExitCode {
     }
 
     ExitCode::SUCCESS
+}
+
+fn command_cd(name: &str, mut args: SplitWhitespace) -> String {
+    let path = match args.next() {
+        Some(path) => String::from(path),
+        None => String::new(),
+    };
+
+    if !is_dir_exists(&path) {
+        return format!("{}: {}: No such file or directory", name, path);
+    }
+
+    match env::set_current_dir(&path) {
+        Ok(_) => String::new(),
+        Err(_) => format!("{}: failed to run command", name),
+    }
+}
+
+fn is_dir_exists(path: &str) -> bool {
+    match fs::read_dir(path) {
+        // проверено: существует, каталог, доступен
+        Ok(_) => true,
+        Err(_) => false,
+    }
 }
 
 fn command_pwd(name: &str) -> String {
@@ -140,7 +169,7 @@ fn command_from_path(name: &str, args: SplitWhitespace) -> String {
 }
 
 fn command_type(mut iter: SplitWhitespace) -> String {
-    let commands = ["type", "echo", "exit", "pwd"];
+    let commands = ["type", "echo", "exit", "pwd", "cd"];
 
     match iter.next() {
         Some(command) => {
