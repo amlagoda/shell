@@ -16,6 +16,7 @@ use std::str::SplitWhitespace;
 use std::os::unix::fs::PermissionsExt;
 use std::process::{Command, Stdio};
 // для чтения output дочернего процесса
+use std::env::VarError;
 use std::io::Error;
 use std::io::Read;
 
@@ -205,52 +206,60 @@ fn command_echo(iter: SplitWhitespace) -> String {
 }
 
 fn search_path(command: &str) -> String {
-    for path in paths() {
-        match fs::read_dir(path) {
-            // проверено: существует, каталог, доступен
-            Ok(dir) => {
-                for entry in dir {
-                    match entry {
-                        Ok(entry) => {
-                            let is_exe = match is_executable_file(&entry) {
-                                Ok(r) => r,
-                                Err(_) => false, //Err(e) => { return Err(e) };
-                            };
+    match paths() {
+        Ok(paths) => {
+            for path in paths {
+                match fs::read_dir(path) {
+                    // проверено: существует, каталог, доступен
+                    Ok(dir) => {
+                        for entry in dir {
+                            match entry {
+                                Ok(entry) => {
+                                    let is_exe = match is_executable_file(&entry) {
+                                        Ok(r) => r,
+                                        Err(_) => false, //Err(e) => { return Err(e) };
+                                    };
 
-                            if !is_exe {
-                                continue;
-                            }
+                                    if !is_exe {
+                                        continue;
+                                    }
 
-                            let file_name = match entry.file_name().into_string() {
-                                Ok(file_name) => file_name,
-                                Err(_) => String::new(),
-                            };
+                                    let file_name = match entry.file_name().into_string() {
+                                        Ok(file_name) => file_name,
+                                        Err(_) => String::new(),
+                                    };
 
-                            if command == file_name {
-                                return match entry.path().to_str() {
-                                    Some(path) => String::from(path),
-                                    None => String::new(),
-                                };
+                                    if command == file_name {
+                                        return match entry.path().to_str() {
+                                            Some(path) => String::from(path),
+                                            None => String::new(),
+                                        };
+                                    }
+                                }
+                                Err(_) => {}
                             }
                         }
-                        Err(_) => {}
                     }
-                }
+                    Err(_) => {}
+                };
             }
-            Err(_) => {}
-        };
-    }
 
-    String::new()
+            String::new()
+        }
+        Err(_) => String::new(), //Err(e) => Err(e)
+    }
 }
 
-fn paths() -> Vec<String> {
+fn paths() -> Result<Vec<String>, VarError> {
     match env::var("PATH") {
-        Ok(path) => path
-            .split(':')
-            .map(|path| String::from(path))
-            .collect::<Vec<String>>(),
-        Err(_) => Vec::new(),
+        Ok(r) => {
+            let paths = r
+                .split(':')
+                .map(|path| String::from(path))
+                .collect::<Vec<String>>();
+            Ok(paths)
+        }
+        Err(e) => Err(e),
     }
 }
 
