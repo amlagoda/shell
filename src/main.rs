@@ -215,7 +215,7 @@ fn command_echo(iter: SplitWhitespace) -> String {
 }
 
 fn search_command_exe_path(command: &str) -> Result<Option<String>, Error> {
-    match get_env_paths() {
+    match split_env_path() {
         Ok(paths) => {
             let mut search = None;
 
@@ -225,31 +225,13 @@ fn search_command_exe_path(command: &str) -> Result<Option<String>, Error> {
                     Ok(dir) => {
                         for entry in dir {
                             match entry {
-                                Ok(entry) => {
-                                    let is_exe = match is_executable_file(&entry) {
-                                        Ok(r) => r,
-                                        Err(_) => false,
-                                    };
-
-                                    if !is_exe {
-                                        continue;
+                                Ok(entry) => match match_command_and_file(command, &entry) {
+                                    Some(path) => {
+                                        search = Some(path);
+                                        break 'paths;
                                     }
-
-                                    let file_name = match entry.file_name().into_string() {
-                                        Ok(file_name) => file_name,
-                                        Err(_) => String::new(),
-                                    };
-
-                                    if command == file_name {
-                                        match entry.path().to_str() {
-                                            Some(path) => {
-                                                search = Some(String::from(path));
-                                                break 'paths; // переделать
-                                            }
-                                            None => {}
-                                        };
-                                    }
-                                }
+                                    None => {}
+                                },
                                 Err(e) => {
                                     return Err(e);
                                 }
@@ -268,16 +250,43 @@ fn search_command_exe_path(command: &str) -> Result<Option<String>, Error> {
     }
 }
 
-fn get_env_paths() -> Result<Vec<String>, VarError> {
+fn split_env_path() -> Result<Vec<String>, VarError> {
     match env::var("PATH") {
-        Ok(r) => {
-            let paths = r
+        Ok(env) => {
+            let paths = env
                 .split(':')
                 .map(|path| String::from(path))
                 .collect::<Vec<String>>();
             Ok(paths)
         }
         Err(e) => Err(e),
+    }
+}
+
+fn match_command_and_file(command: &str, entry: &DirEntry) -> Option<String> {
+    match is_executable_file(entry) {
+        Ok(is_exe) => {
+            if !is_exe {
+                return None;
+            }
+
+            let file_name = match entry.file_name().into_string() {
+                Ok(r) => r,
+                Err(_) => {
+                    return None;
+                } // error remain here
+            };
+
+            if command != file_name {
+                return None;
+            }
+
+            match entry.path().to_str() {
+                Some(r) => Some(String::from(r)),
+                None => None,
+            }
+        }
+        Err(_) => None, // error remain here
     }
 }
 
