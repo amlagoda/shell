@@ -211,8 +211,8 @@ fn command_type(mut iter: SplitWhitespace) -> String {
     }
 }
 
-fn command_echo(iter: SplitWhitespace) -> String {
-    format!("{}", iter.collect::<Vec<&str>>().join(" "))
+fn command_echo(args: SplitWhitespace) -> String {
+    format!("{}", args.collect::<Vec<&str>>().join(" "))
 }
 
 fn search_command_in_env_path(command: &str) -> Result<Option<String>, Error> {
