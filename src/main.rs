@@ -226,11 +226,14 @@ fn search_command_exe_path(command: &str) -> Result<Option<String>, Error> {
                         for entry in dir {
                             match entry {
                                 Ok(entry) => match match_command_and_file(command, &entry) {
-                                    Some(path) => {
-                                        search = Some(path);
-                                        break 'paths;
-                                    }
-                                    None => {}
+                                    Ok(r) => match r {
+                                        Some(path) => {
+                                            search = Some(path);
+                                            break 'paths;
+                                        }
+                                        None => {}
+                                    },
+                                    Err(_) => {}
                                 },
                                 Err(e) => {
                                     return Err(e);
@@ -263,30 +266,28 @@ fn split_env_path() -> Result<Vec<String>, VarError> {
     }
 }
 
-fn match_command_and_file(command: &str, entry: &DirEntry) -> Option<String> {
+fn match_command_and_file(command: &str, entry: &DirEntry) -> Result<Option<String>, Error> {
     match is_executable_file(entry) {
         Ok(is_exe) => {
             if !is_exe {
-                return None;
+                return Ok(None);
             }
 
             let file_name = match entry.file_name().into_string() {
                 Ok(r) => r,
-                Err(_) => {
-                    return None;
-                } // error remain here
+                Err(_) => return Err(Error::new(ErrorKind::InvalidFilename, "")),
             };
 
             if command != file_name {
-                return None;
+                return Ok(None);
             }
 
             match entry.path().to_str() {
-                Some(r) => Some(String::from(r)),
-                None => None,
+                Some(r) => Ok(Some(String::from(r))),
+                None => Ok(None),
             }
         }
-        Err(_) => None, // error remain here
+        Err(e) => Err(e),
     }
 }
 
