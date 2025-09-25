@@ -16,6 +16,7 @@ use std::str::SplitWhitespace;
 use std::os::unix::fs::PermissionsExt;
 use std::process::{Command, Stdio};
 // для чтения output дочернего процесса
+use std::io::Error;
 use std::io::Read;
 
 fn main() -> ExitCode {
@@ -211,7 +212,12 @@ fn search_path(command: &str) -> String {
                 for entry in dir {
                     match entry {
                         Ok(entry) => {
-                            if !is_executable_file(&entry) {
+                            let is_exe = match is_executable_file(&entry) {
+                                Ok(r) => r,
+                                Err(_) => false, //Err(e) => { return Err(e) };
+                            };
+
+                            if !is_exe {
                                 continue;
                             }
 
@@ -248,15 +254,16 @@ fn paths() -> Vec<String> {
     }
 }
 
-fn is_executable_file(entry: &DirEntry) -> bool {
+fn is_executable_file(entry: &DirEntry) -> Result<bool, Error> {
     match entry.metadata() {
-        Ok(meta) => {
-            if meta.is_dir() {
-                return false;
+        Ok(md) => {
+            if md.is_dir() {
+                Ok(false)
+            } else {
+                // windows?
+                Ok(md.permissions().mode() & 0o111 != 0)
             }
-            // windows?
-            meta.permissions().mode() & 0o111 != 0
         }
-        Err(_) => false,
+        Err(e) => Err(e),
     }
 }
