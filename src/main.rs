@@ -206,7 +206,7 @@ fn command_echo(iter: SplitWhitespace) -> String {
 }
 
 fn search_path(command: &str) -> String {
-    match paths() {
+    match env_paths() {
         Ok(paths) => {
             for path in paths {
                 match fs::read_dir(path) {
@@ -250,7 +250,7 @@ fn search_path(command: &str) -> String {
     }
 }
 
-fn paths() -> Result<Vec<String>, VarError> {
+fn env_paths() -> Result<Vec<String>, VarError> {
     match env::var("PATH") {
         Ok(r) => {
             let paths = r
