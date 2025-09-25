@@ -18,6 +18,7 @@ use std::process::{Command, Stdio};
 // для чтения output дочернего процесса
 use std::env::VarError;
 use std::io::Error;
+use std::io::ErrorKind;
 use std::io::Read;
 
 fn main() -> ExitCode {
@@ -143,40 +144,44 @@ fn command_pwd(name: &str) -> String {
 }
 
 fn command_from_path(name: &str, args: SplitWhitespace) -> String {
-    let path = search_path(name);
+    match search_command_exe_path(name) {
+        Ok(path) => {
+            match path {
+                Some(_) => {
+                    // нужно чтобы передаваемое название name было в PATH
+                    // иначе передавать path
+                    let mut command = Command::new(name);
 
-    if path.len() == 0 {
-        return format!("{}: command not found", name);
-    }
+                    for arg in args {
+                        command.arg(arg);
+                    }
 
-    // нужно чтобы передаваемое название name было в PATH
-    // иначе передавать path
-    let mut command = Command::new(name);
+                    match command.stdout(Stdio::piped()).spawn() {
+                        Ok(command) => {
+                            // ограничение take?
+                            match command.stdout {
+                                Some(mut stdout) => {
+                                    let mut output = String::new();
 
-    for arg in args {
-        command.arg(arg);
-    }
+                                    match stdout.read_to_string(&mut output) {
+                                        Ok(_) => {}
+                                        Err(_) => {
+                                            return format!("{}: failed to run command", name);
+                                        }
+                                    };
 
-    match command.stdout(Stdio::piped()).spawn() {
-        Ok(command) => {
-            // ограничение take?
-            match command.stdout {
-                Some(mut stdout) => {
-                    let mut output = String::new();
-
-                    match stdout.read_to_string(&mut output) {
-                        Ok(_) => {}
-                        Err(_) => {
-                            return format!("{}: failed to run command", name);
+                                    String::from(output.as_str().trim())
+                                }
+                                None => String::new(),
+                            }
                         }
-                    };
-
-                    String::from(output.as_str().trim())
+                        Err(_) => format!("{}: failed to run command", name),
+                    }
                 }
-                None => String::new(),
+                None => format!("{}: command not found", name),
             }
         }
-        Err(_) => format!("{}: failed to run command", name),
+        Err(_) => format!("{}: command not found", name), // обработать
     }
 }
 
@@ -189,10 +194,14 @@ fn command_type(mut iter: SplitWhitespace) -> String {
                 return format!("{} is a shell builtin", command);
             }
 
-            let path = search_path(&command);
-
-            if path.len() > 0 {
-                return format!("{} is {}", command, path);
+            match search_command_exe_path(&command) {
+                Ok(path) => match path {
+                    Some(path) => {
+                        return format!("{} is {}", command, path);
+                    }
+                    None => {}
+                },
+                Err(_) => {} // обработать
             }
 
             format!("{}: not found", command)
@@ -205,19 +214,21 @@ fn command_echo(iter: SplitWhitespace) -> String {
     format!("{}", iter.collect::<Vec<&str>>().join(" "))
 }
 
-fn search_path(command: &str) -> String {
+fn search_command_exe_path(command: &str) -> Result<Option<String>, Error> {
     match get_env_paths() {
         Ok(paths) => {
-            for path in paths {
+            let mut search = None;
+
+            'paths: for path in paths {
                 match fs::read_dir(path) {
-                    // проверено: существует, каталог, доступен
+                    // exists, is dir, allowed
                     Ok(dir) => {
                         for entry in dir {
                             match entry {
                                 Ok(entry) => {
                                     let is_exe = match is_executable_file(&entry) {
                                         Ok(r) => r,
-                                        Err(_) => false, //Err(e) => { return Err(e) };
+                                        Err(_) => false,
                                     };
 
                                     if !is_exe {
@@ -230,23 +241,30 @@ fn search_path(command: &str) -> String {
                                     };
 
                                     if command == file_name {
-                                        return match entry.path().to_str() {
-                                            Some(path) => String::from(path),
-                                            None => String::new(),
+                                        match entry.path().to_str() {
+                                            Some(path) => {
+                                                search = Some(String::from(path));
+                                                break 'paths; // переделать
+                                            }
+                                            None => {}
                                         };
                                     }
                                 }
-                                Err(_) => {}
+                                Err(e) => {
+                                    return Err(e);
+                                }
                             }
                         }
                     }
-                    Err(_) => {}
-                };
+                    Err(e) => {
+                        return Err(e);
+                    }
+                }
             }
 
-            String::new()
+            Ok(search)
         }
-        Err(_) => String::new(), //Err(e) => Err(e)
+        Err(e) => Err(Error::new(ErrorKind::Interrupted, e)),
     }
 }
 
