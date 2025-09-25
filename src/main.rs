@@ -17,6 +17,7 @@ use std::os::unix::fs::PermissionsExt;
 use std::process::{Command, Stdio};
 // для чтения output дочернего процесса
 use std::env::VarError;
+use std::fs::ReadDir;
 use std::io::Error;
 use std::io::ErrorKind;
 use std::io::Read;
@@ -219,28 +220,16 @@ fn search_command_exe_path(command: &str) -> Result<Option<String>, Error> {
         Ok(paths) => {
             let mut search = None;
 
-            'paths: for path in paths {
+            for path in paths {
                 match fs::read_dir(path) {
                     // exists, is dir, allowed
-                    Ok(dir) => {
-                        for entry in dir {
-                            match entry {
-                                Ok(entry) => match match_command_and_file(command, &entry) {
-                                    Ok(r) => match r {
-                                        Some(path) => {
-                                            search = Some(path);
-                                            break 'paths;
-                                        }
-                                        None => {}
-                                    },
-                                    Err(_) => {}
-                                },
-                                Err(e) => {
-                                    return Err(e);
-                                }
-                            }
+                    Ok(mut dir) => match search_command_in_dir(command, &mut dir) {
+                        Some(path) => {
+                            search = Some(path);
+                            break;
                         }
-                    }
+                        None => continue,
+                    },
                     Err(e) => {
                         return Err(e);
                     }
@@ -264,6 +253,23 @@ fn split_env_path() -> Result<Vec<String>, VarError> {
         }
         Err(e) => Err(e),
     }
+}
+
+fn search_command_in_dir(command: &str, dir: &mut ReadDir) -> Option<String> {
+    for entry in dir {
+        match entry {
+            Ok(r) => match match_command_and_file(command, &r) {
+                Ok(path) => match path {
+                    Some(r) => return Some(r),
+                    None => continue,
+                },
+                Err(_) => continue, // errors remain here
+            },
+            Err(_) => continue, // errors remain here
+        }
+    }
+
+    None
 }
 
 fn match_command_and_file(command: &str, entry: &DirEntry) -> Result<Option<String>, Error> {
