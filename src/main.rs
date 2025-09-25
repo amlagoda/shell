@@ -145,7 +145,7 @@ fn command_pwd(name: &str) -> String {
 }
 
 fn command_from_path(name: &str, args: SplitWhitespace) -> String {
-    match search_command_exe_path(name) {
+    match search_command_in_env_path(name) {
         Ok(path) => {
             match path {
                 Some(_) => {
@@ -195,7 +195,7 @@ fn command_type(mut iter: SplitWhitespace) -> String {
                 return format!("{} is a shell builtin", command);
             }
 
-            match search_command_exe_path(&command) {
+            match search_command_in_env_path(&command) {
                 Ok(path) => match path {
                     Some(path) => {
                         return format!("{} is {}", command, path);
@@ -215,28 +215,21 @@ fn command_echo(iter: SplitWhitespace) -> String {
     format!("{}", iter.collect::<Vec<&str>>().join(" "))
 }
 
-fn search_command_exe_path(command: &str) -> Result<Option<String>, Error> {
+fn search_command_in_env_path(command: &str) -> Result<Option<String>, Error> {
     match split_env_path() {
         Ok(paths) => {
-            let mut search = None;
-
             for path in paths {
                 match fs::read_dir(path) {
                     // exists, is dir, allowed
-                    Ok(mut dir) => match search_command_in_dir(command, &mut dir) {
-                        Some(path) => {
-                            search = Some(path);
-                            break;
-                        }
+                    Ok(mut r) => match search_command_in_dir(command, &mut r) {
+                        Some(r) => return Ok(Some(r)),
                         None => continue,
                     },
-                    Err(e) => {
-                        return Err(e);
-                    }
+                    Err(_) => continue, // errors remain here
                 }
             }
 
-            Ok(search)
+            Ok(None)
         }
         Err(e) => Err(Error::new(ErrorKind::Interrupted, e)),
     }
