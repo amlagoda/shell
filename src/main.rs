@@ -66,10 +66,12 @@ fn main() -> ExitCode {
                 // для пустого ввода
                 let mut output = format!("{}: command not found", input);
 
+                let commands = Vec::from(["type", "echo", "exit", "pwd", "cd"]);
+
                 match iter.next() {
                     Some(command) => match command {
                         "type" => {
-                            output = command_type(iter);
+                            output = command_type(iter, &commands);
                         }
                         "echo" => {
                             output = command_echo(iter);
@@ -186,10 +188,8 @@ fn command_from_path(name: &str, args: SplitWhitespace) -> String {
     }
 }
 
-fn command_type(mut iter: SplitWhitespace) -> String {
-    let commands = ["type", "echo", "exit", "pwd", "cd"];
-
-    match iter.next() {
+fn command_type(mut args: SplitWhitespace, commands: &Vec<&str>) -> String {
+    match args.next() {
         Some(command) => {
             if commands.contains(&command) {
                 return format!("{} is a shell builtin", command);
@@ -197,15 +197,11 @@ fn command_type(mut iter: SplitWhitespace) -> String {
 
             match search_command_in_env_path(&command) {
                 Ok(path) => match path {
-                    Some(path) => {
-                        return format!("{} is {}", command, path);
-                    }
-                    None => {}
+                    Some(r) => format!("{} is {}", command, r),
+                    None => format!("{}: not found", command),
                 },
-                Err(_) => {} // обработать
+                Err(_) => format!("{}: not found", command),
             }
-
-            format!("{}: not found", command)
         }
         None => String::from(": not found"),
     }
