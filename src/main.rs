@@ -1,26 +1,10 @@
-// отключает предупреждение компилятора о неиспользуемом импорте
-#[allow(unused_imports)]
-// импорт: std - стандартная библиотека, io - раздел input/output
-// self - видимо весь раздел для обращения без префикса
-// Write - трейт записи
-// {self, Write} - видимо короткая форма записи
-use std::io::{self, Write};
-// коды состояния возвращаемые текущим процессом своему родителю при
-// нормальном завершении
-use std::env;
-use std::fs;
-use std::fs::DirEntry;
-use std::process::ExitCode;
-use std::str::SplitWhitespace;
-// без этого не работает permissions().mode()
+use std::env::{current_dir, home_dir, set_current_dir, var, VarError};
+use std::fs::{read_dir, DirEntry, ReadDir};
+use std::io::{stdin, stdout, Write};
+use std::io::{Error, ErrorKind, Read};
 use std::os::unix::fs::PermissionsExt;
-use std::process::{Command, Stdio};
-// для чтения output дочернего процесса
-use std::env::VarError;
-use std::fs::ReadDir;
-use std::io::Error;
-use std::io::ErrorKind;
-use std::io::Read;
+use std::process::{Command, ExitCode, Stdio};
+use std::str::SplitWhitespace;
 
 fn main() -> ExitCode {
     // изменяемая строка в памяти кучи
@@ -35,7 +19,7 @@ fn main() -> ExitCode {
         // stdout() - создание дескриптора стандартного вывода текущего процесса
         // std::io::Stdout
         // flush() - немедленный вывод буферизованной строки
-        match io::stdout().flush() {
+        match stdout().flush() {
             Ok(_n) => {}
             Err(_) => {
                 return ExitCode::FAILURE;
@@ -51,7 +35,7 @@ fn main() -> ExitCode {
         // Добавляется к уже имеющейся строке буффера, поэтому буффер нужно
         // очищать с помощью std::String::clear
 
-        match io::stdin().read_line(&mut input) {
+        match stdin().read_line(&mut input) {
             // _ подчеркивание выключает предупреждение неиспользуемой переменной
             Ok(_len) => {
                 let input: &str = input.trim();
@@ -143,7 +127,7 @@ fn command_cd(name: &str, mut args: SplitWhitespace) -> String {
     };
 
     if path == "~" {
-        path = match env::home_dir() {
+        path = match home_dir() {
             Some(path) => match path.to_str() {
                 Some(r) => String::from(r),
                 None => String::new(),
@@ -156,14 +140,14 @@ fn command_cd(name: &str, mut args: SplitWhitespace) -> String {
         return format!("{}: {}: No such file or directory", name, path);
     }
 
-    match env::set_current_dir(&path) {
+    match set_current_dir(&path) {
         Ok(_) => String::new(),
         Err(_) => format!("{}: failed to run command", name),
     }
 }
 
 fn command_pwd(name: &str) -> String {
-    match env::current_dir() {
+    match current_dir() {
         Ok(path) => match path.to_str() {
             Some(r) => String::from(r),
             None => format!("{}: failed to run command", name),
@@ -196,7 +180,7 @@ fn command_echo(args: SplitWhitespace) -> String {
 }
 
 fn split_env_path() -> Result<Vec<String>, VarError> {
-    match env::var("PATH") {
+    match var("PATH") {
         Ok(env) => {
             let paths = env
                 .split(':')
@@ -212,7 +196,7 @@ fn search_command_in_env_path(command: &str) -> Result<Option<String>, Error> {
     match split_env_path() {
         Ok(paths) => {
             for path in paths {
-                match fs::read_dir(path) {
+                match read_dir(path) {
                     // exists, is dir, allowed
                     Ok(mut r) => match search_command_in_dir(command, &mut r) {
                         Some(r) => return Ok(Some(r)),
@@ -271,7 +255,7 @@ fn match_command_and_file(command: &str, entry: &DirEntry) -> Result<Option<Stri
 }
 
 fn is_allowed_dir(path: &str) -> bool {
-    match fs::read_dir(path) {
+    match read_dir(path) {
         // exists, is dir, allowed
         Ok(_) => true,
         Err(_) => false,
