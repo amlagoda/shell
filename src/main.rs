@@ -118,21 +118,13 @@ fn command_cd(name: &str, mut args: SplitWhitespace) -> String {
         };
     }
 
-    if !is_dir_exists(&path) {
+    if !is_allowed_dir(&path) {
         return format!("{}: {}: No such file or directory", name, path);
     }
 
     match env::set_current_dir(&path) {
         Ok(_) => String::new(),
         Err(_) => format!("{}: failed to run command", name),
-    }
-}
-
-fn is_dir_exists(path: &str) -> bool {
-    match fs::read_dir(path) {
-        // проверено: существует, каталог, доступен
-        Ok(_) => true,
-        Err(_) => false,
     }
 }
 
@@ -283,6 +275,14 @@ fn match_command_and_file(command: &str, entry: &DirEntry) -> Result<Option<Stri
             }
         }
         Err(e) => Err(e),
+    }
+}
+
+fn is_allowed_dir(path: &str) -> bool {
+    match fs::read_dir(path) {
+        // exists, is dir, allowed
+        Ok(_) => true,
+        Err(_) => false,
     }
 }
 
