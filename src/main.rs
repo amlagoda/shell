@@ -246,8 +246,7 @@ fn match_command_and_file(command: &str, entry: &DirEntry) -> Result<Option<Stri
 
 fn is_allowed_dir(path: &str) -> bool {
     match read_dir(path) {
-        // exists, is dir, allowed
-        Ok(_) => true,
+        Ok(_) => true, // exists, is dir, allowed
         Err(_) => false,
     }
 }
@@ -258,8 +257,7 @@ fn is_executable_file(entry: &DirEntry) -> Result<bool, Error> {
             if md.is_dir() {
                 Ok(false)
             } else {
-                // windows?
-                Ok(md.permissions().mode() & 0o111 != 0)
+                Ok(md.permissions().mode() & 0o111 != 0) // windows no
             }
         }
         Err(e) => Err(e),
