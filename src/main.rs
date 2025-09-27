@@ -187,17 +187,19 @@ fn search_command_in_env_path(command: &str) -> Result<Option<String>, Error> {
         Ok(paths) => {
             for path in paths {
                 match read_dir(path) {
-                    // exists, is dir, allowed
                     Ok(mut r) => match search_command_in_dir(command, &mut r) {
                         Some(r) => return Ok(Some(r)),
                         None => continue,
                     },
-                    Err(_) => continue, // errors remain here
+                    // path not exists, is not dir and permissions errors
+                    // remain here because we need to go down the list
+                    Err(_) => continue,
                 }
             }
 
             Ok(None)
         }
+        // PATH not present, PATH not unicode
         Err(e) => Err(Error::new(ErrorKind::Interrupted, e)),
     }
 }
@@ -218,7 +220,6 @@ fn search_command_in_dir(command: &str, dir: &mut ReadDir) -> Option<String> {
             // fetching the next entry error remain here
             // because we need to go down the list
             Err(_) => continue,
-            
         }
     }
 
