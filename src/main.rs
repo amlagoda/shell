@@ -203,6 +203,19 @@ fn command_echo(args: SplitWhitespace) -> String {
     format!("{}", args.collect::<Vec<&str>>().join(" "))
 }
 
+fn split_env_path() -> Result<Vec<String>, VarError> {
+    match env::var("PATH") {
+        Ok(env) => {
+            let paths = env
+                .split(':')
+                .map(|path| String::from(path))
+                .collect::<Vec<String>>();
+            Ok(paths)
+        }
+        Err(e) => Err(e),
+    }
+}
+
 fn search_command_in_env_path(command: &str) -> Result<Option<String>, Error> {
     match split_env_path() {
         Ok(paths) => {
@@ -220,19 +233,6 @@ fn search_command_in_env_path(command: &str) -> Result<Option<String>, Error> {
             Ok(None)
         }
         Err(e) => Err(Error::new(ErrorKind::Interrupted, e)),
-    }
-}
-
-fn split_env_path() -> Result<Vec<String>, VarError> {
-    match env::var("PATH") {
-        Ok(env) => {
-            let paths = env
-                .split(':')
-                .map(|path| String::from(path))
-                .collect::<Vec<String>>();
-            Ok(paths)
-        }
-        Err(e) => Err(e),
     }
 }
 
