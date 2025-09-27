@@ -210,9 +210,15 @@ fn search_command_in_dir(command: &str, dir: &mut ReadDir) -> Option<String> {
                     Some(r) => return Some(r),
                     None => continue,
                 },
-                Err(_) => continue, // errors remain here
+                // read file metadata error and
+                // file name not unicode error remains here
+                // because we need to go down the list
+                Err(_) => continue,
             },
-            Err(_) => continue, // errors remain here
+            // fetching the next entry error remain here
+            // because we need to go down the list
+            Err(_) => continue,
+            
         }
     }
 
