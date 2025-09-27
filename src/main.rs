@@ -102,32 +102,6 @@ fn main() -> ExitCode {
     ExitCode::SUCCESS
 }
 
-fn command_cd(name: &str, mut args: SplitWhitespace) -> String {
-    let mut path = match args.next() {
-        Some(path) => String::from(path),
-        None => String::new(),
-    };
-
-    if path == "~" {
-        path = match env::home_dir() {
-            Some(path) => match path.to_str() {
-                Some(path) => String::from(path),
-                None => String::new(),
-            },
-            None => String::new(),
-        };
-    }
-
-    if !is_allowed_dir(&path) {
-        return format!("{}: {}: No such file or directory", name, path);
-    }
-
-    match env::set_current_dir(&path) {
-        Ok(_) => String::new(),
-        Err(_) => format!("{}: failed to run command", name),
-    }
-}
-
 fn command_from_path(name: &str, args: SplitWhitespace) -> String {
     match search_command_in_env_path(name) {
         Ok(path) => {
@@ -167,6 +141,32 @@ fn command_from_path(name: &str, args: SplitWhitespace) -> String {
             }
         }
         Err(_) => format!("{}: command not found", name), // обработать
+    }
+}
+
+fn command_cd(name: &str, mut args: SplitWhitespace) -> String {
+    let mut path = match args.next() {
+        Some(r) => String::from(r),
+        None => String::new(),
+    };
+
+    if path == "~" {
+        path = match env::home_dir() {
+            Some(path) => match path.to_str() {
+                Some(r) => String::from(r),
+                None => String::new(),
+            },
+            None => String::new(),
+        };
+    }
+
+    if !is_allowed_dir(&path) {
+        return format!("{}: {}: No such file or directory", name, path);
+    }
+
+    match env::set_current_dir(&path) {
+        Ok(_) => String::new(),
+        Err(_) => format!("{}: failed to run command", name),
     }
 }
 
