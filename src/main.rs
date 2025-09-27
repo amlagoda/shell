@@ -7,63 +7,55 @@ use std::process::{Command, ExitCode, Stdio};
 use std::str::SplitWhitespace;
 
 fn main() -> ExitCode {
-    // изменяемая строка в памяти кучи
+    const COMMAND_TYPE: &str = "type";
+    const COMMAND_ECHO: &str = "echo";
+    const COMMAND_PWD: &str = "pwd";
+    const COMMAND_CD: &str = "cd";
+    const COMMAND_EXIT: &str = "exit";
+
     let mut input = String::new();
 
     loop {
-        // очистка буфера
         input.clear();
-        // буфферизация вывода
         print!("$ ");
 
-        // stdout() - создание дескриптора стандартного вывода текущего процесса
-        // std::io::Stdout
-        // flush() - немедленный вывод буферизованной строки
         match stdout().flush() {
-            Ok(_n) => {}
-            Err(_) => {
-                return ExitCode::FAILURE;
-            }
+            Ok(_) => {}
+            Err(_) => return ExitCode::FAILURE,
         }
 
-        // stdin() - создание дескриптора стандартного потока ввода std::io::Stdin
-        // read_line(&mut input) - блокирует дескриптор, считывает сроку и
-        // помещает в буффер переданный в параметре. Строка считывается до
-        // достижения новой строки, которое определяется наличием байта 0xA.
-        // Поэтому нужно ставить ограничение с помощью std::io::Read::take, на
-        // случай если байт не передан
-        // Добавляется к уже имеющейся строке буффера, поэтому буффер нужно
-        // очищать с помощью std::String::clear
-
         match stdin().read_line(&mut input) {
-            // _ подчеркивание выключает предупреждение неиспользуемой переменной
-            Ok(_len) => {
+            Ok(_) => {
                 let input: &str = input.trim();
 
                 if input == "exit 0" {
                     break;
                 }
-                // split_whitespace() - разбивает строку по пробелам считая
-                // не одиночный за один std::str::SplitWhitespace
-                let mut iter = input.split_whitespace();
-                // next() - std::str::SplitWhitespace
-                // для пустого ввода
-                let mut output = format!("{}: command not found", input);
 
-                let commands = Vec::from(["type", "echo", "exit", "pwd", "cd"]);
+                let mut iter = input.split_whitespace();
+                let mut output = format!("{}: command not found", input); // for empty input
 
                 match iter.next() {
                     Some(command) => match command {
-                        "type" => {
-                            output = command_type(iter, &commands);
+                        COMMAND_TYPE => {
+                            output = command_type(
+                                iter,
+                                &Vec::from([
+                                    COMMAND_TYPE,
+                                    COMMAND_ECHO,
+                                    COMMAND_PWD,
+                                    COMMAND_CD,
+                                    COMMAND_EXIT,
+                                ]),
+                            );
                         }
-                        "echo" => {
+                        COMMAND_ECHO => {
                             output = command_echo(iter);
                         }
-                        "pwd" => {
+                        COMMAND_PWD => {
                             output = command_pwd(command);
                         }
-                        "cd" => {
+                        COMMAND_CD => {
                             output = command_cd(command, iter);
                         }
                         another => {
@@ -77,9 +69,7 @@ fn main() -> ExitCode {
                     println!("{}", output);
                 }
             }
-            Err(_) => {
-                return ExitCode::FAILURE;
-            }
+            Err(_) => return ExitCode::FAILURE,
         }
     }
 
