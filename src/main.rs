@@ -83,7 +83,7 @@ fn main() -> ExitCode {
                             output = command_cd(command, iter);
                         }
                         another => {
-                            output = command_from_path(another, iter);
+                            output = command_from_env_path(another, iter);
                         }
                     },
                     None => {}
@@ -102,45 +102,37 @@ fn main() -> ExitCode {
     ExitCode::SUCCESS
 }
 
-fn command_from_path(name: &str, args: SplitWhitespace) -> String {
+fn command_from_env_path(name: &str, args: SplitWhitespace) -> String {
     match search_command_in_env_path(name) {
-        Ok(path) => {
-            match path {
-                Some(_) => {
-                    // нужно чтобы передаваемое название name было в PATH
-                    // иначе передавать path
-                    let mut command = Command::new(name);
+        Ok(path) => match path {
+            Some(_) => {
+                let mut command = Command::new(name);
 
-                    for arg in args {
-                        command.arg(arg);
-                    }
-
-                    match command.stdout(Stdio::piped()).spawn() {
-                        Ok(command) => {
-                            // ограничение take?
-                            match command.stdout {
-                                Some(mut stdout) => {
-                                    let mut output = String::new();
-
-                                    match stdout.read_to_string(&mut output) {
-                                        Ok(_) => {}
-                                        Err(_) => {
-                                            return format!("{}: failed to run command", name);
-                                        }
-                                    };
-
-                                    String::from(output.as_str().trim())
-                                }
-                                None => String::new(),
-                            }
-                        }
-                        Err(_) => format!("{}: failed to run command", name),
-                    }
+                for arg in args {
+                    command.arg(arg);
                 }
-                None => format!("{}: command not found", name),
+
+                match command.stdout(Stdio::piped()).spawn() {
+                    Ok(command) => {
+                        // take?
+                        match command.stdout {
+                            Some(mut r) => {
+                                let mut output = String::new();
+
+                                match r.read_to_string(&mut output) {
+                                    Ok(_) => String::from(output.as_str().trim()),
+                                    Err(_) => format!("{}: failed to run command", name),
+                                }
+                            }
+                            None => String::new(),
+                        }
+                    }
+                    Err(_) => format!("{}: failed to run command", name),
+                }
             }
-        }
-        Err(_) => format!("{}: command not found", name), // обработать
+            None => format!("{}: command not found", name),
+        },
+        Err(_) => format!("{}: command not found", name),
     }
 }
 
