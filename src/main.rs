@@ -38,16 +38,21 @@ fn main() -> ExitCode {
                 match iter.next() {
                     Some(command) => match command {
                         COMMAND_TYPE => {
-                            output = command_type(
-                                iter,
-                                &Vec::from([
-                                    COMMAND_TYPE,
-                                    COMMAND_ECHO,
-                                    COMMAND_PWD,
-                                    COMMAND_CD,
-                                    COMMAND_EXIT,
-                                ]),
-                            );
+                            let commands = Vec::from([
+                                COMMAND_TYPE,
+                                COMMAND_ECHO,
+                                COMMAND_PWD,
+                                COMMAND_CD,
+                                COMMAND_EXIT,
+                            ]);
+
+                            match command_type(iter, &commands) {
+                                Ok(r) => {
+                                    output = r;
+                                }
+                                // PATH not present, PATH not unicode
+                                Err(_) => return ExitCode::FAILURE,
+                            }
                         }
                         COMMAND_ECHO => {
                             output = command_echo(iter);
@@ -146,22 +151,22 @@ fn command_pwd(name: &str) -> String {
     }
 }
 
-fn command_type(mut args: SplitWhitespace, commands: &Vec<&str>) -> String {
+fn command_type(mut args: SplitWhitespace, commands: &Vec<&str>) -> Result<String, Error> {
     match args.next() {
         Some(command) => {
             if commands.contains(&command) {
-                return format!("{} is a shell builtin", command);
+                return Ok(format!("{} is a shell builtin", command));
             }
 
             match search_command_in_env_path(&command) {
                 Ok(path) => match path {
-                    Some(r) => format!("{} is {}", command, r),
-                    None => format!("{}: not found", command),
+                    Some(r) => Ok(format!("{} is {}", command, r)),
+                    None => Ok(format!("{}: not found", command)),
                 },
-                Err(_) => format!("{}: not found", command),
+                Err(e) => Err(e), // PATH not present, PATH not unicode
             }
         }
-        None => String::from(": not found"),
+        None => Ok(String::from(": not found")),
     }
 }
 
