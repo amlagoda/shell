@@ -66,9 +66,12 @@ fn main() -> ExitCode {
                                 Err(_) => return ExitCode::FAILURE,
                             };
                         }
-                        COMMAND_CD => {
-                            output = command_cd(command, iter);
-                        }
+                        COMMAND_CD => match command_cd(iter) {
+                            Ok(r) => {
+                                output = r;
+                            }
+                            Err(_) => return ExitCode::FAILURE,
+                        },
                         another => {
                             output = command_from_env_path(another, iter);
                         }
@@ -121,7 +124,7 @@ fn command_from_env_path(name: &str, args: SplitWhitespace) -> String {
     }
 }
 
-fn command_cd(name: &str, mut args: SplitWhitespace) -> String {
+fn command_cd(mut args: SplitWhitespace) -> Result<String, Error> {
     let mut path = match args.next() {
         Some(r) => String::from(r),
         None => String::new(),
@@ -129,21 +132,21 @@ fn command_cd(name: &str, mut args: SplitWhitespace) -> String {
 
     if path == "~" {
         path = match home_dir() {
-            Some(path) => match path.to_str() {
+            Some(r) => match r.to_str() {
                 Some(r) => String::from(r),
-                None => String::new(),
+                None => path,
             },
-            None => String::new(),
+            None => path,
         };
     }
 
     if !is_allowed_dir(&path) {
-        return format!("{}: {}: No such file or directory", name, path);
+        return Ok(format!("cd: {}: No such file or directory", path));
     }
 
     match set_current_dir(&path) {
-        Ok(_) => String::new(),
-        Err(_) => format!("{}: failed to run command", name),
+        Ok(_) => Ok(String::new()),
+        Err(e) => Err(e),
     }
 }
 
