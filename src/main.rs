@@ -58,7 +58,13 @@ fn main() -> ExitCode {
                             output = command_echo(iter);
                         }
                         COMMAND_PWD => {
-                            output = command_pwd(command);
+                            match command_pwd() {
+                                Ok(r) => {
+                                    output = r;
+                                }
+                                // not exists, not unicode or permissions errors
+                                Err(_) => return ExitCode::FAILURE,
+                            };
                         }
                         COMMAND_CD => {
                             output = command_cd(command, iter);
@@ -141,13 +147,13 @@ fn command_cd(name: &str, mut args: SplitWhitespace) -> String {
     }
 }
 
-fn command_pwd(name: &str) -> String {
+fn command_pwd() -> Result<String, Error> {
     match current_dir() {
         Ok(path) => match path.to_str() {
-            Some(r) => String::from(r),
-            None => format!("{}: failed to run command", name),
+            Some(r) => Ok(String::from(r)),
+            None => Err(Error::new(ErrorKind::InvalidFilename, "")), // not unicode error
         },
-        Err(_) => format!("{}: failed to run command", name),
+        Err(e) => Err(e), // not exists or permissions errors
     }
 }
 
@@ -240,6 +246,7 @@ fn match_command_and_file(command: &str, entry: &DirEntry) -> Result<Option<Stri
 
             let file_name = match entry.file_name().into_string() {
                 Ok(r) => r,
+                // no unicode error
                 Err(_) => return Err(Error::new(ErrorKind::InvalidFilename, "")),
             };
 
