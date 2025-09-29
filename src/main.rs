@@ -72,9 +72,17 @@ fn main() -> ExitCode {
                             }
                             Err(_) => return ExitCode::FAILURE,
                         },
-                        another => {
-                            output = command_from_env_path(another, iter);
-                        }
+                        another => match command_from_env_path(another, iter) {
+                            Ok(r) => match r {
+                                Some(r) => {
+                                    output = r;
+                                }
+                                None => {
+                                    output = format!("{}: command not found", command);
+                                }
+                            },
+                            Err(_) => return ExitCode::FAILURE,
+                        },
                     },
                     None => {}
                 }
@@ -90,7 +98,7 @@ fn main() -> ExitCode {
     ExitCode::SUCCESS
 }
 
-fn command_from_env_path(command: &str, args: SplitWhitespace) -> String {
+fn command_from_env_path(command: &str, args: SplitWhitespace) -> Result<Option<String>, Error> {
     match search_command_in_env_path(command) {
         Ok(path) => match path {
             Some(_) => {
@@ -101,26 +109,32 @@ fn command_from_env_path(command: &str, args: SplitWhitespace) -> String {
                 }
 
                 match process.stdout(Stdio::piped()).spawn() {
-                    Ok(process) => {
-                        // take?
-                        match process.stdout {
+                    Ok(mut process) => match process.wait() {
+                        Ok(_) => match process.stdout {
+                            // take?
                             Some(mut r) => {
                                 let mut output = String::new();
 
                                 match r.read_to_string(&mut output) {
-                                    Ok(_) => String::from(output.as_str().trim()),
-                                    Err(_) => format!("{}: failed to run command", command),
+                                    Ok(_) => {
+                                        let t = output.as_str().trim();
+                                        let r = String::from(t);
+
+                                        Ok(Some(r))
+                                    }
+                                    Err(e) => Err(e), // not unicode
                                 }
                             }
-                            None => String::new(),
-                        }
-                    }
-                    Err(_) => format!("{}: failed to run command", command),
+                            None => Ok(Some(String::new())),
+                        },
+                        Err(e) => Err(e), // fail exit status
+                    },
+                    Err(e) => Err(e), // ?
                 }
             }
-            None => format!("{}: command not found", command),
+            None => Ok(None),
         },
-        Err(_) => format!("{}: command not found", command),
+        Err(e) => Err(e), // PATH not present, PATH not unicode
     }
 }
 
