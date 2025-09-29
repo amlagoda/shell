@@ -90,37 +90,37 @@ fn main() -> ExitCode {
     ExitCode::SUCCESS
 }
 
-fn command_from_env_path(name: &str, args: SplitWhitespace) -> String {
-    match search_command_in_env_path(name) {
+fn command_from_env_path(command: &str, args: SplitWhitespace) -> String {
+    match search_command_in_env_path(command) {
         Ok(path) => match path {
             Some(_) => {
-                let mut command = Command::new(name);
+                let mut process = Command::new(command);
 
                 for arg in args {
-                    command.arg(arg);
+                    process.arg(arg);
                 }
 
-                match command.stdout(Stdio::piped()).spawn() {
-                    Ok(command) => {
+                match process.stdout(Stdio::piped()).spawn() {
+                    Ok(process) => {
                         // take?
-                        match command.stdout {
+                        match process.stdout {
                             Some(mut r) => {
                                 let mut output = String::new();
 
                                 match r.read_to_string(&mut output) {
                                     Ok(_) => String::from(output.as_str().trim()),
-                                    Err(_) => format!("{}: failed to run command", name),
+                                    Err(_) => format!("{}: failed to run command", command),
                                 }
                             }
                             None => String::new(),
                         }
                     }
-                    Err(_) => format!("{}: failed to run command", name),
+                    Err(_) => format!("{}: failed to run command", command),
                 }
             }
-            None => format!("{}: command not found", name),
+            None => format!("{}: command not found", command),
         },
-        Err(_) => format!("{}: command not found", name),
+        Err(_) => format!("{}: command not found", command),
     }
 }
 
