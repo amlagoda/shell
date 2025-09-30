@@ -76,7 +76,9 @@ fn main() -> ExitCode {
                     None => {}
                 }
 
-                println!("{}", output.trim());
+                if output.len() > 0 {
+                    println!("{}", output);
+                }
             }
             Err(_) => return ExitCode::FAILURE,
         }
