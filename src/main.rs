@@ -26,16 +26,16 @@ fn main() -> ExitCode {
 
         match stdin().read_line(&mut input) {
             Ok(_) => {
-                let input: &str = input.trim();
+                let input = input.trim();
 
                 if input == "exit 0" {
                     break;
                 }
 
-                let mut iter = input.split_whitespace();
+                let mut args = input.split_whitespace();
                 let mut output = format!("{}: command not found", input); // for empty input
 
-                match iter.next() {
+                match args.next() {
                     Some(command) => match command {
                         COMMAND_TYPE => {
                             let commands = Vec::from([
@@ -46,40 +46,26 @@ fn main() -> ExitCode {
                                 COMMAND_EXIT,
                             ]);
 
-                            match command_type(iter, &commands) {
-                                Ok(r) => {
-                                    output = r;
-                                }
+                            match command_type(args, &commands) {
+                                Ok(r) => output = r,
                                 // PATH not present, PATH not unicode
                                 Err(_) => return ExitCode::FAILURE,
                             }
                         }
-                        COMMAND_ECHO => {
-                            output = command_echo(iter);
+                        COMMAND_ECHO => output = command_echo(args),
+                        COMMAND_PWD => match command_pwd() {
+                            Ok(r) => output = r,
+                            // not exists, not unicode or permissions errors
+                            Err(_) => return ExitCode::FAILURE,
                         }
-                        COMMAND_PWD => {
-                            match command_pwd() {
-                                Ok(r) => {
-                                    output = r;
-                                }
-                                // not exists, not unicode or permissions errors
-                                Err(_) => return ExitCode::FAILURE,
-                            };
-                        }
-                        COMMAND_CD => match command_cd(iter) {
-                            Ok(r) => {
-                                output = r;
-                            }
+                        COMMAND_CD => match command_cd(args) {
+                            Ok(r) => output = r,
                             Err(_) => return ExitCode::FAILURE,
                         },
-                        another => match command_from_env_path(another, iter) {
+                        another => match command_from_env_path(another, args) {
                             Ok(r) => match r {
-                                Some(r) => {
-                                    output = r;
-                                }
-                                None => {
-                                    output = format!("{}: command not found", command);
-                                }
+                                Some(r) => output = r,
+                                None => output = format!("{}: command not found", command)
                             },
                             Err(_) => return ExitCode::FAILURE,
                         },
@@ -87,9 +73,7 @@ fn main() -> ExitCode {
                     None => {}
                 }
 
-                if output.len() > 0 {
-                    println!("{}", output);
-                }
+                println!("{}", output);
             }
             Err(_) => return ExitCode::FAILURE,
         }
