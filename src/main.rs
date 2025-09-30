@@ -76,7 +76,7 @@ fn main() -> ExitCode {
                     None => {}
                 }
 
-                println!("{}", output);
+                println!("{}", output.trim());
             }
             Err(_) => return ExitCode::FAILURE,
         }
@@ -103,7 +103,7 @@ fn command_from_env_path(command: &str, args: SplitWhitespace) -> Result<Option<
                                 let mut output = String::new();
 
                                 match r.read_to_string(&mut output) {
-                                    Ok(_) => Ok(Some(trim(output))),
+                                    Ok(_) => Ok(Some(output)),
                                     Err(e) => Err(e), // not unicode
                                 }
                             }
@@ -118,10 +118,6 @@ fn command_from_env_path(command: &str, args: SplitWhitespace) -> Result<Option<
         },
         Err(e) => Err(e), // PATH not present, PATH not unicode
     }
-}
-
-fn trim(s: String) -> String {
-    String::from(s.as_str().trim())
 }
 
 fn command_cd(mut args: SplitWhitespace) -> Result<String, Error> {
