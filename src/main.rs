@@ -33,7 +33,8 @@ fn main() -> ExitCode {
                 }
 
                 let mut args = input.split_whitespace();
-                let mut output = format!("{}: command not found", input); // for empty input
+                // for empty input
+                let mut output = format!("{}: command not found", input);
 
                 match args.next() {
                     Some(command) => match command {
@@ -48,24 +49,26 @@ fn main() -> ExitCode {
 
                             match command_type(args, &commands) {
                                 Ok(r) => output = r,
-                                // PATH not present, PATH not unicode
                                 Err(_) => return ExitCode::FAILURE,
                             }
                         }
+
                         COMMAND_ECHO => output = command_echo(args),
+
                         COMMAND_PWD => match command_pwd() {
                             Ok(r) => output = r,
-                            // not exists, not unicode or permissions errors
                             Err(_) => return ExitCode::FAILURE,
-                        }
+                        },
+
                         COMMAND_CD => match command_cd(args) {
                             Ok(r) => output = r,
                             Err(_) => return ExitCode::FAILURE,
                         },
+
                         another => match command_from_env_path(another, args) {
                             Ok(r) => match r {
                                 Some(r) => output = r,
-                                None => output = format!("{}: command not found", command)
+                                None => output = format!("{}: command not found", command),
                             },
                             Err(_) => return ExitCode::FAILURE,
                         },
