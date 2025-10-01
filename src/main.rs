@@ -1,10 +1,10 @@
 use std::env::{current_dir, home_dir, set_current_dir, var, VarError};
 use std::fs::{read_dir, DirEntry, ReadDir};
-use std::io::{stdin, stdout, Write};
-use std::io::{Error, ErrorKind, Read};
+use std::io::{stdin, stdout, Write, Error, ErrorKind, Read};
 use std::os::unix::fs::PermissionsExt;
 use std::process::{Command, ExitCode, Stdio};
 use std::str::SplitWhitespace;
+use std::collections::VecDeque;
 
 fn main() -> ExitCode {
     const COMMAND_TYPE: &str = "type";
@@ -14,6 +14,7 @@ fn main() -> ExitCode {
     const COMMAND_EXIT: &str = "exit";
 
     let mut input = String::new();
+    let mut output = String::from("enter the command");
 
     loop {
         input.clear();
@@ -26,65 +27,94 @@ fn main() -> ExitCode {
 
         match stdin().read_line(&mut input) {
             Ok(_) => {
-                let input = input.trim();
+                let mut args = parse_input(input.as_str());
 
-                if input == "exit 0" {
-                    break;
-                }
+                match args.pop_front() {
+                    Some(command) => match command.as_str() {
+                        //COMMAND_TYPE => {
+                        //    let commands = Vec::from([
+                        //        COMMAND_TYPE,
+                        //        COMMAND_ECHO,
+                        //        COMMAND_PWD,
+                        //        COMMAND_CD,
+                        //        COMMAND_EXIT,
+                        //    ]);
 
-                let mut args = input.split_whitespace();
-                // for empty input
-                let mut output = format!("{}: command not found", input);
+                        //    match command_type(args, &commands) {
+                        //        Ok(r) => output = r,
+                        //        Err(_) => return ExitCode::FAILURE,
+                        //    }
+                        //}
 
-                match args.next() {
-                    Some(command) => match command {
-                        COMMAND_TYPE => {
-                            let commands = Vec::from([
-                                COMMAND_TYPE,
-                                COMMAND_ECHO,
-                                COMMAND_PWD,
-                                COMMAND_CD,
-                                COMMAND_EXIT,
-                            ]);
+                        //COMMAND_ECHO => output = command_echo(args),
 
-                            match command_type(args, &commands) {
-                                Ok(r) => output = r,
-                                Err(_) => return ExitCode::FAILURE,
-                            }
-                        }
+                        //COMMAND_PWD => match command_pwd() {
+                        //    Ok(r) => output = r,
+                        //    Err(_) => return ExitCode::FAILURE,
+                        //},
 
-                        COMMAND_ECHO => output = command_echo(args),
+                        //COMMAND_CD => match command_cd(args) {
+                        //    Ok(r) => output = r,
+                        //    Err(_) => return ExitCode::FAILURE,
+                        //},
 
-                        COMMAND_PWD => match command_pwd() {
-                            Ok(r) => output = r,
-                            Err(_) => return ExitCode::FAILURE,
-                        },
+                        COMMAND_EXIT => return ExitCode::SUCCESS,
 
-                        COMMAND_CD => match command_cd(args) {
-                            Ok(r) => output = r,
-                            Err(_) => return ExitCode::FAILURE,
-                        },
+                        //another => match command_from_env_path(another, args) {
+                        //    Ok(r) => match r {
+                        //        Some(r) => output = r,
+                        //        None => output = format!("{}: command not found", command),
+                        //    },
+                        //    Err(_) => return ExitCode::FAILURE,
+                        //},
 
-                        another => match command_from_env_path(another, args) {
-                            Ok(r) => match r {
-                                Some(r) => output = r,
-                                None => output = format!("{}: command not found", command),
-                            },
-                            Err(_) => return ExitCode::FAILURE,
-                        },
-                    },
-                    None => {}
-                }
-
-                if output.len() > 0 {
-                    println!("{}", output);
+                        _ => {output = String::from("stub")} // delete
+                    }
+                    None => {},
                 }
             }
             Err(_) => return ExitCode::FAILURE,
         }
+
+        if output.len() > 0 {
+            println!("{}", output);
+        }
     }
 
     ExitCode::SUCCESS
+}
+
+fn parse_input(input: &str) -> VecDeque<String> {
+    let mut chars = input.trim().chars();
+    let mut args: VecDeque<String> = VecDeque::new();
+    let mut arg = String::new();
+    let mut is_single = false;
+
+    loop {
+        match chars.next() {
+            Some(r) => {
+                if r == '\'' {
+                    is_single = !is_single
+                }
+
+                if (is_single && r != '\'') || (r != ' ' && r != '\'') {
+                    arg.push(r);
+                } else if arg.len() > 0 {
+                    args.push_back(arg);
+                    arg = String::new();
+                }
+            }
+            None => {
+                if arg.len() > 0 {
+                    args.push_back(arg);
+                }
+
+                break;
+            }
+        }
+    }
+
+    args
 }
 
 fn command_from_env_path(command: &str, args: SplitWhitespace) -> Result<Option<String>, Error> {
