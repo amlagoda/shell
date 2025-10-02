@@ -60,15 +60,13 @@ fn main() -> ExitCode {
 
                         COMMAND_EXIT => return ExitCode::SUCCESS,
 
-                        //another => match command_from_env_path(another, args) {
-                        //    Ok(r) => match r {
-                        //        Some(r) => output = r,
-                        //        None => output = format!("{}: command not found", command),
-                        //    },
-                        //    Err(_) => return ExitCode::FAILURE,
-                        //},
-
-                        _ => {output = String::from("stub")} // delete
+                        another => match command_from_env_path(another, args) {
+                            Ok(r) => match r {
+                                Some(r) => output = r,
+                                None => output = format!("{}: command not found", command),
+                            },
+                            Err(_) => return ExitCode::FAILURE,
+                        },
                     }
                     None => {},
                 }
@@ -117,7 +115,7 @@ fn parse_input(input: &str) -> VecDeque<String> {
     args
 }
 
-fn command_from_env_path(command: &str, args: SplitWhitespace) -> Result<Option<String>, Error> {
+fn command_from_env_path(command: &str, args: VecDeque<String>) -> Result<Option<String>, Error> {
     match search_command_in_env_path(command) {
         Ok(path) => match path {
             Some(_) => {
@@ -135,7 +133,7 @@ fn command_from_env_path(command: &str, args: SplitWhitespace) -> Result<Option<
                                 let mut output = String::new();
 
                                 match r.read_to_string(&mut output) {
-                                    Ok(_) => Ok(Some(output)),
+                                    Ok(_) => Ok(Some(output.trim().to_string())),
                                     Err(e) => Err(e), // not unicode
                                 }
                             }
