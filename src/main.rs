@@ -97,6 +97,11 @@ fn parse_input(input: &str) -> VecDeque<String> {
                 }
 
                 if r == '"' {
+                    if is_single {
+                        arg.push(r);
+                        continue;
+                    }
+
                     is_double = !is_double;
                     continue;
                 }
