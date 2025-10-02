@@ -53,10 +53,10 @@ fn main() -> ExitCode {
                             Err(_) => return ExitCode::FAILURE,
                         },
 
-                        //COMMAND_CD => match command_cd(args) {
-                        //    Ok(r) => output = r,
-                        //    Err(_) => return ExitCode::FAILURE,
-                        //},
+                        COMMAND_CD => match command_cd(args) {
+                            Ok(r) => output = r,
+                            Err(_) => return ExitCode::FAILURE,
+                        },
 
                         COMMAND_EXIT => return ExitCode::SUCCESS,
 
@@ -152,8 +152,8 @@ fn command_from_env_path(command: &str, args: SplitWhitespace) -> Result<Option<
     }
 }
 
-fn command_cd(mut args: SplitWhitespace) -> Result<String, Error> {
-    let mut path = match args.next() {
+fn command_cd(args: VecDeque<String>) -> Result<String, Error> {
+    let mut path = match args.iter().next() {
         Some(r) => String::from(r),
         None => String::new(),
     };
