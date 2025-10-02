@@ -105,9 +105,13 @@ fn parse_input(input: &str) -> VecDeque<String> {
                 }
 
                 if r == '\\' {
-                    if is_single || is_double {
+                    if is_double {
                         arg.push(r);
                         continue;
+                    }
+
+                    if is_single {
+                        arg.push(r);
                     }
 
                     match input.next() {
