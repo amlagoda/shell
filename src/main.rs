@@ -85,10 +85,17 @@ fn parse_input(input: &str) -> VecDeque<String> {
     let mut args: VecDeque<String> = VecDeque::new();
     let mut is_single = false;
     let mut is_double = false;
+    let mut is_shielding = false;
 
     loop {
         match input.next() {
             Some(r) => {
+                if is_shielding {
+                    arg.push(r);
+                    is_shielding = false;
+                    continue;
+                }
+
                 if r == '"' {
                     is_double = !is_double;
                     continue;
@@ -105,43 +112,31 @@ fn parse_input(input: &str) -> VecDeque<String> {
                 }
 
                 if r == '\\' {
+                    if is_single {
+                        arg.push(r);
+                        continue;
+                    }
+
                     if is_double {
                         match input.peek() {
                             Some(n) => {
                                 let n = *n;
 
-                                if n == '\\' {
-                                    continue;
-                                }
-
-                                if n == '"' {
-                                    arg.push('"');
-                                    input.next();
+                                if n == '"' || n == '\\' {
+                                    is_shielding = true;
                                     continue;
                                 }
 
                                 arg.push(r);
                             }
-                            None => {
-                                arg.push(r);
-                                break;
-                            }
+                            None => arg.push(r),
                         }
 
                         continue;
                     }
 
-                    if is_single {
-                        arg.push(r);
-                    }
-
-                    match input.next() {
-                        Some(r) => {
-                            arg.push(r);
-                            continue;
-                        }
-                        None => break,
-                    }
+                    is_shielding = true;
+                    continue;
                 }
 
                 if r != ' ' {
