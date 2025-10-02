@@ -80,7 +80,7 @@ fn main() -> ExitCode {
 }
 
 fn parse_input(input: &str) -> VecDeque<String> {
-    let mut input = input.trim().chars().peekable();
+    let mut input = input.trim().chars();
     let mut arg = String::new();
     let mut args: VecDeque<String> = VecDeque::new();
     let mut is_single = false;
