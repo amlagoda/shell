@@ -97,10 +97,26 @@ fn parse_input(input: &str) -> VecDeque<String> {
                 if r == '\'' {
                     if is_double {
                         arg.push(r);
-                    } else {
-                        is_single = !is_single;
+                        continue;
                     }
+
+                    is_single = !is_single;
                     continue;
+                }
+
+                if r == '\\' {
+                    if is_single || is_double {
+                        arg.push(r);
+                        continue;
+                    }
+
+                    match input.next() {
+                        Some(r) => {
+                            arg.push(r);
+                            continue;
+                        }
+                        None => break,
+                    }
                 }
 
                 if r != ' ' {
