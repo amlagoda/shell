@@ -1,10 +1,9 @@
+use std::collections::VecDeque;
 use std::env::{current_dir, home_dir, set_current_dir, var, VarError};
 use std::fs::{read_dir, DirEntry, ReadDir};
-use std::io::{stdin, stdout, Write, Error, ErrorKind, Read};
+use std::io::{stdin, stdout, Error, ErrorKind, Read, Write};
 use std::os::unix::fs::PermissionsExt;
 use std::process::{Command, ExitCode, Stdio};
-use std::str::SplitWhitespace;
-use std::collections::VecDeque;
 
 fn main() -> ExitCode {
     const COMMAND_TYPE: &str = "type";
@@ -67,8 +66,8 @@ fn main() -> ExitCode {
                             },
                             Err(_) => return ExitCode::FAILURE,
                         },
-                    }
-                    None => {},
+                    },
+                    None => {}
                 }
             }
             Err(_) => return ExitCode::FAILURE,
@@ -78,8 +77,6 @@ fn main() -> ExitCode {
             println!("{}", output);
         }
     }
-
-    ExitCode::SUCCESS
 }
 
 fn parse_input(input: &str) -> VecDeque<String> {
@@ -206,7 +203,12 @@ fn command_type(args: VecDeque<String>, commands: &Vec<&str>) -> Result<String, 
 }
 
 fn command_echo(args: VecDeque<String>) -> String {
-    String::from(args.iter().map(|arg| arg.as_str()).collect::<Vec<&str>>().join(" ")) 
+    String::from(
+        args.iter()
+            .map(|arg| arg.as_str())
+            .collect::<Vec<&str>>()
+            .join(" "),
+    )
 }
 
 fn split_env_path() -> Result<Vec<String>, VarError> {
