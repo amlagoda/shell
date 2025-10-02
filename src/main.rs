@@ -80,7 +80,7 @@ fn main() -> ExitCode {
 }
 
 fn parse_input(input: &str) -> VecDeque<String> {
-    let mut input = input.trim().chars();
+    let mut input = input.trim().chars().peekable();
     let mut arg = String::new();
     let mut args: VecDeque<String> = VecDeque::new();
     let mut is_single = false;
@@ -106,7 +106,28 @@ fn parse_input(input: &str) -> VecDeque<String> {
 
                 if r == '\\' {
                     if is_double {
-                        arg.push(r);
+                        match input.peek() {
+                            Some(n) => {
+                                let n = *n;
+
+                                if n == '\\' {
+                                    continue;
+                                }
+
+                                if n == '"' {
+                                    arg.push('"');
+                                    input.next();
+                                    continue;
+                                }
+
+                                arg.push(r);
+                            }
+                            None => {
+                                arg.push(r);
+                                break;
+                            }
+                        }
+
                         continue;
                     }
 
