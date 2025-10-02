@@ -46,7 +46,7 @@ fn main() -> ExitCode {
                             }
                         }
 
-                        //COMMAND_ECHO => output = command_echo(args),
+                        COMMAND_ECHO => output = command_echo(args),
 
                         COMMAND_PWD => match command_pwd() {
                             Ok(r) => output = r,
@@ -205,8 +205,8 @@ fn command_type(args: VecDeque<String>, commands: &Vec<&str>) -> Result<String, 
     }
 }
 
-fn command_echo(args: SplitWhitespace) -> String {
-    format!("{}", args.collect::<Vec<&str>>().join(" "))
+fn command_echo(args: VecDeque<String>) -> String {
+    String::from(args.iter().map(|arg| arg.as_str()).collect::<Vec<&str>>().join(" ")) 
 }
 
 fn split_env_path() -> Result<Vec<String>, VarError> {
