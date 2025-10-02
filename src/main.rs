@@ -84,12 +84,22 @@ fn parse_input(input: &str) -> VecDeque<String> {
     let mut arg = String::new();
     let mut args: VecDeque<String> = VecDeque::new();
     let mut is_single = false;
+    let mut is_double = false;
 
     loop {
         match input.next() {
             Some(r) => {
+                if r == '"' {
+                    is_double = !is_double;
+                    continue;
+                }
+
                 if r == '\'' {
-                    is_single = !is_single;
+                    if is_double {
+                        arg.push(r);
+                    } else {
+                        is_single = !is_single;
+                    }
                     continue;
                 }
 
@@ -98,7 +108,7 @@ fn parse_input(input: &str) -> VecDeque<String> {
                     continue;
                 }
 
-                if is_single {
+                if is_single || is_double {
                     arg.push(r);
                     continue;
                 }
