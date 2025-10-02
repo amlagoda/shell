@@ -48,10 +48,10 @@ fn main() -> ExitCode {
 
                         //COMMAND_ECHO => output = command_echo(args),
 
-                        //COMMAND_PWD => match command_pwd() {
-                        //    Ok(r) => output = r,
-                        //    Err(_) => return ExitCode::FAILURE,
-                        //},
+                        COMMAND_PWD => match command_pwd() {
+                            Ok(r) => output = r,
+                            Err(_) => return ExitCode::FAILURE,
+                        },
 
                         //COMMAND_CD => match command_cd(args) {
                         //    Ok(r) => output = r,
