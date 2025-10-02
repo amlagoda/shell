@@ -31,20 +31,20 @@ fn main() -> ExitCode {
 
                 match args.pop_front() {
                     Some(command) => match command.as_str() {
-                        //COMMAND_TYPE => {
-                        //    let commands = Vec::from([
-                        //        COMMAND_TYPE,
-                        //        COMMAND_ECHO,
-                        //        COMMAND_PWD,
-                        //        COMMAND_CD,
-                        //        COMMAND_EXIT,
-                        //    ]);
+                        COMMAND_TYPE => {
+                            let commands = Vec::from([
+                                COMMAND_TYPE,
+                                COMMAND_ECHO,
+                                COMMAND_PWD,
+                                COMMAND_CD,
+                                COMMAND_EXIT,
+                            ]);
 
-                        //    match command_type(args, &commands) {
-                        //        Ok(r) => output = r,
-                        //        Err(_) => return ExitCode::FAILURE,
-                        //    }
-                        //}
+                            match command_type(args, &commands) {
+                                Ok(r) => output = r,
+                                Err(_) => return ExitCode::FAILURE,
+                            }
+                        }
 
                         //COMMAND_ECHO => output = command_echo(args),
 
@@ -188,10 +188,10 @@ fn command_pwd() -> Result<String, Error> {
     }
 }
 
-fn command_type(mut args: SplitWhitespace, commands: &Vec<&str>) -> Result<String, Error> {
-    match args.next() {
+fn command_type(args: VecDeque<String>, commands: &Vec<&str>) -> Result<String, Error> {
+    match args.iter().next() {
         Some(command) => {
-            if commands.contains(&command) {
+            if commands.contains(&command.as_str()) {
                 return Ok(format!("{} is a shell builtin", command));
             }
 
