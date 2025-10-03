@@ -85,7 +85,7 @@ fn parse_input(input: &str) -> VecDeque<String> {
     const MODE_DOUBLE: u8 = 3;
     const MODE_SHIELD: u8 = 4;
 
-    let mut mode = [MODE_NORMAL, MODE_NORMAL]; // current, revious
+    let mut mode = [MODE_NORMAL, MODE_NORMAL]; // current, previous
     let mut input = input.trim().chars().peekable();
     let mut arg = String::new();
     let mut args: VecDeque<String> = VecDeque::new();
@@ -99,14 +99,11 @@ fn parse_input(input: &str) -> VecDeque<String> {
                         mode.reverse();
                     }
                     MODE_SINGLE => match r {
-                        '"' => arg.push(r),
                         '\'' => mode = [MODE_NORMAL, MODE_SINGLE],
-                        '\\' => arg.push(r),
                         _ => arg.push(r),
                     },
                     MODE_DOUBLE => match r {
                         '"' => mode = [MODE_NORMAL, MODE_DOUBLE],
-                        '\'' => arg.push(r),
                         '\\' => match input.peek() {
                             Some(n) => {
                                 if *n == '"' || *n == '\\' {
