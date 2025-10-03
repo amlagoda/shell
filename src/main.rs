@@ -80,90 +80,65 @@ fn main() -> ExitCode {
 }
 
 fn parse_input(input: &str) -> VecDeque<String> {
+    const MODE_NORMAL: u8 = 1;
+    const MODE_SINGLE: u8 = 2;
+    const MODE_DOUBLE: u8 = 3;
+    const MODE_SHIELD: u8 = 4;
+
+    let mut mode = [MODE_NORMAL, MODE_NORMAL]; // current, revious
     let mut input = input.trim().chars().peekable();
     let mut arg = String::new();
     let mut args: VecDeque<String> = VecDeque::new();
-    let mut is_single = false;
-    let mut is_double = false;
-    let mut is_shielding = false;
 
     loop {
         match input.next() {
             Some(r) => {
-                if is_shielding {
-                    arg.push(r);
-                    is_shielding = false;
-                    continue;
-                }
-
-                if r == '"' {
-                    if is_single {
+                match mode[0] {
+                    MODE_SHIELD => {
                         arg.push(r);
-                        continue;
+                        mode.reverse();
                     }
-
-                    is_double = !is_double;
-                    continue;
-                }
-
-                if r == '\'' {
-                    if is_double {
-                        arg.push(r);
-                        continue;
-                    }
-
-                    is_single = !is_single;
-                    continue;
-                }
-
-                if r == '\\' {
-                    if is_single {
-                        arg.push(r);
-                        continue;
-                    }
-
-                    if is_double {
-                        match input.peek() {
+                    MODE_SINGLE => match r {
+                        '"' => arg.push(r),
+                        '\'' => mode = [MODE_NORMAL, MODE_SINGLE],
+                        '\\' => arg.push(r),
+                        _ => arg.push(r),
+                    },
+                    MODE_DOUBLE => match r {
+                        '"' => mode = [MODE_NORMAL, MODE_DOUBLE],
+                        '\'' => arg.push(r),
+                        '\\' => match input.peek() {
                             Some(n) => {
-                                let n = *n;
-
-                                if n == '"' || n == '\\' {
-                                    is_shielding = true;
-                                    continue;
+                                if *n == '"' || *n == '\\' {
+                                    mode = [MODE_SHIELD, MODE_DOUBLE];
+                                } else {
+                                    arg.push(r);
                                 }
-
-                                arg.push(r);
                             }
                             None => arg.push(r),
+                        },
+                        _ => arg.push(r),
+                    },
+                    // MODE_NORMAL
+                    _ => match r {
+                        '"' => mode = [MODE_DOUBLE, MODE_NORMAL],
+                        '\'' => mode = [MODE_SINGLE, MODE_NORMAL],
+                        '\\' => mode = [MODE_SHIELD, MODE_NORMAL],
+                        ' ' => {
+                            if arg.len() > 0 {
+                                args.push_back(arg);
+                                arg = String::new();
+                            }
                         }
-
-                        continue;
-                    }
-
-                    is_shielding = true;
-                    continue;
-                }
-
-                if r != ' ' {
-                    arg.push(r);
-                    continue;
-                }
-
-                if is_single || is_double {
-                    arg.push(r);
-                    continue;
-                }
-
-                if arg.len() > 0 {
-                    args.push_back(arg);
-                    arg = String::new();
+                        _ => arg.push(r),
+                    },
                 }
             }
             None => {
                 if arg.len() > 0 {
                     args.push_back(arg);
+                    break;
                 }
-                break;
             }
         }
     }
