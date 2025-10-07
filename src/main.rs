@@ -14,6 +14,7 @@ fn main() -> ExitCode {
 
     let mut input = String::new();
     let mut output = String::from("enter the command");
+    let mut redirect_path: Option<String>;
 
     loop {
         input.clear();
@@ -26,9 +27,10 @@ fn main() -> ExitCode {
 
         match stdin().read_line(&mut input) {
             Ok(_) => {
-                let mut args = parse_input(input.as_str());
+                let (command, args, path) = parse_args(parse_input(input.as_str()));
+                redirect_path = path;
 
-                match args.pop_front() {
+                match command {
                     Some(command) => match command.as_str() {
                         COMMAND_TYPE => {
                             let commands = Vec::from([
@@ -74,9 +76,41 @@ fn main() -> ExitCode {
         }
 
         if output.len() > 0 {
-            println!("{}", output);
+            match redirect_path {
+                Some(r) => {
+                    println!("Redirect to {}", r);
+                }
+                None => println!("{}", output),
+            }
         }
     }
+}
+
+fn parse_args(mut args: VecDeque<String>) -> (Option<String>, VecDeque<String>, Option<String>) {
+    let mut args_new: VecDeque<String> = VecDeque::new();
+    let mut redirect_path = None;
+    let mut is_redirect = false;
+    let command = args.pop_front();
+
+    loop {
+        match args.pop_front() {
+            Some(r) => {
+                if is_redirect {
+                    redirect_path = Some(r.clone());
+                    break;
+                }
+
+                if [">", "1>"].contains(&r.as_str()) {
+                    is_redirect = true;
+                } else {
+                    args_new.push_back(r.clone());
+                }
+            }
+            None => break,
+        }
+    }
+
+    (command, args_new, redirect_path)
 }
 
 fn parse_input(input: &str) -> VecDeque<String> {
