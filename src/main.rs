@@ -1,8 +1,9 @@
 use std::collections::VecDeque;
 use std::env::{current_dir, home_dir, set_current_dir, var, VarError};
-use std::fs::{read_dir, DirEntry, ReadDir};
+use std::fs::{read_dir, DirEntry, File, ReadDir};
 use std::io::{stdin, stdout, Error, ErrorKind, Read, Write};
 use std::os::unix::fs::PermissionsExt;
+use std::path::Path;
 use std::process::{Command, ExitCode, Stdio};
 
 fn main() -> ExitCode {
@@ -77,9 +78,11 @@ fn main() -> ExitCode {
 
         if output.len() > 0 {
             match redirect_path {
-                Some(r) => {
-                    println!("Redirect to {}", r);
-                }
+                Some(r) => match write_to_file(r.as_str(), output.as_str()) {
+                    Ok(_) => {}
+                    // catalog not found and permissions errors
+                    Err(_) => println!("{}: No such file or directory", r),
+                },
                 None => println!("{}", output),
             }
         }
@@ -376,5 +379,15 @@ fn is_executable_file(entry: &DirEntry) -> Result<bool, Error> {
             }
         }
         Err(e) => Err(e),
+    }
+}
+
+fn write_to_file(path: &str, content: &str) -> Result<(), Error> {
+    match File::create(Path::new(path)) {
+        Ok(mut r) => match r.write_all(content.as_bytes()) {
+            Ok(_) => Ok(()),
+            Err(e) => Err(e),
+        },
+        Err(e) => Err(e), // catalog not found and permissions errors
     }
 }
