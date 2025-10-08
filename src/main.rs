@@ -15,7 +15,7 @@ fn main() -> ExitCode {
 
     let mut input = String::new();
     let mut output = String::from("enter the command");
-    let mut redirect_path: Option<String>;
+    let mut redirect: Option<[String; 3]>;
 
     loop {
         input.clear();
@@ -28,8 +28,8 @@ fn main() -> ExitCode {
 
         match stdin().read_line(&mut input) {
             Ok(_) => {
-                let (command, args, path) = parse_args(parse_input(input.as_str()));
-                redirect_path = path;
+                let (command, args, r) = parse_args(parse_input(input.as_str()));
+                redirect = r;
 
                 match command {
                     Some(command) => match command.as_str() {
@@ -77,34 +77,42 @@ fn main() -> ExitCode {
         }
 
         if output.len() > 0 {
-            match redirect_path {
-                Some(r) => match write_to_file(r.as_str(), output.as_str()) {
-                    Ok(_) => {}
-                    // catalog not found and permissions errors
-                    Err(_) => println!("{}: No such file or directory", r),
-                },
+            match redirect {
+                Some(r) => {
+                    let [_flow, _mode, path] = r;
+
+                    match write_to_file(path.as_str(), output.as_str()) {
+                        Ok(_) => {}
+                        // catalog not found and permissions errors
+                        Err(_) => println!("{}: No such file or directory", path),
+                    }
+                }
                 None => println!("{}", output),
             }
         }
     }
 }
 
-fn parse_args(mut args: VecDeque<String>) -> (Option<String>, VecDeque<String>, Option<String>) {
-    let mut args_new: VecDeque<String> = VecDeque::new();
-    let mut redirect_path = None;
-    let mut is_redirect = false;
+fn parse_args(
+    mut args: VecDeque<String>,
+) -> (Option<String>, VecDeque<String>, Option<[String; 3]>) {
     let command = args.pop_front();
+    let mut args_new: VecDeque<String> = VecDeque::new();
+    let mut redirect = [String::new(), String::new(), String::new()];
+    let mut is_path = false;
 
     loop {
         match args.pop_front() {
             Some(r) => {
-                if is_redirect {
-                    redirect_path = Some(r.clone());
+                if is_path {
+                    redirect[2] = r.clone();
                     break;
                 }
 
-                if [">", "1>"].contains(&r.as_str()) {
-                    is_redirect = true;
+                if is_redirect(r.as_str()) {
+                    let r = normalize_redirect(r.as_str());
+                    [redirect[0], redirect[1]] = parse_redirect(r.as_str());
+                    is_path = true;
                 } else {
                     args_new.push_back(r.clone());
                 }
@@ -113,7 +121,39 @@ fn parse_args(mut args: VecDeque<String>) -> (Option<String>, VecDeque<String>, 
         }
     }
 
-    (command, args_new, redirect_path)
+    if redirect[2].len() > 0 {
+        (command, args_new, Some(redirect))
+    } else {
+        (command, args_new, None)
+    }
+}
+
+fn is_redirect(arg: &str) -> bool {
+    const REDIRECTS: [&str; 6] = [">", "1>", "2>", ">>", "1>>", "2>>"];
+    REDIRECTS.contains(&arg)
+}
+
+fn normalize_redirect(redirect: &str) -> String {
+    if [">", ">>"].contains(&redirect) {
+        format!("1{}", redirect)
+    } else {
+        String::from(redirect)
+    }
+}
+
+fn parse_redirect(redirect: &str) -> [String; 2] {
+    let mut flow = String::new();
+    let mut mode = String::new();
+
+    for r in redirect.chars() {
+        if flow.len() == 0 {
+            flow.push(r);
+        } else {
+            mode.push(r);
+        }
+    }
+
+    [flow, mode]
 }
 
 fn parse_input(input: &str) -> VecDeque<String> {
@@ -383,6 +423,7 @@ fn is_executable_file(entry: &DirEntry) -> Result<bool, Error> {
 }
 
 fn write_to_file(path: &str, content: &str) -> Result<(), Error> {
+    // Create a file if it does not exist, and will truncate it if it does
     match File::create(Path::new(path)) {
         Ok(mut r) => match r.write_all(content.as_bytes()) {
             Ok(_) => Ok(()),
