@@ -1,10 +1,10 @@
 use std::collections::VecDeque;
 use std::env::{current_dir, home_dir, set_current_dir, var, VarError};
-use std::fs::{read_dir, DirEntry, File, ReadDir};
+use std::fs::{read_dir, DirEntry, OpenOptions, ReadDir};
 use std::io::{stdin, stdout, Error, ErrorKind, Read, Write};
 use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
-use std::process::{Command, ExitCode, Stdio};
+use std::process::{Child, Command, ExitCode, Stdio};
 
 fn main() -> ExitCode {
     const COMMAND_TYPE: &str = "type";
@@ -14,8 +14,9 @@ fn main() -> ExitCode {
     const COMMAND_EXIT: &str = "exit";
 
     let mut input = String::new();
-    let mut output = String::from("enter the command");
+    let mut output: Option<String> = None;
     let mut redirect: Option<[String; 3]>;
+    let mut error: Option<String> = None;
 
     loop {
         input.clear();
@@ -23,7 +24,10 @@ fn main() -> ExitCode {
 
         match stdout().flush() {
             Ok(_) => {}
-            Err(_) => return ExitCode::FAILURE,
+            Err(e) => {
+                println!("{}", e.to_string());
+                return ExitCode::FAILURE;
+            }
         }
 
         match stdin().read_line(&mut input) {
@@ -43,52 +47,90 @@ fn main() -> ExitCode {
                             ]);
 
                             match command_type(args, &commands) {
-                                Ok(r) => output = r,
-                                Err(_) => return ExitCode::FAILURE,
+                                Ok(r) => output = Some(r),
+                                Err(e) => error = Some(e.to_string()),
                             }
                         }
 
-                        COMMAND_ECHO => output = command_echo(args),
+                        COMMAND_ECHO => output = Some(command_echo(args)),
 
                         COMMAND_PWD => match command_pwd() {
-                            Ok(r) => output = r,
-                            Err(_) => return ExitCode::FAILURE,
+                            Ok(r) => output = Some(r),
+                            Err(e) => error = Some(e.to_string()),
                         },
 
                         COMMAND_CD => match command_cd(args) {
-                            Ok(r) => output = r,
-                            Err(_) => return ExitCode::FAILURE,
+                            Ok(_) => output = None,
+                            Err(e) => error = Some(e.to_string()),
                         },
 
                         COMMAND_EXIT => return ExitCode::SUCCESS,
 
                         another => match command_from_env_path(another, args) {
                             Ok(r) => match r {
-                                Some(r) => output = r,
-                                None => output = format!("{}: command not found", command),
+                                Some(r) => [output, error] = r,
+                                None => {}
                             },
-                            Err(_) => return ExitCode::FAILURE,
+                            Err(e) => error = Some(e.to_string()),
                         },
                     },
-                    None => {}
+                    None => error = Some(String::from(": not found")),
                 }
             }
-            Err(_) => return ExitCode::FAILURE,
+            Err(e) => {
+                println!("{}", e.to_string());
+                return ExitCode::FAILURE;
+            }
         }
 
-        if output.len() > 0 {
-            match redirect {
-                Some(r) => {
-                    let [_flow, _mode, path] = r;
+        match error {
+            Some(err) => {
+                error = None;
 
-                    match write_to_file(path.as_str(), output.as_str()) {
-                        Ok(_) => {}
-                        // catalog not found and permissions errors
-                        Err(_) => println!("{}: No such file or directory", path),
+                match &redirect {
+                    Some(rd) => {
+                        let [flow, mode, path] = rd;
+
+                        if flow == "2" {
+                            match write_to_file(path.as_str(), err.as_str(), mode == ">>") {
+                                Ok(_) => {}
+                                Err(e) => println!("{}: {}", path, e.to_string()),
+                            }
+                        } else {
+                            println!("{}", err)
+                        }
+                    }
+                    None => {
+                        println!("{}", err)
                     }
                 }
-                None => println!("{}", output),
             }
+            None => {}
+        }
+
+        match output {
+            Some(r) => {
+                output = None;
+
+                match &redirect {
+                    Some(rd) => {
+                        let [flow, mode, path] = rd;
+
+                        if flow == "1" {
+                            match write_to_file(path.as_str(), r.as_str(), mode == ">>") {
+                                Ok(_) => {}
+                                Err(e) => println!("{}: {}", path, e.to_string()),
+                            }
+                        } else {
+                            println!("{}", r)
+                        }
+                    }
+                    None => {
+                        println!("{}", r)
+                    }
+                }
+            }
+            None => {}
         }
     }
 }
@@ -211,8 +253,8 @@ fn parse_input(input: &str) -> VecDeque<String> {
             None => {
                 if arg.len() > 0 {
                     args.push_back(arg);
-                    break;
                 }
+                break;
             }
         }
     }
@@ -220,7 +262,10 @@ fn parse_input(input: &str) -> VecDeque<String> {
     args
 }
 
-fn command_from_env_path(command: &str, args: VecDeque<String>) -> Result<Option<String>, Error> {
+fn command_from_env_path(
+    command: &str,
+    args: VecDeque<String>,
+) -> Result<Option<[Option<String>; 2]>, Error> {
     match search_command_in_env_path(command) {
         Ok(path) => match path {
             Some(_) => {
@@ -230,32 +275,31 @@ fn command_from_env_path(command: &str, args: VecDeque<String>) -> Result<Option
                     process.arg(arg);
                 }
 
-                match process.stdout(Stdio::piped()).spawn() {
-                    Ok(mut process) => match process.wait() {
-                        Ok(_) => match process.stdout {
-                            // take?
-                            Some(mut r) => {
-                                let mut output = String::new();
-
-                                match r.read_to_string(&mut output) {
-                                    Ok(_) => Ok(Some(output.trim().to_string())),
-                                    Err(e) => Err(e), // not unicode
-                                }
-                            }
-                            None => Ok(Some(String::new())),
+                match process
+                    .stdout(Stdio::piped())
+                    .stderr(Stdio::piped())
+                    .spawn()
+                {
+                    Ok(mut r) => match r.wait() {
+                        Ok(_) => match read_process_output_to_strings(r) {
+                            Ok(r) => Ok(Some(r)),
+                            Err(e) => Err(e),
                         },
-                        Err(e) => Err(e), // fail exit status
+                        Err(e) => Err(e),
                     },
-                    Err(e) => Err(e), // ?
+                    Err(e) => Err(e),
                 }
             }
-            None => Ok(None),
+            None => {
+                let msg = format!("{}: not found", command);
+                Err(Error::new(ErrorKind::NotFound, msg))
+            }
         },
-        Err(e) => Err(e), // PATH not present, PATH not unicode
+        Err(e) => Err(e),
     }
 }
 
-fn command_cd(args: VecDeque<String>) -> Result<String, Error> {
+fn command_cd(args: VecDeque<String>) -> Result<(), Error> {
     let mut path = match args.iter().next() {
         Some(r) => String::from(r),
         None => String::new(),
@@ -272,11 +316,12 @@ fn command_cd(args: VecDeque<String>) -> Result<String, Error> {
     }
 
     if !is_allowed_dir(&path) {
-        return Ok(format!("cd: {}: No such file or directory", path));
+        let msg = format!("cd: {}: No such file or directory", path);
+        return Err(Error::new(ErrorKind::NotFound, msg));
     }
 
     match set_current_dir(&path) {
-        Ok(_) => Ok(String::new()),
+        Ok(_) => Ok(()),
         Err(e) => Err(e),
     }
 }
@@ -285,9 +330,9 @@ fn command_pwd() -> Result<String, Error> {
     match current_dir() {
         Ok(path) => match path.to_str() {
             Some(r) => Ok(String::from(r)),
-            None => Err(Error::new(ErrorKind::InvalidFilename, "")), // not unicode error
+            None => Err(Error::new(ErrorKind::InvalidFilename, "invalid file name")),
         },
-        Err(e) => Err(e), // not exists or permissions errors
+        Err(e) => Err(e),
     }
 }
 
@@ -301,12 +346,15 @@ fn command_type(args: VecDeque<String>, commands: &Vec<&str>) -> Result<String, 
             match search_command_in_env_path(&command) {
                 Ok(path) => match path {
                     Some(r) => Ok(format!("{} is {}", command, r)),
-                    None => Ok(format!("{}: not found", command)),
+                    None => {
+                        let msg = format!("{}: not found", command);
+                        Err(Error::new(ErrorKind::NotFound, msg))
+                    }
                 },
-                Err(e) => Err(e), // PATH not present, PATH not unicode
+                Err(e) => Err(e),
             }
         }
-        None => Ok(String::from(": not found")),
+        None => Err(Error::new(ErrorKind::NotFound, ": not found")),
     }
 }
 
@@ -317,6 +365,46 @@ fn command_echo(args: VecDeque<String>) -> String {
             .collect::<Vec<&str>>()
             .join(" "),
     )
+}
+
+fn read_process_output_to_strings(process: Child) -> Result<[Option<String>; 2], Error> {
+    let mut stdout = None;
+    let mut stderr = None;
+
+    // take?
+    match process.stdout {
+        Some(mut r) => {
+            let mut output = String::new();
+
+            match r.read_to_string(&mut output) {
+                Ok(_) => {
+                    if output.len() > 0 {
+                        stdout = Some(output.trim().to_string());
+                    }
+                }
+                Err(e) => return Err(e),
+            }
+        }
+        None => {}
+    }
+
+    match process.stderr {
+        Some(mut e) => {
+            let mut error = String::new();
+
+            match e.read_to_string(&mut error) {
+                Ok(_) => {
+                    if error.len() > 0 {
+                        stderr = Some(error.trim().to_string());
+                    }
+                }
+                Err(e) => return Err(e),
+            }
+        }
+        None => {}
+    }
+
+    Ok([stdout, stderr])
 }
 
 fn split_env_path() -> Result<Vec<String>, VarError> {
@@ -349,7 +437,6 @@ fn search_command_in_env_path(command: &str) -> Result<Option<String>, Error> {
 
             Ok(None)
         }
-        // PATH not present, PATH not unicode
         Err(e) => Err(Error::new(ErrorKind::Interrupted, e)),
     }
 }
@@ -385,8 +472,7 @@ fn match_command_and_file(command: &str, entry: &DirEntry) -> Result<Option<Stri
 
             let file_name = match entry.file_name().into_string() {
                 Ok(r) => r,
-                // no unicode error
-                Err(_) => return Err(Error::new(ErrorKind::InvalidFilename, "")),
+                Err(_) => return Err(Error::new(ErrorKind::InvalidFilename, "invalid file name")),
             };
 
             if command != file_name {
@@ -422,13 +508,20 @@ fn is_executable_file(entry: &DirEntry) -> Result<bool, Error> {
     }
 }
 
-fn write_to_file(path: &str, content: &str) -> Result<(), Error> {
-    // Create a file if it does not exist, and will truncate it if it does
-    match File::create(Path::new(path)) {
+fn write_to_file(path: &str, content: &str, append: bool) -> Result<(), Error> {
+    let file = OpenOptions::new()
+        .create(true)
+        .read(true)
+        .write(true)
+        .truncate(!append)
+        .append(append)
+        .open(Path::new(path));
+
+    match file {
         Ok(mut r) => match r.write_all(content.as_bytes()) {
             Ok(_) => Ok(()),
             Err(e) => Err(e),
         },
-        Err(e) => Err(e), // catalog not found and permissions errors
+        Err(e) => Err(e),
     }
 }
