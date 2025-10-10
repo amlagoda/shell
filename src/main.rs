@@ -83,54 +83,53 @@ fn main() -> ExitCode {
             }
         }
 
-        match error {
-            Some(err) => {
-                error = None;
+        match redirect {
+            Some(rd) => {
+                let [flow, mode, path] = rd;
 
-                match &redirect {
-                    Some(rd) => {
-                        let [flow, mode, path] = rd;
+                if flow == "1" {
+                    let out = match output {
+                        Some(r) => r,
+                        None => String::new(),
+                    };
 
-                        if flow == "2" {
-                            match write_to_file(path.as_str(), err.as_str(), mode == ">>") {
-                                Ok(_) => {}
-                                Err(e) => println!("{}: {}", path, e.to_string()),
-                            }
-                        } else {
-                            println!("{}", err)
-                        }
+                    output = None;
+
+                    match write_to_file(path.as_str(), out.as_str(), mode == ">>") {
+                        Ok(_) => {}
+                        Err(e) => println!("{}: {}", path, e.to_string()),
                     }
-                    None => {
-                        println!("{}", err)
-                    }
-                }
-            }
-            None => {}
-        }
+                } else {
+                    let err = match error {
+                        Some(e) => e,
+                        None => String::new(),
+                    };
 
-        match output {
-            Some(r) => {
-                output = None;
+                    error = None;
 
-                match &redirect {
-                    Some(rd) => {
-                        let [flow, mode, path] = rd;
-
-                        if flow == "1" {
-                            match write_to_file(path.as_str(), r.as_str(), mode == ">>") {
-                                Ok(_) => {}
-                                Err(e) => println!("{}: {}", path, e.to_string()),
-                            }
-                        } else {
-                            println!("{}", r)
-                        }
-                    }
-                    None => {
-                        println!("{}", r)
+                    match write_to_file(path.as_str(), err.as_str(), mode == ">>") {
+                        Ok(_) => {}
+                        Err(e) => println!("{}: {}", path, e.to_string()),
                     }
                 }
             }
-            None => {}
+            None => {
+                match error {
+                    Some(e) => {
+                        error = None;
+                        println!("{}", e);
+                    }
+                    None => {}
+                }
+
+                match output {
+                    Some(r) => {
+                        output = None;
+                        println!("{}", r);
+                    }
+                    None => {}
+                }
+            }
         }
     }
 }
