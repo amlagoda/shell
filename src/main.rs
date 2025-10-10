@@ -113,23 +113,23 @@ fn main() -> ExitCode {
                     }
                 }
             }
-            None => {
-                match error {
-                    Some(e) => {
-                        error = None;
-                        println!("{}", e);
-                    }
-                    None => {}
-                }
+            None => {}
+        }
 
-                match output {
-                    Some(r) => {
-                        output = None;
-                        println!("{}", r);
-                    }
-                    None => {}
-                }
+        match error {
+            Some(e) => {
+                error = None;
+                println!("{}", e);
             }
+            None => {}
+        }
+
+        match output {
+            Some(r) => {
+                output = None;
+                println!("{}", r);
+            }
+            None => {}
         }
     }
 }
