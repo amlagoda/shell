@@ -89,7 +89,7 @@ fn main() -> ExitCode {
 
                 if flow == "1" {
                     let out = match output {
-                        Some(r) => r,
+                        Some(r) => format!("{}\n", r),
                         None => String::new(),
                     };
 
@@ -101,7 +101,7 @@ fn main() -> ExitCode {
                     }
                 } else {
                     let err = match error {
-                        Some(e) => e,
+                        Some(e) => format!("{}\n", e),
                         None => String::new(),
                     };
 
