@@ -9,7 +9,7 @@ use crossterm::{
 use std::collections::VecDeque;
 use std::env::{current_dir, home_dir, set_current_dir, var, VarError};
 use std::fs::{read_dir, DirEntry, OpenOptions, ReadDir};
-use std::io::{stdin, stdout, Error, ErrorKind, Read, Write};
+use std::io::{stdout, Error, ErrorKind, Read, Write};
 use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
 use std::process::{Child, Command, ExitCode, Stdio};
@@ -28,6 +28,7 @@ fn main() -> ExitCode {
     let mut output: Option<String> = None;
     let mut error: Option<String> = None;
     let mut print: Option<String> = None;
+    let mut redirect: Option<[String; 3]> = None;
     let mut is_exit = false;
 
     match write!(stdout, "$ ") {
@@ -49,8 +50,8 @@ fn main() -> ExitCode {
             Ok(r) => match r {
                 Event::Key(event) => match event.code {
                     KeyCode::Enter => {
-                        //(Option<String>, VecDeque<String>, Option<[String; 3]>)
-                        let (name, args, _) = parse_args(parse_input(input.as_str()));
+                        let (name, args, r) = parse_args(parse_input(input.as_str()));
+                        redirect = r;
 
                         match name {
                             Some(r) => (output, error, is_exit) = command(r.as_str(), args),
@@ -129,6 +130,41 @@ fn main() -> ExitCode {
             },
             None => {}
         }
+
+        match redirect {
+            Some(rd) => {
+                let [flow, mode, path] = rd;
+
+                if flow == "1" {
+                    let out = match output {
+                        Some(r) => format!("{}\n", r),
+                        None => String::new(),
+                    };
+
+                    output = None;
+
+                    match write_to_file(path.as_str(), out.as_str(), mode == ">>") {
+                        Ok(_) => {}
+                        Err(e) => println!("{}: {}", path, e.to_string()),
+                    }
+                } else {
+                    let err = match error {
+                        Some(e) => format!("{}\n", e),
+                        None => String::new(),
+                    };
+
+                    error = None;
+
+                    match write_to_file(path.as_str(), err.as_str(), mode == ">>") {
+                        Ok(_) => {}
+                        Err(e) => println!("{}: {}", path, e.to_string()),
+                    }
+                }
+            }
+            None => {}
+        }
+
+        redirect = None;
 
         let mut to_print = [error, output].into_iter().peekable();
 
@@ -209,67 +245,6 @@ fn main() -> ExitCode {
         }
     }
 }
-
-/*fn main() {
-
-
-    let mut input = String::new();
-
-    let mut redirect: Option<[String; 3]>;
-
-
-    loop {
-        input.clear();
-
-        match stdin().read_line(&mut input) {
-            Ok(_) => {
-
-                redirect = r;
-
-
-            }
-            Err(e) => {
-                println!("{}", e.to_string());
-                return ExitCode::FAILURE;
-            }
-        }
-
-        match redirect {
-            Some(rd) => {
-                let [flow, mode, path] = rd;
-
-                if flow == "1" {
-                    let out = match output {
-                        Some(r) => format!("{}\n", r),
-                        None => String::new(),
-                    };
-
-                    output = None;
-
-                    match write_to_file(path.as_str(), out.as_str(), mode == ">>") {
-                        Ok(_) => {}
-                        Err(e) => println!("{}: {}", path, e.to_string()),
-                    }
-                } else {
-                    let err = match error {
-                        Some(e) => format!("{}\n", e),
-                        None => String::new(),
-                    };
-
-                    error = None;
-
-                    match write_to_file(path.as_str(), err.as_str(), mode == ">>") {
-                        Ok(_) => {}
-                        Err(e) => println!("{}: {}", path, e.to_string()),
-                    }
-                }
-            }
-            None => {}
-        }
-
-
-    }
-}*/
 
 fn parse_args(
     mut args: VecDeque<String>,
