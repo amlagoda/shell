@@ -1,3 +1,5 @@
+mod command;
+use command::command::{COMMAND_CD, COMMAND_ECHO, COMMAND_EXIT, COMMAND_PWD, COMMAND_TYPE};
 use crossterm::{
     cursor::MoveLeft,
     event::{read, Event, KeyCode, KeyModifiers},
@@ -23,7 +25,9 @@ fn main() -> ExitCode {
 
     let mut stdout = stdout();
     let mut input = String::new();
-    let mut output = String::new();
+    let mut output: Option<String> = None;
+    let mut error: Option<String> = None;
+    let mut print: Option<String> = None;
     let mut is_exit = false;
 
     match write!(stdout, "$ ") {
@@ -45,8 +49,15 @@ fn main() -> ExitCode {
             Ok(r) => match r {
                 Event::Key(event) => match event.code {
                     KeyCode::Enter => {
+                        //(Option<String>, VecDeque<String>, Option<[String; 3]>)
+                        let (name, args, _) = parse_args(parse_input(input.as_str()));
+
+                        match name {
+                            Some(r) => (output, error, is_exit) = command(r.as_str(), args),
+                            None => error = Some(String::from(": not found")),
+                        }
+
                         input.clear();
-                        output = format!("\r\n{}\r\n$ ", String::from("command result"));
                     }
 
                     KeyCode::Backspace => {
@@ -70,25 +81,25 @@ fn main() -> ExitCode {
                             continue;
                         }
 
-                        output.push_str("it");
                         input.push_str("it");
+                        print = Some(String::from("it"));
                     }
 
                     KeyCode::Char(c) => {
                         if c == 'c' {
                             match event.modifiers {
                                 KeyModifiers::CONTROL => {
-                                    output.push_str("^C");
+                                    print = Some(String::from("^C"));
                                     is_exit = true;
                                 }
                                 _ => {
                                     input.push(c);
-                                    output.push(c);
+                                    print = Some(String::from(c));
                                 }
                             }
                         } else {
                             input.push(c);
-                            output.push(c);
+                            print = Some(String::from(c));
                         }
                     }
 
@@ -102,18 +113,62 @@ fn main() -> ExitCode {
             }
         }
 
-        match write!(stdout, "{}", output) {
-            Ok(_) => match stdout.flush() {
-                Ok(_) => output.clear(),
+        match print {
+            Some(r) => match write!(stdout, "{}", r) {
+                Ok(_) => match stdout.flush() {
+                    Ok(_) => print = None,
+                    Err(e) => {
+                        println!("{}", e.to_string());
+                        return ExitCode::FAILURE;
+                    }
+                },
                 Err(e) => {
                     println!("{}", e.to_string());
                     return ExitCode::FAILURE;
                 }
             },
-            Err(e) => {
-                println!("{}", e.to_string());
-                return ExitCode::FAILURE;
+            None => {}
+        }
+
+        match error {
+            Some(err) => {
+                let message = match output {
+                    Some(_) => format!("\r\n{}\r\n", err),
+                    None => format!("\r\n{}\r\n$ ", err),
+                };
+
+                match write!(stdout, "{}", message) {
+                    Ok(_) => match stdout.flush() {
+                        Ok(_) => error = None,
+                        Err(e) => {
+                            println!("{}", e.to_string());
+                            return ExitCode::FAILURE;
+                        }
+                    },
+                    Err(e) => {
+                        println!("{}", e.to_string());
+                        return ExitCode::FAILURE;
+                    }
+                }
             }
+            None => {}
+        }
+
+        match output {
+            Some(r) => match write!(stdout, "{}", format!("\r\n{}\r\n$ ", r)) {
+                Ok(_) => match stdout.flush() {
+                    Ok(_) => output = None,
+                    Err(e) => {
+                        println!("{}", e.to_string());
+                        return ExitCode::FAILURE;
+                    }
+                },
+                Err(e) => {
+                    println!("{}", e.to_string());
+                    return ExitCode::FAILURE;
+                }
+            },
+            None => {}
         }
 
         if is_exit {
@@ -134,66 +189,22 @@ fn main() -> ExitCode {
 }
 
 /*fn main() {
-    const COMMAND_TYPE: &str = "type";
-    const COMMAND_ECHO: &str = "echo";
-    const COMMAND_PWD: &str = "pwd";
-    const COMMAND_CD: &str = "cd";
-    const COMMAND_EXIT: &str = "exit";
+
 
     let mut input = String::new();
-    let mut output: Option<String> = None;
+
     let mut redirect: Option<[String; 3]>;
-    let mut error: Option<String> = None;
+
 
     loop {
         input.clear();
 
         match stdin().read_line(&mut input) {
             Ok(_) => {
-                let (command, args, r) = parse_args(parse_input(input.as_str()));
+
                 redirect = r;
 
-                match command {
-                    Some(command) => match command.as_str() {
-                        COMMAND_TYPE => {
-                            let commands = Vec::from([
-                                COMMAND_TYPE,
-                                COMMAND_ECHO,
-                                COMMAND_PWD,
-                                COMMAND_CD,
-                                COMMAND_EXIT,
-                            ]);
 
-                            match command_type(args, &commands) {
-                                Ok(r) => output = Some(r),
-                                Err(e) => error = Some(e.to_string()),
-                            }
-                        }
-
-                        COMMAND_ECHO => output = Some(command_echo(args)),
-
-                        COMMAND_PWD => match command_pwd() {
-                            Ok(r) => output = Some(r),
-                            Err(e) => error = Some(e.to_string()),
-                        },
-
-                        COMMAND_CD => match command_cd(args) {
-                            Ok(_) => output = None,
-                            Err(e) => error = Some(e.to_string()),
-                        },
-
-                        COMMAND_EXIT => return ExitCode::SUCCESS,
-
-                        another => match command_from_env_path(another, args) {
-                            Ok(r) => match r {
-                                Some(r) => [output, error] = r,
-                                None => {}
-                            },
-                            Err(e) => error = Some(e.to_string()),
-                        },
-                    },
-                    None => error = Some(String::from(": not found")),
-                }
             }
             Err(e) => {
                 println!("{}", e.to_string());
@@ -234,21 +245,7 @@ fn main() -> ExitCode {
             None => {}
         }
 
-        match error {
-            Some(e) => {
-                error = None;
-                println!("{}", e);
-            }
-            None => {}
-        }
 
-        match output {
-            Some(r) => {
-                output = None;
-                println!("{}", r);
-            }
-            None => {}
-        }
     }
 }*/
 
@@ -377,6 +374,53 @@ fn parse_input(input: &str) -> VecDeque<String> {
     }
 
     args
+}
+
+fn command(command: &str, args: VecDeque<String>) -> (Option<String>, Option<String>, bool) {
+    let mut output: Option<String> = None;
+    let mut error: Option<String> = None;
+    let mut is_exit = false;
+
+    match command {
+        COMMAND_TYPE => {
+            let commands = Vec::from([
+                COMMAND_TYPE,
+                COMMAND_ECHO,
+                COMMAND_PWD,
+                COMMAND_CD,
+                COMMAND_EXIT,
+            ]);
+
+            match command_type(args, &commands) {
+                Ok(r) => output = Some(r),
+                Err(e) => error = Some(e.to_string()),
+            }
+        }
+
+        COMMAND_ECHO => output = Some(command_echo(args)),
+
+        COMMAND_PWD => match command_pwd() {
+            Ok(r) => output = Some(r),
+            Err(e) => error = Some(e.to_string()),
+        },
+
+        COMMAND_CD => match command_cd(args) {
+            Ok(_) => output = None,
+            Err(e) => error = Some(e.to_string()),
+        },
+
+        COMMAND_EXIT => is_exit = true,
+
+        another => match command_from_env_path(another, args) {
+            Ok(r) => match r {
+                Some(r) => [output, error] = r,
+                None => {}
+            },
+            Err(e) => error = Some(e.to_string()),
+        },
+    }
+
+    (output, error, is_exit)
 }
 
 fn command_from_env_path(
