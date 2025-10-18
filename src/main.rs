@@ -79,12 +79,15 @@ fn main() -> ExitCode {
                     }
 
                     KeyCode::Tab => {
-                        if input != "ex" {
-                            continue;
+                        if input == "ech" {
+                            input.push('o');
+                            print = Some(String::from('o'));
                         }
 
-                        input.push_str("it");
-                        print = Some(String::from("it"));
+                        if input == "exi" {
+                            input.push('t');
+                            print = Some(String::from('t'));
+                        }
                     }
 
                     KeyCode::Char(c) => {
