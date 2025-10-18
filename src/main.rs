@@ -219,7 +219,7 @@ fn main() -> ExitCode {
             }
         }
 
-        if is_enter {
+        if is_enter && !is_exit {
             match write!(stdout, "\r\n$ ",) {
                 Ok(_) => match stdout.flush() {
                     Ok(_) => {}
