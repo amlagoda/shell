@@ -130,45 +130,67 @@ fn main() -> ExitCode {
             None => {}
         }
 
-        match error {
-            Some(err) => {
-                let message = match output {
-                    Some(_) => format!("\r\n{}\r\n", err),
-                    None => format!("\r\n{}\r\n$ ", err),
-                };
+        let mut to_print = [error, output].into_iter().peekable();
 
-                match write!(stdout, "{}", message) {
-                    Ok(_) => match stdout.flush() {
-                        Ok(_) => error = None,
-                        Err(e) => {
-                            println!("{}", e.to_string());
-                            return ExitCode::FAILURE;
+        loop {
+            match to_print.next() {
+                Some(r) => match r {
+                    Some(r) => {
+                        let mut rows = r.split("\n");
+
+                        loop {
+                            match rows.next() {
+                                Some(r) => match write!(stdout, "\r\n{}", r) {
+                                    Ok(_) => match stdout.flush() {
+                                        Ok(_) => {}
+                                        Err(e) => {
+                                            println!("{}", e.to_string());
+                                            return ExitCode::FAILURE;
+                                        }
+                                    },
+                                    Err(e) => {
+                                        println!("{}", e.to_string());
+                                        return ExitCode::FAILURE;
+                                    }
+                                },
+                                None => break,
+                            }
                         }
-                    },
-                    Err(e) => {
-                        println!("{}", e.to_string());
-                        return ExitCode::FAILURE;
+
+                        let mut new_line = false;
+
+                        match to_print.peek() {
+                            Some(r) => match r {
+                                Some(_) => {}
+                                None => new_line = true,
+                            },
+                            None => new_line = true,
+                        }
+
+                        if new_line {
+                            match write!(stdout, "\r\n$ ",) {
+                                Ok(_) => match stdout.flush() {
+                                    Ok(_) => {}
+                                    Err(e) => {
+                                        println!("{}", e.to_string());
+                                        return ExitCode::FAILURE;
+                                    }
+                                },
+                                Err(e) => {
+                                    println!("{}", e.to_string());
+                                    return ExitCode::FAILURE;
+                                }
+                            }
+                        }
                     }
+                    None => {}
+                },
+                None => {
+                    error = None;
+                    output = None;
+                    break;
                 }
             }
-            None => {}
-        }
-
-        match output {
-            Some(r) => match write!(stdout, "{}", format!("\r\n{}\r\n$ ", r)) {
-                Ok(_) => match stdout.flush() {
-                    Ok(_) => output = None,
-                    Err(e) => {
-                        println!("{}", e.to_string());
-                        return ExitCode::FAILURE;
-                    }
-                },
-                Err(e) => {
-                    println!("{}", e.to_string());
-                    return ExitCode::FAILURE;
-                }
-            },
-            None => {}
         }
 
         if is_exit {
