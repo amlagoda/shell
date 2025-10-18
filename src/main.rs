@@ -80,13 +80,13 @@ fn main() -> ExitCode {
 
                     KeyCode::Tab => {
                         if input == "ech" {
-                            input.push('o');
-                            print = Some(String::from('o'));
+                            input.push_str("o ");
+                            print = Some(String::from("o "));
                         }
 
                         if input == "exi" {
-                            input.push('t');
-                            print = Some(String::from('t'));
+                            input.push_str("t ");
+                            print = Some(String::from("t "));
                         }
                     }
 
