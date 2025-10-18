@@ -29,6 +29,7 @@ fn main() -> ExitCode {
     let mut error: Option<String> = None;
     let mut print: Option<String> = None;
     let mut redirect: Option<[String; 3]> = None;
+    let mut is_new_line = false;
     let mut is_exit = false;
 
     match write!(stdout, "$ ") {
@@ -143,6 +144,10 @@ fn main() -> ExitCode {
 
                     output = None;
 
+                    if error.is_none() {
+                        is_new_line = true;
+                    }
+
                     match write_to_file(path.as_str(), out.as_str(), mode == ">>") {
                         Ok(_) => {}
                         Err(e) => println!("{}: {}", path, e.to_string()),
@@ -154,6 +159,10 @@ fn main() -> ExitCode {
                     };
 
                     error = None;
+
+                    if output.is_none() {
+                        is_new_line = true;
+                    }
 
                     match write_to_file(path.as_str(), err.as_str(), mode == ">>") {
                         Ok(_) => {}
@@ -193,30 +202,12 @@ fn main() -> ExitCode {
                             }
                         }
 
-                        let mut new_line = false;
-
                         match to_print.peek() {
                             Some(r) => match r {
                                 Some(_) => {}
-                                None => new_line = true,
+                                None => is_new_line = true,
                             },
-                            None => new_line = true,
-                        }
-
-                        if new_line {
-                            match write!(stdout, "\r\n$ ",) {
-                                Ok(_) => match stdout.flush() {
-                                    Ok(_) => {}
-                                    Err(e) => {
-                                        println!("{}", e.to_string());
-                                        return ExitCode::FAILURE;
-                                    }
-                                },
-                                Err(e) => {
-                                    println!("{}", e.to_string());
-                                    return ExitCode::FAILURE;
-                                }
-                            }
+                            None => is_new_line = true,
                         }
                     }
                     None => {}
@@ -227,6 +218,24 @@ fn main() -> ExitCode {
                     break;
                 }
             }
+        }
+
+        if is_new_line {
+            match write!(stdout, "\r\n$ ",) {
+                Ok(_) => match stdout.flush() {
+                    Ok(_) => {}
+                    Err(e) => {
+                        println!("{}", e.to_string());
+                        return ExitCode::FAILURE;
+                    }
+                },
+                Err(e) => {
+                    println!("{}", e.to_string());
+                    return ExitCode::FAILURE;
+                }
+            }
+
+            is_new_line = false;
         }
 
         if is_exit {
