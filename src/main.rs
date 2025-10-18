@@ -29,7 +29,6 @@ fn main() -> ExitCode {
     let mut error: Option<String> = None;
     let mut print: Option<String> = None;
     let mut redirect: Option<[String; 3]> = None;
-    let mut is_new_line = false;
     let mut is_exit = false;
     let mut is_enter = false;
 
@@ -119,19 +118,6 @@ fn main() -> ExitCode {
             }
         }
 
-        if is_enter {
-            let (name, args, r) = parse_args(parse_input(input.as_str()));
-            redirect = r;
-
-            match name {
-                Some(r) => (output, error, is_exit) = command(r.as_str(), args),
-                None => error = Some(String::from(": not found")),
-            }
-
-            input.clear();
-            is_enter = false;
-        }
-
         match print {
             Some(r) => match write!(stdout, "{}", r) {
                 Ok(_) => match stdout.flush() {
@@ -149,6 +135,18 @@ fn main() -> ExitCode {
             None => {}
         }
 
+        if is_enter {
+            let (name, args, r) = parse_args(parse_input(input.as_str()));
+            redirect = r;
+
+            match name {
+                Some(r) => (output, error, is_exit) = command(r.as_str(), args),
+                None => error = Some(String::from(": not found")),
+            }
+
+            input.clear();
+        }
+
         match redirect {
             Some(rd) => {
                 let [flow, mode, path] = rd;
@@ -161,10 +159,6 @@ fn main() -> ExitCode {
 
                     output = None;
 
-                    if error.is_none() {
-                        is_new_line = true;
-                    }
-
                     match write_to_file(path.as_str(), out.as_str(), mode == ">>") {
                         Ok(_) => {}
                         Err(e) => println!("{}: {}", path, e.to_string()),
@@ -176,10 +170,6 @@ fn main() -> ExitCode {
                     };
 
                     error = None;
-
-                    if output.is_none() {
-                        is_new_line = true;
-                    }
 
                     match write_to_file(path.as_str(), err.as_str(), mode == ">>") {
                         Ok(_) => {}
@@ -218,14 +208,6 @@ fn main() -> ExitCode {
                                 None => break,
                             }
                         }
-
-                        match to_print.peek() {
-                            Some(r) => match r {
-                                Some(_) => {}
-                                None => is_new_line = true,
-                            },
-                            None => is_new_line = true,
-                        }
                     }
                     None => {}
                 },
@@ -237,7 +219,7 @@ fn main() -> ExitCode {
             }
         }
 
-        if is_new_line {
+        if is_enter {
             match write!(stdout, "\r\n$ ",) {
                 Ok(_) => match stdout.flush() {
                     Ok(_) => {}
@@ -252,7 +234,7 @@ fn main() -> ExitCode {
                 }
             }
 
-            is_new_line = false;
+            is_enter = false;
         }
 
         if is_exit {
