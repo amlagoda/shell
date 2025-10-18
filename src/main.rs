@@ -1,3 +1,9 @@
+use crossterm::{
+    cursor::MoveLeft,
+    event::{read, Event, KeyCode, KeyModifiers},
+    execute,
+    terminal::{disable_raw_mode, enable_raw_mode, Clear, ClearType},
+};
 use std::collections::VecDeque;
 use std::env::{current_dir, home_dir, set_current_dir, var, VarError};
 use std::fs::{read_dir, DirEntry, OpenOptions, ReadDir};
@@ -7,6 +13,127 @@ use std::path::Path;
 use std::process::{Child, Command, ExitCode, Stdio};
 
 fn main() -> ExitCode {
+    match enable_raw_mode() {
+        Ok(_) => {}
+        Err(e) => {
+            println!("{}", e.to_string());
+            return ExitCode::FAILURE;
+        }
+    }
+
+    let mut stdout = stdout();
+    let mut input = String::new();
+    let mut output = String::new();
+    let mut is_exit = false;
+
+    match write!(stdout, "$ ") {
+        Ok(_) => match stdout.flush() {
+            Ok(_) => {}
+            Err(e) => {
+                println!("{}", e.to_string());
+                return ExitCode::FAILURE;
+            }
+        },
+        Err(e) => {
+            println!("{}", e.to_string());
+            return ExitCode::FAILURE;
+        }
+    }
+
+    loop {
+        match read() {
+            Ok(r) => match r {
+                Event::Key(event) => match event.code {
+                    KeyCode::Enter => {
+                        input.clear();
+                        output = format!("\r\n{}\r\n$ ", String::from("command result"));
+                    }
+
+                    KeyCode::Backspace => {
+                        if input.len() == 0 {
+                            continue;
+                        }
+
+                        match execute!(stdout, MoveLeft(1), Clear(ClearType::UntilNewLine)) {
+                            Ok(_) => {
+                                input.pop();
+                            }
+                            Err(e) => {
+                                println!("{}", e.to_string());
+                                return ExitCode::FAILURE;
+                            }
+                        }
+                    }
+
+                    KeyCode::Tab => {
+                        if input != "ex" {
+                            continue;
+                        }
+
+                        output.push_str("it");
+                        input.push_str("it");
+                    }
+
+                    KeyCode::Char(c) => {
+                        if c == 'c' {
+                            match event.modifiers {
+                                KeyModifiers::CONTROL => {
+                                    output.push_str("^C");
+                                    is_exit = true;
+                                }
+                                _ => {
+                                    input.push(c);
+                                    output.push(c);
+                                }
+                            }
+                        } else {
+                            input.push(c);
+                            output.push(c);
+                        }
+                    }
+
+                    _ => {}
+                },
+                _ => {}
+            },
+            Err(e) => {
+                println!("{}", e.to_string());
+                return ExitCode::FAILURE;
+            }
+        }
+
+        match write!(stdout, "{}", output) {
+            Ok(_) => match stdout.flush() {
+                Ok(_) => output.clear(),
+                Err(e) => {
+                    println!("{}", e.to_string());
+                    return ExitCode::FAILURE;
+                }
+            },
+            Err(e) => {
+                println!("{}", e.to_string());
+                return ExitCode::FAILURE;
+            }
+        }
+
+        if is_exit {
+            break;
+        }
+    }
+
+    match disable_raw_mode() {
+        Ok(_) => {
+            println!(""); // %
+            ExitCode::SUCCESS
+        }
+        Err(e) => {
+            println!("{}", e.to_string());
+            ExitCode::FAILURE
+        }
+    }
+}
+
+/*fn main() {
     const COMMAND_TYPE: &str = "type";
     const COMMAND_ECHO: &str = "echo";
     const COMMAND_PWD: &str = "pwd";
@@ -20,15 +147,6 @@ fn main() -> ExitCode {
 
     loop {
         input.clear();
-        print!("$ ");
-
-        match stdout().flush() {
-            Ok(_) => {}
-            Err(e) => {
-                println!("{}", e.to_string());
-                return ExitCode::FAILURE;
-            }
-        }
 
         match stdin().read_line(&mut input) {
             Ok(_) => {
@@ -132,7 +250,7 @@ fn main() -> ExitCode {
             None => {}
         }
     }
-}
+}*/
 
 fn parse_args(
     mut args: VecDeque<String>,
