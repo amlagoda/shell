@@ -31,6 +31,7 @@ fn main() -> ExitCode {
     let mut redirect: Option<[String; 3]> = None;
     let mut is_new_line = false;
     let mut is_exit = false;
+    let mut is_enter = false;
 
     match write!(stdout, "$ ") {
         Ok(_) => match stdout.flush() {
@@ -50,17 +51,7 @@ fn main() -> ExitCode {
         match read() {
             Ok(r) => match r {
                 Event::Key(event) => match event.code {
-                    KeyCode::Enter => {
-                        let (name, args, r) = parse_args(parse_input(input.as_str()));
-                        redirect = r;
-
-                        match name {
-                            Some(r) => (output, error, is_exit) = command(r.as_str(), args),
-                            None => error = Some(String::from(": not found")),
-                        }
-
-                        input.clear();
-                    }
+                    KeyCode::Enter => is_enter = true,
 
                     KeyCode::Backspace => {
                         if input.len() == 0 {
@@ -81,7 +72,7 @@ fn main() -> ExitCode {
                     KeyCode::Tab => {
                         if input == "ech" {
                             input.push_str("o ");
-                            print = Some(String::from("o ")); 
+                            print = Some(String::from("o "));
                         }
 
                         if input == "exi" {
@@ -102,6 +93,16 @@ fn main() -> ExitCode {
                                     print = Some(String::from(c));
                                 }
                             }
+                        } else if c == 'j' {
+                            match event.modifiers {
+                                KeyModifiers::CONTROL => {
+                                    is_enter = true;
+                                }
+                                _ => {
+                                    input.push(c);
+                                    print = Some(String::from(c));
+                                }
+                            }
                         } else {
                             input.push(c);
                             print = Some(String::from(c));
@@ -116,6 +117,19 @@ fn main() -> ExitCode {
                 println!("{}", e.to_string());
                 return ExitCode::FAILURE;
             }
+        }
+
+        if is_enter {
+            let (name, args, r) = parse_args(parse_input(input.as_str()));
+            redirect = r;
+
+            match name {
+                Some(r) => (output, error, is_exit) = command(r.as_str(), args),
+                None => error = Some(String::from(": not found")),
+            }
+
+            input.clear();
+            is_enter = false;
         }
 
         match print {
