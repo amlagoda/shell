@@ -81,7 +81,7 @@ fn main() -> ExitCode {
                     KeyCode::Tab => {
                         if input == "ech" {
                             input.push_str("o ");
-                            print = Some(String::from("o "));
+                            print = Some(String::from("o ")); 
                         }
 
                         if input == "exi" {
