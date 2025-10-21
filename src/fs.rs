@@ -5,21 +5,16 @@ mod fs {
     use std::path::Path;
 
     fn write_to_file(path: &str, content: &str, append: bool) -> Result<(), Error> {
-        let file = OpenOptions::new()
+        OpenOptions::new()
             .create(true)
             .read(true)
             .write(true)
             .truncate(!append)
             .append(append)
-            .open(Path::new(path));
+            .open(Path::new(path))?
+            .write_all(content.as_bytes())?;
 
-        match file {
-            Ok(mut r) => match r.write_all(content.as_bytes()) {
-                Ok(_) => Ok(()),
-                Err(e) => Err(e),
-            },
-            Err(e) => Err(e),
-        }
+        Ok(())
     }
 
     fn is_executable_file(entry: &DirEntry) -> Result<bool, Error> {
