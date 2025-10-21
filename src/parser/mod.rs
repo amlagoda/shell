@@ -4,7 +4,11 @@ mod parser {
     use crate::parser::redirect::redirect::{is_redirect, normalize_redirect, parse_redirect};
     use std::collections::VecDeque;
 
-    fn parse_args(
+    fn parse(input: &str) -> (Option<String>, VecDeque<String>, Option<[String; 3]>) {
+        group_args(parse_input(input))
+    }
+
+    fn group_args(
         mut args: VecDeque<String>,
     ) -> (Option<String>, VecDeque<String>, Option<[String; 3]>) {
         let command = args.pop_front();
@@ -116,33 +120,31 @@ mod parser {
         use super::*;
 
         #[test]
-        fn test_parse_args1() {
+        fn test_parse() {
+            let expected = (
+                Some("echo".to_string()),
+                VecDeque::from(["foo".to_string()]),
+                Some(["1".to_string(), ">".to_string(), "path".to_string()]),
+            );
+
+            assert_eq!(expected, parse("echo foo > path"));
+        }
+
+        #[test]
+        fn test_group_args1() {
             let expected = (
                 Some("echo".to_string()),
                 VecDeque::from(["foo".to_string(), "bar".to_string()]),
-                Some(["1".to_string(), ">".to_string(), "path".to_string()]),
+                None,
             );
             let r = VecDeque::from([
                 "echo".to_string(),
                 "foo".to_string(),
                 "bar".to_string(),
                 ">".to_string(),
-                "path".to_string(),
             ]);
 
-            assert_eq!(expected, parse_args(r));
-        }
-
-        #[test]
-        fn test_parse_args2() {
-            let expected = (
-                Some("echo".to_string()),
-                VecDeque::from(["foo".to_string()]),
-                None,
-            );
-            let r = VecDeque::from(["echo".to_string(), "foo".to_string(), ">".to_string()]);
-
-            assert_eq!(expected, parse_args(r));
+            assert_eq!(expected, group_args(r));
         }
 
         #[test]
