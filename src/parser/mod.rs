@@ -13,22 +13,25 @@ mod parser {
         let mut is_path = false;
 
         loop {
-            match args.pop_front() {
-                Some(r) => {
-                    if is_path {
-                        redirect[2] = r.clone();
-                        break;
-                    }
+            let r = args.pop_front();
 
-                    if is_redirect(r.as_str()) {
-                        let r = normalize_redirect(r.as_str());
-                        [redirect[0], redirect[1]] = parse_redirect(r.as_str());
-                        is_path = true;
-                    } else {
-                        args_new.push_back(r.clone());
-                    }
-                }
-                None => break,
+            if r.is_none() {
+                break;
+            }
+
+            let arg = r.unwrap();
+
+            if is_path {
+                redirect[2] = arg;
+                break;
+            }
+
+            if is_redirect(arg.as_str()) {
+                let r = normalize_redirect(arg.as_str());
+                [redirect[0], redirect[1]] = parse_redirect(r.as_str());
+                is_path = true;
+            } else {
+                args_new.push_back(arg);
             }
         }
 
@@ -113,7 +116,7 @@ mod parser {
         use super::*;
 
         #[test]
-        fn test_parse_args() {
+        fn test_parse_args1() {
             let expected = (
                 Some("echo".to_string()),
                 VecDeque::from(["foo".to_string(), "bar".to_string()]),
@@ -126,6 +129,19 @@ mod parser {
                 ">".to_string(),
                 "path".to_string(),
             ]);
+
+            assert_eq!(expected, parse_args(r));
+        }
+
+        #[test]
+        fn test_parse_args2() {
+            let expected = (
+                Some("echo".to_string()),
+                VecDeque::from(["foo".to_string()]),
+                None,
+            );
+            let r = VecDeque::from(["echo".to_string(), "foo".to_string(), ">".to_string()]);
+
             assert_eq!(expected, parse_args(r));
         }
 
