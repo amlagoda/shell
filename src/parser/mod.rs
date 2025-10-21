@@ -113,6 +113,23 @@ mod parser {
         use super::*;
 
         #[test]
+        fn test_parse_args() {
+            let expected = (
+                Some("echo".to_string()),
+                VecDeque::from(["foo".to_string(), "bar".to_string()]),
+                Some(["1".to_string(), ">".to_string(), "path".to_string()]),
+            );
+            let r = VecDeque::from([
+                "echo".to_string(),
+                "foo".to_string(),
+                "bar".to_string(),
+                ">".to_string(),
+                "path".to_string(),
+            ]);
+            assert_eq!(expected, parse_args(r));
+        }
+
+        #[test]
         fn test_parse_input() {
             assert_eq!(
                 VecDeque::from(["echo".to_string(), "1'".to_string()]),
