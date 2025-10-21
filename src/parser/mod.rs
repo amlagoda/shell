@@ -60,33 +60,37 @@ mod parser {
                 break;
             }
 
-            let r = iter.unwrap();
+            let symbol = iter.unwrap();
+            let current_mode = mode[0];
 
-            match mode[0] {
+            match current_mode {
                 MODE_SHIELD => {
-                    arg.push(r);
+                    arg.push(symbol);
                     mode.reverse();
                 }
-                MODE_SINGLE => match r {
+
+                MODE_SINGLE => match symbol {
                     '\'' => mode = [MODE_NORMAL, MODE_SINGLE],
-                    _ => arg.push(r),
+                    _ => arg.push(symbol),
                 },
-                MODE_DOUBLE => match r {
+
+                MODE_DOUBLE => match symbol {
                     '"' => mode = [MODE_NORMAL, MODE_DOUBLE],
                     '\\' => match input.peek() {
                         Some(n) => {
                             if *n == '"' || *n == '\\' {
                                 mode = [MODE_SHIELD, MODE_DOUBLE];
                             } else {
-                                arg.push(r);
+                                arg.push(symbol);
                             }
                         }
-                        None => arg.push(r),
+                        None => arg.push(symbol),
                     },
-                    _ => arg.push(r),
+                    _ => arg.push(symbol),
                 },
+
                 // MODE_NORMAL
-                _ => match r {
+                _ => match symbol {
                     '"' => mode = [MODE_DOUBLE, MODE_NORMAL],
                     '\'' => mode = [MODE_SINGLE, MODE_NORMAL],
                     '\\' => mode = [MODE_SHIELD, MODE_NORMAL],
@@ -96,7 +100,7 @@ mod parser {
                             arg = String::new();
                         }
                     }
-                    _ => arg.push(r),
+                    _ => arg.push(symbol),
                 },
             }
         }
