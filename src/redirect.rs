@@ -7,7 +7,7 @@ mod redirect {
         if [">", ">>"].contains(&redirect) {
             format!("1{}", redirect)
         } else {
-            String::from(redirect)
+            redirect.to_string()
         }
     }
 
