@@ -2,13 +2,10 @@ mod env {
     use std::env::{var, VarError};
 
     fn split_env_path() -> Result<Vec<String>, VarError> {
-        match var("PATH") {
-            Ok(r) => Ok(r
-                .split(':')
-                .map(|r| String::from(r))
-                .collect::<Vec<String>>()),
-            Err(e) => Err(e),
-        }
+        Ok(var("PATH")?
+            .split(':')
+            .map(|r| String::from(r))
+            .collect::<Vec<String>>())
     }
 
     #[cfg(test)]
