@@ -52,45 +52,43 @@ mod parser {
 
         loop {
             match input.next() {
-                Some(r) => {
-                    match mode[0] {
-                        MODE_SHIELD => {
-                            arg.push(r);
-                            mode.reverse();
-                        }
-                        MODE_SINGLE => match r {
-                            '\'' => mode = [MODE_NORMAL, MODE_SINGLE],
-                            _ => arg.push(r),
-                        },
-                        MODE_DOUBLE => match r {
-                            '"' => mode = [MODE_NORMAL, MODE_DOUBLE],
-                            '\\' => match input.peek() {
-                                Some(n) => {
-                                    if *n == '"' || *n == '\\' {
-                                        mode = [MODE_SHIELD, MODE_DOUBLE];
-                                    } else {
-                                        arg.push(r);
-                                    }
-                                }
-                                None => arg.push(r),
-                            },
-                            _ => arg.push(r),
-                        },
-                        // MODE_NORMAL
-                        _ => match r {
-                            '"' => mode = [MODE_DOUBLE, MODE_NORMAL],
-                            '\'' => mode = [MODE_SINGLE, MODE_NORMAL],
-                            '\\' => mode = [MODE_SHIELD, MODE_NORMAL],
-                            ' ' => {
-                                if arg.len() > 0 {
-                                    args.push_back(arg);
-                                    arg = String::new();
+                Some(r) => match mode[0] {
+                    MODE_SHIELD => {
+                        arg.push(r);
+                        mode.reverse();
+                    }
+                    MODE_SINGLE => match r {
+                        '\'' => mode = [MODE_NORMAL, MODE_SINGLE],
+                        _ => arg.push(r),
+                    },
+                    MODE_DOUBLE => match r {
+                        '"' => mode = [MODE_NORMAL, MODE_DOUBLE],
+                        '\\' => match input.peek() {
+                            Some(n) => {
+                                if *n == '"' || *n == '\\' {
+                                    mode = [MODE_SHIELD, MODE_DOUBLE];
+                                } else {
+                                    arg.push(r);
                                 }
                             }
-                            _ => arg.push(r),
+                            None => arg.push(r),
                         },
-                    }
-                }
+                        _ => arg.push(r),
+                    },
+                    // MODE_NORMAL
+                    _ => match r {
+                        '"' => mode = [MODE_DOUBLE, MODE_NORMAL],
+                        '\'' => mode = [MODE_SINGLE, MODE_NORMAL],
+                        '\\' => mode = [MODE_SHIELD, MODE_NORMAL],
+                        ' ' => {
+                            if arg.len() > 0 {
+                                args.push_back(arg);
+                                arg = String::new();
+                            }
+                        }
+                        _ => arg.push(r),
+                    },
+                },
                 None => {
                     if arg.len() > 0 {
                         args.push_back(arg);
