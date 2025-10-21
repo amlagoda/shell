@@ -23,15 +23,12 @@ mod fs {
     }
 
     fn is_executable_file(entry: &DirEntry) -> Result<bool, Error> {
-        match entry.metadata() {
-            Ok(md) => {
-                if md.is_dir() {
-                    Ok(false)
-                } else {
-                    Ok(md.permissions().mode() & 0o111 != 0) // windows no
-                }
-            }
-            Err(e) => Err(e),
+        let r = entry.metadata()?;
+
+        if r.is_dir() {
+            Ok(false)
+        } else {
+            Ok(r.permissions().mode() & 0o111 != 0) // windows no
         }
     }
 
