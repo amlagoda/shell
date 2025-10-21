@@ -1,9 +1,9 @@
-mod redirect {
-    fn is_redirect(arg: &str) -> bool {
+pub mod redirect {
+    pub fn is_redirect(arg: &str) -> bool {
         [">", "1>", "2>", ">>", "1>>", "2>>"].contains(&arg)
     }
 
-    fn normalize_redirect(redirect: &str) -> String {
+    pub fn normalize_redirect(redirect: &str) -> String {
         if [">", ">>"].contains(&redirect) {
             format!("1{}", redirect)
         } else {
@@ -11,7 +11,7 @@ mod redirect {
         }
     }
 
-    fn parse_redirect(redirect: &str) -> [String; 2] {
+    pub fn parse_redirect(redirect: &str) -> [String; 2] {
         let mut flow = String::new();
         let mut mode = String::new();
 
