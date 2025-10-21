@@ -50,29 +50,20 @@ mod process {
             process.stderr(Stdio::piped());
             process.arg("fake_path");
 
-            let path = current_dir();
-            assert!(path.is_ok());
-            let mut path = path.unwrap();
+            let mut path = current_dir().unwrap();
             path.push("test/fixture/process/");
-            let path = path.to_str();
-            assert!(path.is_some());
-            let path = path.unwrap();
+            let path = path.to_str().unwrap();
 
             process.arg(path);
 
-            let process = process.spawn();
-            assert!(process.is_ok());
-            let mut process = process.unwrap();
-            let r = process.wait();
-            assert!(r.is_ok());
+            let mut process = process.spawn().unwrap();
+            process.wait().unwrap();
 
             let r = [
                 Some("ls: fake_path: No such file or directory".to_string()),
                 Some(format!("{}:\nfile.txt", path)),
             ];
-            let output = read_process_output(process);
-            assert!(output.is_ok());
-            assert_eq!(r, output.unwrap());
+            assert_eq!(r, read_process_output(process).unwrap());
         }
     }
 }
