@@ -108,6 +108,21 @@ mod parser {
         use super::*;
 
         #[test]
-        fn test_parse_args() {}
+        fn test_parse_input() {
+            assert_eq!(
+                VecDeque::from(["echo".to_string(), "1'".to_string()]),
+                parse_input(" echo  1\\'")
+            );
+
+            assert_eq!(
+                VecDeque::from(["echo".to_string(), " 1 2".to_string()]),
+                parse_input("echo ' 1 ''2'")
+            );
+
+            assert_eq!(
+                VecDeque::from(["echo".to_string(), "  ' \\ 1".to_string()]),
+                parse_input("echo \"  ' \\ 1\"")
+            );
+        }
     }
 }
