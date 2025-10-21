@@ -9,11 +9,7 @@ mod process {
         if process.stderr.is_some() {
             let mut r = process.stderr.unwrap();
             let mut output = String::new();
-            let r = r.read_to_string(&mut output); // take?
-
-            if r.is_err() {
-                return Err(r.unwrap_err());
-            }
+            r.read_to_string(&mut output)?; // take?
 
             if output.len() > 0 {
                 stderr = Some(output.trim().to_string());
@@ -23,11 +19,7 @@ mod process {
         if process.stdout.is_some() {
             let mut r = process.stdout.unwrap();
             let mut output = String::new();
-            let r = r.read_to_string(&mut output); // take?
-
-            if r.is_err() {
-                return Err(r.unwrap_err());
-            }
+            r.read_to_string(&mut output)?; // take?
 
             if output.len() > 0 {
                 stdout = Some(output.trim().to_string());
