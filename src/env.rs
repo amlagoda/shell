@@ -20,11 +20,10 @@ mod env {
         fn test_split_env_path() {
             set_var("PATH", "foo:bar");
 
-            let r = split_env_path();
-            assert!(r.is_ok());
-
-            let n = vec!["foo".to_string(), "bar".to_string()];
-            assert_eq!(n, r.unwrap());
+            assert_eq!(
+                vec!["foo".to_string(), "bar".to_string()],
+                split_env_path().unwrap()
+            );
         }
     }
 }
