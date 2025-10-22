@@ -27,6 +27,86 @@ mod fs {
         }
     }
 
+    /*fn search_command_in_env_path(command: &str) -> Result<Option<String>, Error> {
+        match split_env_path() {
+            Ok(paths) => {
+                for path in paths {
+                    match read_dir(path) {
+                        Ok(mut r) => match search_command_in_dir(command, &mut r) {
+                            Some(r) => return Ok(Some(r)),
+                            None => continue,
+                        },
+                        // path not exists, is not dir and permissions errors
+                        // remain here because we need to go down the list
+                        Err(_) => continue,
+                    }
+                }
+
+                Ok(None)
+            }
+            Err(e) => Err(Error::new(ErrorKind::Interrupted, e)),
+        }
+    }*/
+
+    /*fn search_command_in_dir(command: &str, dir: &mut ReadDir) -> Option<String> {
+        for entry in dir {
+            match entry {
+                Ok(r) => match match_command_and_file(command, &r) {
+                    Ok(path) => match path {
+                        Some(r) => return Some(r),
+                        None => continue,
+                    },
+                    // read file metadata error and
+                    // file name not unicode error remains here
+                    // because we need to go down the list
+                    Err(_) => continue,
+                },
+                // fetching the next entry error remain here
+                // because we need to go down the list
+                Err(_) => continue,
+            }
+        }
+
+        None
+    }*/
+
+    /*fn match_command_and_file(command: &str, entry: &DirEntry) -> Result<Option<String>, Error> {
+        match is_executable_file(entry) {
+            Ok(is_exe) => {
+                if !is_exe {
+                    return Ok(None);
+                }
+
+                let file_name = match entry.file_name().into_string() {
+                    Ok(r) => r,
+                    Err(_) => return Err(Error::new(ErrorKind::InvalidFilename, "invalid file name")),
+                };
+
+                if command != file_name {
+                    return Ok(None);
+                }
+
+                match entry.path().to_str() {
+                    Some(r) => Ok(Some(String::from(r))),
+                    None => Ok(None),
+                }
+            }
+            Err(e) => Err(e),
+        }
+    }*/
+
+    fn match_command_and_file(command: &str, file: &DirEntry) -> Option<String> {
+        if !is_executable_file(file).ok()? {
+            return None;
+        }
+
+        if command != file.file_name().into_string().ok()? {
+            return None;
+        }
+
+        file.path().to_str().map(|r| Some(r.to_string()))?
+    }
+
     #[cfg(test)]
     mod tests {
         use super::*;
@@ -34,6 +114,30 @@ mod fs {
         use std::fs::read_dir;
         use std::io::Read;
         use std::time::{SystemTime, UNIX_EPOCH};
+
+        #[test]
+        fn test_match_command_and_file() {
+            let mut path = get_current_dir();
+            path.push_str("/test/fixture/fs/");
+
+            for r in read_dir(Path::new(path.as_str())).unwrap() {
+                let file = r.unwrap();
+                let file_name = file.file_name().into_string().unwrap();
+
+                if file_name == "executable" {
+                    let r = match_command_and_file("executable", &file).unwrap();
+                    assert_eq!(file.path().to_str().unwrap(), r);
+
+                    let r = match_command_and_file("another", &file);
+                    assert_eq!(None, r);
+                }
+
+                if file_name == "non_executable" {
+                    let r = match_command_and_file("non_executable", &file);
+                    assert_eq!(None, r);
+                }
+            }
+        }
 
         #[test]
         fn test_write_to_file() {
@@ -57,13 +161,8 @@ mod fs {
             assert_eq!("Hello world!Good weather!", r);
         }
 
-        #[test]
-        fn test_is_executable_file() {
-            let mut path = current_dir().unwrap();
-            path.push("test/fixture/fs/");
-            let path = path.to_str().unwrap();
-            let file = read_dir(path).unwrap().next().unwrap().unwrap();
-            assert!(is_executable_file(&file).unwrap());
+        fn get_current_dir() -> String {
+            current_dir().unwrap().to_str().unwrap().to_string()
         }
     }
 }
