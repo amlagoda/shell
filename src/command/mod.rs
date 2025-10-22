@@ -1,4 +1,7 @@
 pub mod command {
+    use std::env::current_dir;
+    use std::io::{Error, ErrorKind};
+
     const COMMAND_TYPE: &str = "type";
     const COMMAND_ECHO: &str = "echo";
     const COMMAND_PWD: &str = "pwd";
@@ -31,10 +34,10 @@ pub mod command {
             }*/
             COMMAND_ECHO => output = Some(command_echo(args)),
 
-            /*COMMAND_PWD => match command_pwd() {
+            COMMAND_PWD => match command_pwd() {
                 Ok(r) => output = Some(r),
                 Err(e) => error = Some(e.to_string()),
-            },*/
+            },
 
             /*COMMAND_CD => match command_cd(args) {
                 Ok(_) => output = None,
@@ -92,15 +95,13 @@ pub mod command {
             .to_string()
     }
 
-    /*fn command_pwd() -> Result<String, Error> {
-        match current_dir() {
-            Ok(path) => match path.to_str() {
-                Some(r) => Ok(String::from(r)),
-                None => Err(Error::new(ErrorKind::InvalidFilename, "invalid file name")),
-            },
-            Err(e) => Err(e),
-        }
-    }*/
+    fn command_pwd() -> Result<String, Error> {
+        let e = Error::new(ErrorKind::InvalidFilename, "invalid file name");
+        let path = current_dir()?;
+        let path = path.to_str().ok_or(e)?;
+
+        Ok(path.to_string())
+    }
 
     /*fn command_cd(args: VecDeque<String>) -> Result<(), Error> {
         let mut path = match args.iter().next() {
@@ -238,6 +239,14 @@ pub mod command {
     #[cfg(test)]
     mod tests {
         use super::*;
+
+        #[test]
+        fn test_command_pwd() {
+            assert_eq!(
+                current_dir().unwrap().to_str().unwrap().to_string(),
+                command_pwd().unwrap()
+            );
+        }
 
         #[test]
         fn test_command_echo() {
