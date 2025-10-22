@@ -102,9 +102,10 @@ pub mod command {
     }
 
     fn command_pwd() -> Result<String, Error> {
-        let e = Error::new(ErrorKind::InvalidFilename, "invalid file name");
-        let path = current_dir()?;
-        let path = path.to_str().ok_or(e)?;
+        let e1 = Error::new(ErrorKind::NotFound, "pwd: Not found");
+        let e2 = Error::new(ErrorKind::InvalidFilename, "pwd: Invalid file name");
+        let path = current_dir().map_err(|_| e1)?;
+        let path = path.to_str().ok_or(e2)?;
 
         Ok(path.to_string())
     }
@@ -116,7 +117,10 @@ pub mod command {
             path = home_dir()
                 .ok_or(Error::new(ErrorKind::NotFound, "cd ~: Path is empty"))?
                 .to_str()
-                .ok_or(Error::new(ErrorKind::Other, "cd ~: Path non-UTF-8"))?
+                .ok_or(Error::new(
+                    ErrorKind::InvalidFilename,
+                    "cd ~: Path non-UTF-8",
+                ))?
                 .to_string();
         }
 
