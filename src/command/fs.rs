@@ -51,7 +51,7 @@ mod fs {
     /*fn search_command_in_dir(command: &str, dir: &mut ReadDir) -> Option<String> {
         for entry in dir {
             match entry {
-                Ok(r) => match match_command_and_file(command, &r) {
+                Ok(r) => match match_name_and_executable_file(command, &r) {
                     Ok(path) => match path {
                         Some(r) => return Some(r),
                         None => continue,
@@ -70,32 +70,7 @@ mod fs {
         None
     }*/
 
-    /*fn match_command_and_file(command: &str, entry: &DirEntry) -> Result<Option<String>, Error> {
-        match is_executable_file(entry) {
-            Ok(is_exe) => {
-                if !is_exe {
-                    return Ok(None);
-                }
-
-                let file_name = match entry.file_name().into_string() {
-                    Ok(r) => r,
-                    Err(_) => return Err(Error::new(ErrorKind::InvalidFilename, "invalid file name")),
-                };
-
-                if command != file_name {
-                    return Ok(None);
-                }
-
-                match entry.path().to_str() {
-                    Some(r) => Ok(Some(String::from(r))),
-                    None => Ok(None),
-                }
-            }
-            Err(e) => Err(e),
-        }
-    }*/
-
-    fn match_command_and_file(command: &str, file: &DirEntry) -> Option<String> {
+    fn match_name_and_executable_file(command: &str, file: &DirEntry) -> Option<String> {
         if !is_executable_file(file).ok()? {
             return None;
         }
@@ -116,7 +91,7 @@ mod fs {
         use std::time::{SystemTime, UNIX_EPOCH};
 
         #[test]
-        fn test_match_command_and_file() {
+        fn test_match_name_and_executable_file() {
             let mut path = get_current_dir();
             path.push_str("/test/fixture/fs/");
 
@@ -125,15 +100,15 @@ mod fs {
                 let file_name = file.file_name().into_string().unwrap();
 
                 if file_name == "executable" {
-                    let r = match_command_and_file("executable", &file).unwrap();
+                    let r = match_name_and_executable_file("executable", &file).unwrap();
                     assert_eq!(file.path().to_str().unwrap(), r);
 
-                    let r = match_command_and_file("another", &file);
+                    let r = match_name_and_executable_file("another", &file);
                     assert_eq!(None, r);
                 }
 
                 if file_name == "non_executable" {
-                    let r = match_command_and_file("non_executable", &file);
+                    let r = match_name_and_executable_file("non_executable", &file);
                     assert_eq!(None, r);
                 }
             }
