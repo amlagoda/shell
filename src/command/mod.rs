@@ -1,3 +1,5 @@
+mod fs;
+
 pub mod command {
     use std::env::{current_dir, home_dir, set_current_dir};
     use std::fs::read_dir;
@@ -176,94 +178,26 @@ pub mod command {
         }
     }*/
 
-    /*fn match_command_and_file(command: &str, entry: &DirEntry) -> Result<Option<String>, Error> {
-        match is_executable_file(entry) {
-            Ok(is_exe) => {
-                if !is_exe {
-                    return Ok(None);
-                }
-
-                let file_name = match entry.file_name().into_string() {
-                    Ok(r) => r,
-                    Err(_) => return Err(Error::new(ErrorKind::InvalidFilename, "invalid file name")),
-                };
-
-                if command != file_name {
-                    return Ok(None);
-                }
-
-                match entry.path().to_str() {
-                    Some(r) => Ok(Some(String::from(r))),
-                    None => Ok(None),
-                }
-            }
-            Err(e) => Err(e),
-        }
-    }*/
-
-    /*fn search_command_in_dir(command: &str, dir: &mut ReadDir) -> Option<String> {
-        for entry in dir {
-            match entry {
-                Ok(r) => match match_command_and_file(command, &r) {
-                    Ok(path) => match path {
-                        Some(r) => return Some(r),
-                        None => continue,
-                    },
-                    // read file metadata error and
-                    // file name not unicode error remains here
-                    // because we need to go down the list
-                    Err(_) => continue,
-                },
-                // fetching the next entry error remain here
-                // because we need to go down the list
-                Err(_) => continue,
-            }
-        }
-
-        None
-    }*/
-
-    /*fn search_command_in_env_path(command: &str) -> Result<Option<String>, Error> {
-        match split_env_path() {
-            Ok(paths) => {
-                for path in paths {
-                    match read_dir(path) {
-                        Ok(mut r) => match search_command_in_dir(command, &mut r) {
-                            Some(r) => return Ok(Some(r)),
-                            None => continue,
-                        },
-                        // path not exists, is not dir and permissions errors
-                        // remain here because we need to go down the list
-                        Err(_) => continue,
-                    }
-                }
-
-                Ok(None)
-            }
-            Err(e) => Err(Error::new(ErrorKind::Interrupted, e)),
-        }
-    }*/
-
     #[cfg(test)]
     mod tests {
         use super::*;
+        use std::path::Path;
 
         #[test]
-        fn test_command_cd() {
-            assert_eq!((), command_cd("/tmp").unwrap());
+        fn test_command_cd_and_command_pwd() {
+            let initial_dir = get_current_dir();
+
+            assert_eq!(initial_dir, command_pwd().unwrap());
+
+            assert_eq!((), command_cd("/private/tmp").unwrap());
+            assert_eq!("/private/tmp", command_pwd().unwrap());
+
+            set_current_dir(Path::new(initial_dir.as_str())).unwrap();
 
             assert_eq!(
                 "cd: fake: No such file or directory".to_string(),
                 command_cd("fake").unwrap_err().to_string()
-            );
-        }
-
-        #[test]
-        fn test_command_pwd() {
-            assert_eq!(
-                current_dir().unwrap().to_str().unwrap().to_string(),
-                command_pwd().unwrap()
-            );
+            );            
         }
 
         #[test]
@@ -272,6 +206,10 @@ pub mod command {
                 "foo bar",
                 command_echo(vec!("foo".to_string(), "bar".to_string()))
             );
+        }
+
+        fn get_current_dir() -> String {
+            current_dir().unwrap().to_str().unwrap().to_string()
         }
     }
 }
