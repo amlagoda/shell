@@ -1,10 +1,10 @@
 mod redirect;
 
-mod parser {
-    use crate::parser::redirect::redirect::{is_redirect, normalize_redirect, parse_redirect};
+pub mod parser {
+    use crate::parser::redirect::redirect::{is_redirect, normalize_and_parse_redirect};
     use std::collections::VecDeque;
 
-    fn parse(input: &str) -> (Option<String>, VecDeque<String>, Option<[String; 3]>) {
+    pub fn parse(input: &str) -> (Option<String>, VecDeque<String>, Option<[String; 3]>) {
         group_args(parse_input(input))
     }
 
@@ -31,8 +31,7 @@ mod parser {
             }
 
             if is_redirect(arg.as_str()) {
-                let r = normalize_redirect(arg.as_str());
-                [redirect[0], redirect[1]] = parse_redirect(r.as_str());
+                [redirect[0], redirect[1]] = normalize_and_parse_redirect(arg.as_str());
                 is_path = true;
             } else {
                 args_new.push_back(arg);
@@ -131,7 +130,7 @@ mod parser {
         }
 
         #[test]
-        fn test_group_args1() {
+        fn test_group_args() {
             let expected = (
                 Some("echo".to_string()),
                 VecDeque::from(["foo".to_string(), "bar".to_string()]),
