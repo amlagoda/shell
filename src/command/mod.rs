@@ -1,5 +1,6 @@
 pub mod command {
-    use std::env::current_dir;
+    use std::env::{current_dir, home_dir, set_current_dir};
+    use std::fs::read_dir;
     use std::io::{Error, ErrorKind};
 
     const COMMAND_TYPE: &str = "type";
@@ -39,10 +40,15 @@ pub mod command {
                 Err(e) => error = Some(e.to_string()),
             },
 
-            /*COMMAND_CD => match command_cd(args) {
-                Ok(_) => output = None,
-                Err(e) => error = Some(e.to_string()),
-            },*/
+            COMMAND_CD => {
+                let arg = args.iter().next().map(|r| r.as_str()).unwrap_or("");
+
+                match command_cd(arg) {
+                    Ok(_) => output = None,
+                    Err(e) => error = Some(e.to_string()),
+                }
+            }
+
             COMMAND_EXIT => is_exit = true,
 
             /*another => match command_from_env_path(another, args) {
@@ -103,33 +109,31 @@ pub mod command {
         Ok(path.to_string())
     }
 
-    /*fn command_cd(args: VecDeque<String>) -> Result<(), Error> {
-        let mut path = match args.iter().next() {
-            Some(r) => String::from(r),
-            None => String::new(),
-        };
+    fn command_cd(path: &str) -> Result<(), Error> {
+        let mut path = path.to_string();
 
         if path == "~" {
-            path = match home_dir() {
-                Some(r) => match r.to_str() {
-                    Some(r) => String::from(r),
-                    None => path,
-                },
-                None => path,
-            };
+            path = home_dir()
+                .ok_or(Error::new(ErrorKind::NotFound, "cd ~: Path is empty"))?
+                .to_str()
+                .ok_or(Error::new(ErrorKind::Other, "cd ~: Path non-UTF-8"))?
+                .to_string();
         }
 
-        if read_dir(path).is_err() { // exists, is dir, allowed
-        //if !is_allowed_dir(&path) {
+        let r = read_dir(path.as_str()); // exists, is dir, allowed
+        if r.is_err() {
             let msg = format!("cd: {}: No such file or directory", path);
             return Err(Error::new(ErrorKind::NotFound, msg));
         }
 
-        match set_current_dir(&path) {
-            Ok(_) => Ok(()),
-            Err(e) => Err(e),
+        let r = set_current_dir(path.as_str());
+        if r.is_err() {
+            let msg = format!("cd: {}: {}", path.as_str(), r.unwrap_err().to_string());
+            return Err(Error::new(ErrorKind::Other, msg));
         }
-    }*/
+
+        Ok(())
+    }
 
     /*fn command_from_env_path(
         command: &str,
@@ -239,6 +243,16 @@ pub mod command {
     #[cfg(test)]
     mod tests {
         use super::*;
+
+        #[test]
+        fn test_command_cd() {
+            assert_eq!((), command_cd("/tmp").unwrap());
+
+            assert_eq!(
+                "cd: fake: No such file or directory".to_string(),
+                command_cd("fake").unwrap_err().to_string()
+            );
+        }
 
         #[test]
         fn test_command_pwd() {
