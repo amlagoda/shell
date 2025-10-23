@@ -1,6 +1,5 @@
 mod fs {
-    use std::fs::{read_dir, ReadDir};
-    use std::fs::{DirEntry, OpenOptions};
+    use std::fs::{read_dir, DirEntry, OpenOptions, ReadDir};
     use std::io::{Error, Write};
     use std::os::unix::fs::PermissionsExt;
     use std::path::Path;
@@ -18,17 +17,7 @@ mod fs {
         Ok(())
     }
 
-    fn is_executable_file(entry: &DirEntry) -> Result<bool, Error> {
-        let r = entry.metadata()?;
-
-        if r.is_dir() {
-            Ok(false)
-        } else {
-            Ok(r.permissions().mode() & 0o111 != 0) // windows no
-        }
-    }
-
-    fn search_executable_file_in_paths(file_name: &str, paths: &Vec<String>) -> Option<String> {
+    fn search_executable_file_in_paths(name: &str, paths: &Vec<String>) -> Option<String> {
         for path in paths {
             let dir = read_dir(path);
 
@@ -38,7 +27,7 @@ mod fs {
                 continue;
             }
 
-            let r = search_executable_file_in_dir(file_name, &mut dir.unwrap());
+            let r = search_executable_file_in_dir(name, &mut dir.unwrap());
 
             if r.is_some() {
                 return r;
@@ -48,7 +37,7 @@ mod fs {
         None
     }
 
-    fn search_executable_file_in_dir(file_name: &str, dir: &mut ReadDir) -> Option<String> {
+    fn search_executable_file_in_dir(name: &str, dir: &mut ReadDir) -> Option<String> {
         for entry in dir {
             if entry.is_err() {
                 // errors remains here
@@ -56,7 +45,7 @@ mod fs {
                 continue;
             };
 
-            let r = match_name_and_executable_file(file_name, &entry.unwrap());
+            let r = match_name_and_executable_file(name, &entry.unwrap());
 
             if r.is_some() {
                 return r;
@@ -66,16 +55,26 @@ mod fs {
         None
     }
 
-    fn match_name_and_executable_file(name: &str, file: &DirEntry) -> Option<String> {
-        if !is_executable_file(file).ok()? {
+    fn match_name_and_executable_file(name: &str, entry: &DirEntry) -> Option<String> {
+        if !is_executable_file(entry).ok()? {
             return None;
         }
 
-        if name != file.file_name().into_string().ok()? {
+        if name != entry.file_name().into_string().ok()? {
             return None;
         }
 
-        file.path().to_str().map(|r| Some(r.to_string()))?
+        entry.path().to_str().map(|r| Some(r.to_string()))?
+    }
+
+    fn is_executable_file(entry: &DirEntry) -> Result<bool, Error> {
+        let r = entry.metadata()?;
+
+        if r.is_dir() {
+            Ok(false)
+        } else {
+            Ok(r.permissions().mode() & 0o111 != 0) // windows no
+        }
     }
 
     #[cfg(test)]
@@ -87,8 +86,8 @@ mod fs {
 
         #[test]
         fn test_search_executable_file_in_paths() {
-            // affect test_command_cd_and_command_pwd
-            let paths = vec!(get_fixture_path());
+            // affected test_command_cd_and_command_pwd
+            let paths = vec![get_fixture_path()];
 
             let r = search_executable_file_in_paths("executable", &paths).unwrap();
             assert_eq!(format!("{}executable", get_fixture_path()), r);
@@ -100,14 +99,13 @@ mod fs {
             assert!(r.is_none());
         }
 
-
         #[test]
         fn test_write_to_file() {
-            let path = SystemTime::now()
+            let name = SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .unwrap()
                 .subsec_millis();
-            let path = format!("/tmp/{}", path);
+            let path = format!("/tmp/{}", name);
 
             let r1 = write_to_file(path.as_str(), "Hello world!", false);
             assert_eq!((), r1.unwrap());
@@ -119,12 +117,16 @@ mod fs {
                 .open(Path::new(&path))
                 .unwrap();
             let mut r = String::new();
+
             file.read_to_string(&mut r).unwrap();
             assert_eq!("Hello world!Good weather!", r);
         }
 
         fn get_fixture_path() -> String {
-            format!("{}/test/fixture/fs/", current_dir().unwrap().to_str().unwrap())
+            format!(
+                "{}/test/fixture/fs/",
+                current_dir().unwrap().to_str().unwrap()
+            )
         }
     }
 }
