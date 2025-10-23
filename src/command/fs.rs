@@ -1,4 +1,4 @@
-mod fs {
+pub mod fs {
     use std::fs::{read_dir, DirEntry, OpenOptions, ReadDir};
     use std::io::{Error, Write};
     use std::os::unix::fs::PermissionsExt;
@@ -17,7 +17,7 @@ mod fs {
         Ok(())
     }
 
-    fn search_executable_file_in_paths(name: &str, paths: &Vec<String>) -> Option<String> {
+    pub fn search_executable_file_in_paths(name: &str, paths: &Vec<&str>) -> Option<String> {
         for path in paths {
             let dir = read_dir(path);
 
@@ -87,7 +87,8 @@ mod fs {
         #[test]
         fn test_search_executable_file_in_paths() {
             // affected test_command_cd_and_command_pwd
-            let paths = vec![get_fixture_path()];
+            let r = get_fixture_path();
+            let paths = vec![r.as_str()];
 
             let r = search_executable_file_in_paths("executable", &paths).unwrap();
             assert_eq!(format!("{}executable", get_fixture_path()), r);

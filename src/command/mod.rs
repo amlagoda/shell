@@ -1,6 +1,7 @@
 mod fs;
 
 pub mod command {
+    use crate::command::fs::fs::search_executable_file_in_paths;
     use std::env::{current_dir, home_dir, set_current_dir};
     use std::fs::read_dir;
     use std::io::{Error, ErrorKind};
@@ -14,14 +15,14 @@ pub mod command {
     pub fn command(
         name: &str,
         args: Vec<String>,
-        bin_paths: Vec<String>,
+        bin_paths: Vec<&str>,
     ) -> (Option<String>, Option<String>, bool) {
         let mut output: Option<String> = None;
         let mut error: Option<String> = None;
         let mut is_exit = false;
 
         match name {
-            /*COMMAND_TYPE => {
+            COMMAND_TYPE => {
                 let commands = Vec::from([
                     COMMAND_TYPE,
                     COMMAND_ECHO,
@@ -30,11 +31,10 @@ pub mod command {
                     COMMAND_EXIT,
                 ]);
 
-                match command_type(args, &commands) {
-                    Ok(r) => output = Some(r),
-                    Err(e) => error = Some(e.to_string()),
-                }
-            }*/
+                let command = args.iter().next().map(|r| r.as_str()).unwrap_or("");
+                output = command_type(command, &commands, &bin_paths);
+            }
+
             COMMAND_ECHO => output = Some(command_echo(args)),
 
             COMMAND_PWD => match command_pwd() {
@@ -43,9 +43,9 @@ pub mod command {
             },
 
             COMMAND_CD => {
-                let arg = args.iter().next().map(|r| r.as_str()).unwrap_or("");
+                let path = args.iter().next().map(|r| r.as_str()).unwrap_or("");
 
-                match command_cd(arg) {
+                match command_cd(path) {
                     Ok(_) => output = None,
                     Err(e) => error = Some(e.to_string()),
                 }
@@ -66,34 +66,19 @@ pub mod command {
         (output, error, is_exit)
     }
 
-    // use crate::command::process::process::read_process_output;
-    // use std::collections::VecDeque;
-    // use std::io::{stdout, Error, ErrorKind, Read, Write};
-    // use std::env::{current_dir, home_dir, set_current_dir, var, VarError};
-    // use std::fs::{read_dir, DirEntry, OpenOptions, ReadDir};
-    // use std::process::{Child, Command, ExitCode, Stdio};
-
-    /*fn command_type(args: VecDeque<String>, commands: &Vec<&str>) -> Result<String, Error> {
-        match args.iter().next() {
-            Some(command) => {
-                if commands.contains(&command.as_str()) {
-                    return Ok(format!("{} is a shell builtin", command));
-                }
-
-                match search_command_in_env_path(&command) {
-                    Ok(path) => match path {
-                        Some(r) => Ok(format!("{} is {}", command, r)),
-                        None => {
-                            let msg = format!("{}: not found", command);
-                            Err(Error::new(ErrorKind::NotFound, msg))
-                        }
-                    },
-                    Err(e) => Err(e),
-                }
-            }
-            None => Err(Error::new(ErrorKind::NotFound, ": not found")),
+    fn command_type(command: &str, commands: &Vec<&str>, paths: &Vec<&str>) -> Option<String> {
+        if commands.contains(&command) {
+            return Some(format!("{} is a shell builtin", command));
         }
-    }*/
+
+        let r = search_executable_file_in_paths(command, paths);
+
+        if r.is_some() {
+            return Some(format!("{} is {}", command, r.unwrap()));
+        }
+
+        Some(format!("{}: not found", command))
+    }
 
     fn command_echo(args: Vec<String>) -> String {
         args.iter()
@@ -184,6 +169,30 @@ pub mod command {
         use std::path::Path;
 
         #[test]
+        fn test_command_type() {
+            let commands = vec!["pwd"];
+            let r = get_fixture_path();
+            let paths = vec![r.as_str()];
+
+            assert_eq!(
+                "pwd is a shell builtin",
+                command_type("pwd", &commands, &paths).unwrap()
+            );
+
+            assert_eq!(
+                format!("executable is {}", format!("{}executable", r)),
+                command_type("executable", &commands, &paths).unwrap()
+            );
+
+            assert_eq!(
+                "another: not found",
+                command_type("another", &commands, &paths).unwrap()
+            );
+
+            assert_eq!(": not found", command_type("", &commands, &paths).unwrap());
+        }
+
+        #[test]
         fn test_command_cd_and_command_pwd() {
             let initial_dir = get_current_dir();
 
@@ -197,7 +206,7 @@ pub mod command {
             assert_eq!(
                 "cd: fake: No such file or directory".to_string(),
                 command_cd("fake").unwrap_err().to_string()
-            );            
+            );
         }
 
         #[test]
@@ -206,6 +215,10 @@ pub mod command {
                 "foo bar",
                 command_echo(vec!("foo".to_string(), "bar".to_string()))
             );
+        }
+
+        fn get_fixture_path() -> String {
+            format!("{}/test/fixture/fs/", get_current_dir())
         }
 
         fn get_current_dir() -> String {
