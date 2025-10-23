@@ -15,12 +15,14 @@ mod env {
 
         #[test]
         fn test_split_env_path() {
-            set_var("PATH", "foo:bar");
+            let initial = var("PATH").unwrap();
 
+            set_var("PATH", "foo:bar");
             assert_eq!(
                 vec!["foo".to_string(), "bar".to_string()],
                 split_env_path().unwrap()
             );
+            set_var("PATH", initial);
         }
     }
 }
