@@ -1,4 +1,5 @@
 mod fs {
+    use std::fs::{read_dir, ReadDir};
     use std::fs::{DirEntry, OpenOptions};
     use std::io::{Error, Write};
     use std::os::unix::fs::PermissionsExt;
@@ -27,55 +28,50 @@ mod fs {
         }
     }
 
-    /*fn search_command_in_env_path(command: &str) -> Result<Option<String>, Error> {
-        match split_env_path() {
-            Ok(paths) => {
-                for path in paths {
-                    match read_dir(path) {
-                        Ok(mut r) => match search_command_in_dir(command, &mut r) {
-                            Some(r) => return Ok(Some(r)),
-                            None => continue,
-                        },
-                        // path not exists, is not dir and permissions errors
-                        // remain here because we need to go down the list
-                        Err(_) => continue,
-                    }
-                }
+    fn search_executable_file_in_paths(file_name: &str, paths: &Vec<String>) -> Option<String> {
+        for path in paths {
+            let dir = read_dir(path);
 
-                Ok(None)
-            }
-            Err(e) => Err(Error::new(ErrorKind::Interrupted, e)),
-        }
-    }*/
-
-    /*fn search_command_in_dir(command: &str, dir: &mut ReadDir) -> Option<String> {
-        for entry in dir {
-            match entry {
-                Ok(r) => match match_name_and_executable_file(command, &r) {
-                    Ok(path) => match path {
-                        Some(r) => return Some(r),
-                        None => continue,
-                    },
-                    // read file metadata error and
-                    // file name not unicode error remains here
-                    // because we need to go down the list
-                    Err(_) => continue,
-                },
-                // fetching the next entry error remain here
+            if dir.is_err() {
+                // errors remains here
                 // because we need to go down the list
-                Err(_) => continue,
+                continue;
+            }
+
+            let r = search_executable_file_in_dir(file_name, &mut dir.unwrap());
+
+            if r.is_some() {
+                return r;
             }
         }
 
         None
-    }*/
+    }
 
-    fn match_name_and_executable_file(command: &str, file: &DirEntry) -> Option<String> {
+    fn search_executable_file_in_dir(file_name: &str, dir: &mut ReadDir) -> Option<String> {
+        for entry in dir {
+            if entry.is_err() {
+                // errors remains here
+                // because we need to go down the list
+                continue;
+            };
+
+            let r = match_name_and_executable_file(file_name, &entry.unwrap());
+
+            if r.is_some() {
+                return r;
+            }
+        }
+
+        None
+    }
+
+    fn match_name_and_executable_file(name: &str, file: &DirEntry) -> Option<String> {
         if !is_executable_file(file).ok()? {
             return None;
         }
 
-        if command != file.file_name().into_string().ok()? {
+        if name != file.file_name().into_string().ok()? {
             return None;
         }
 
@@ -86,33 +82,24 @@ mod fs {
     mod tests {
         use super::*;
         use std::env::current_dir;
-        use std::fs::read_dir;
         use std::io::Read;
         use std::time::{SystemTime, UNIX_EPOCH};
 
         #[test]
-        fn test_match_name_and_executable_file() {
-            let mut path = get_current_dir();
-            path.push_str("/test/fixture/fs/");
+        fn test_search_executable_file_in_paths() {
+            // affect test_command_cd_and_command_pwd
+            let paths = vec!(get_fixture_path());
 
-            for r in read_dir(Path::new(path.as_str())).unwrap() {
-                let file = r.unwrap();
-                let file_name = file.file_name().into_string().unwrap();
+            let r = search_executable_file_in_paths("executable", &paths).unwrap();
+            assert_eq!(format!("{}executable", get_fixture_path()), r);
 
-                if file_name == "executable" {
-                    let r = match_name_and_executable_file("executable", &file).unwrap();
-                    assert_eq!(file.path().to_str().unwrap(), r);
+            let r = search_executable_file_in_paths("non_executable", &paths);
+            assert!(r.is_none());
 
-                    let r = match_name_and_executable_file("another", &file);
-                    assert_eq!(None, r);
-                }
-
-                if file_name == "non_executable" {
-                    let r = match_name_and_executable_file("non_executable", &file);
-                    assert_eq!(None, r);
-                }
-            }
+            let r = search_executable_file_in_paths("fake", &paths);
+            assert!(r.is_none());
         }
+
 
         #[test]
         fn test_write_to_file() {
@@ -136,8 +123,8 @@ mod fs {
             assert_eq!("Hello world!Good weather!", r);
         }
 
-        fn get_current_dir() -> String {
-            current_dir().unwrap().to_str().unwrap().to_string()
+        fn get_fixture_path() -> String {
+            format!("{}/test/fixture/fs/", current_dir().unwrap().to_str().unwrap())
         }
     }
 }
