@@ -202,10 +202,7 @@ pub mod command {
         fn test_command_cd_and_command_pwd() {
             let initial_dir = get_current_dir();
 
-            assert_eq!(initial_dir, command_pwd().unwrap());
-
             assert_eq!((), command_cd("/private/tmp").unwrap());
-            assert_eq!("/private/tmp", command_pwd().unwrap());
 
             set_current_dir(Path::new(initial_dir.as_str())).unwrap();
 
@@ -221,16 +218,21 @@ pub mod command {
                 "foo bar",
                 command_echo(vec!("foo".to_string(), "bar".to_string()))
             );
+        }*/
+
+        #[test]
+        fn test_command_pwd() {
+            assert_eq!(get_current_dir(), command_pwd().unwrap());
         }
 
         fn get_fixture_dir() -> String {
             // ends with a slash
-            format!("{}/test/fixture/command/", get_current_dir())
+            format!("{}/test/fixture/command/mod/", get_current_dir())
         }
 
         fn get_current_dir() -> String {
             // does not end with a slash
             current_dir().unwrap().to_str().unwrap().to_string()
-        }*/
+        }
     }
 }
