@@ -208,13 +208,10 @@ pub mod command {
             );
         }*/
 
-        /*#[test]
+        #[test]
         fn test_command_echo() {
-            assert_eq!(
-                "foo bar",
-                command_echo(vec!("foo".to_string(), "bar".to_string()))
-            );
-        }*/
+            assert_eq!("foo bar", command_echo(&Vec::from(["foo", "bar"])));
+        }
 
         // we are not testing the command_cd because
         // it affects the global state
