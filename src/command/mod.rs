@@ -104,14 +104,10 @@ pub mod command {
         let mut path = path.to_string();
 
         if path == "~" {
-            path = home_dir()
-                .ok_or(Error::new(ErrorKind::NotFound, "cd ~: Path is empty"))?
-                .to_str()
-                .ok_or(Error::new(
-                    ErrorKind::InvalidFilename,
-                    "cd ~: Path non-UTF-8",
-                ))?
-                .to_string();
+            let e1 = Error::new(ErrorKind::NotFound, "cd ~: Path is empty");
+            let e2 = Error::new(ErrorKind::InvalidFilename, "cd ~: Path non-UTF-8");
+
+            path = home_dir().ok_or(e1)?.to_str().ok_or(e2)?.to_string();
         }
 
         let r = read_dir(path.as_str()); // exists, is dir, allowed
@@ -153,8 +149,8 @@ pub mod command {
     #[cfg(test)]
     mod tests {
         use super::*;
-        use std::path::Path;
         use std::env::var;
+        use std::path::Path;
 
         /*#[test]
         fn test_command_from_paths() {
@@ -219,6 +215,9 @@ pub mod command {
                 command_echo(vec!("foo".to_string(), "bar".to_string()))
             );
         }*/
+
+        // we are not testing the command_cd because
+        // it affects the global state
 
         #[test]
         fn test_command_pwd() {
