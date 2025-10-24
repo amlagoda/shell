@@ -7,4 +7,6 @@ pub mod env {
             .map(|r| r.to_string())
             .collect::<Vec<String>>())
     }
+
+    // tested in command/mod.rs::test_command_from_paths
 }

@@ -153,6 +153,24 @@ pub mod command {
     #[cfg(test)]
     mod tests {
         use super::*;
+        use crate::env::env::split_env_path;
+
+        #[test]
+        fn test_command_from_paths() {
+            let path = get_fixture_dir();
+            let args = vec!["not_exists", path.as_str()];
+
+            let r = split_env_path().unwrap();
+            let paths = r.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
+
+            let [stderr, stdout] = command_from_paths("ls", &args, &paths).unwrap();
+
+            let msg = "ls: not_exists: No such file or directory";
+            assert_eq!(msg, stderr.unwrap());
+
+            let msg = format!("{}:\nexe\nnot_exe", path);
+            assert_eq!(msg, stdout.unwrap());
+        }
 
         #[test]
         fn test_command_type() {
@@ -166,8 +184,7 @@ pub mod command {
             assert_eq!("exe is a shell builtin", r.unwrap());
 
             let r = command_type("exe", &vec![], &paths);
-            let msg = format!("exe is {}exe", path);
-            assert_eq!(msg, r.unwrap());
+            assert_eq!(format!("exe is {}exe", path), r.unwrap());
         }
 
         #[test]
