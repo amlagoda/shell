@@ -123,7 +123,7 @@ pub mod parser {
             let expected = (
                 Some("echo".to_string()),
                 VecDeque::from(["foo".to_string()]),
-                Some(["1".to_string(), ">".to_string(), "path".to_string()]),
+                Some(["1", ">", "path"].map(|r| r.to_string())),
             );
 
             assert_eq!(expected, parse("echo foo > path"));
@@ -133,15 +133,10 @@ pub mod parser {
         fn test_group_args() {
             let expected = (
                 Some("echo".to_string()),
-                VecDeque::from(["foo".to_string(), "bar".to_string()]),
+                VecDeque::from(["foo", "bar"].map(|r| r.to_string())),
                 None,
             );
-            let r = VecDeque::from([
-                "echo".to_string(),
-                "foo".to_string(),
-                "bar".to_string(),
-                ">".to_string(),
-            ]);
+            let r = VecDeque::from(["echo", "foo", "bar", ">"].map(|r| r.to_string()));
 
             assert_eq!(expected, group_args(r));
         }
@@ -149,17 +144,17 @@ pub mod parser {
         #[test]
         fn test_parse_input() {
             assert_eq!(
-                VecDeque::from(["echo".to_string(), "1'".to_string()]),
+                VecDeque::from(["echo", "1'"].map(|r| r.to_string())),
                 parse_input(" echo  1\\'")
             );
 
             assert_eq!(
-                VecDeque::from(["echo".to_string(), " 1 2".to_string()]),
+                VecDeque::from(["echo", " 1 2"].map(|r| r.to_string())),
                 parse_input("echo ' 1 ''2'")
             );
 
             assert_eq!(
-                VecDeque::from(["echo".to_string(), "  ' \\ 1".to_string()]),
+                VecDeque::from(["echo", "  ' \\ 1"].map(|r| r.to_string())),
                 parse_input("echo \"  ' \\ 1\"")
             );
         }
