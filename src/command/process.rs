@@ -55,7 +55,7 @@ pub mod process {
 
         fn get_fixture_dir() -> String {
             // ends with a slash
-            format!("{}/test/fixture/process/", get_current_dir())
+            format!("{}/test/fixture/command/process/", get_current_dir())
         }
 
         fn get_current_dir() -> String {

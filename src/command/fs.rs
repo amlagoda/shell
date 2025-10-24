@@ -124,7 +124,7 @@ pub mod fs {
 
         fn get_fixture_dir() -> String {
             // ends with a slash
-            format!("{}/test/fixture/fs/", get_current_dir())
+            format!("{}/test/fixture/command/fs/", get_current_dir())
         }
 
         fn get_current_dir() -> String {
