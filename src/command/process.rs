@@ -50,7 +50,7 @@ pub mod process {
             let [stderr, stdout] = read_process_output(process).unwrap();
 
             assert_eq!("ls: notexist: No such file or directory", stderr.unwrap());
-            assert_eq!(format!("{}:\n1", get_fixture_dir()), stdout.unwrap());
+            assert_eq!(format!("{}:\nfile", get_fixture_dir()), stdout.unwrap());
         }
 
         fn get_fixture_dir() -> String {
