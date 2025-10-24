@@ -25,7 +25,7 @@ pub mod command {
         let mut is_exit = false;
 
         match name {
-            COMMAND_TYPE => {
+            /*COMMAND_TYPE => {
                 let commands = Vec::from([
                     COMMAND_TYPE,
                     COMMAND_ECHO,
@@ -36,8 +36,7 @@ pub mod command {
 
                 let command = *args.iter().next().unwrap_or(&"");
                 output = command_type(command, &commands, &bin_paths);
-            }
-
+            }*/
             COMMAND_ECHO => output = Some(command_echo(args)),
 
             COMMAND_PWD => match command_pwd() {
@@ -69,18 +68,23 @@ pub mod command {
         (output, error, is_exit)
     }
 
-    fn command_type(command: &str, commands: &Vec<&str>, paths: &Vec<&str>) -> Option<String> {
+    fn command_type(
+        command: &str,
+        commands: &Vec<&str>,
+        paths: &Vec<&str>,
+    ) -> Result<String, Error> {
         if commands.contains(&command) {
-            return Some(format!("{} is a shell builtin", command));
+            return Ok(format!("{} is a shell builtin", command));
         }
 
         let r = search_executable_file_in_paths(command, paths);
 
         if r.is_some() {
-            return Some(format!("{} is {}", command, r.unwrap()));
+            return Ok(format!("{} is {}", command, r.unwrap()));
         }
 
-        Some(format!("{}: not found", command))
+        let msg = format!("{}: not found", command);
+        Err(Error::new(ErrorKind::NotFound, msg))
     }
 
     fn command_echo(args: &Vec<&str>) -> String {
@@ -149,64 +153,22 @@ pub mod command {
     #[cfg(test)]
     mod tests {
         use super::*;
-        use std::env::var;
-        use std::path::Path;
 
-        /*#[test]
-        fn test_command_from_paths() {
-            let paths = var("PATH").unwrap();
-            let paths = paths.split(':').collect::<Vec<&str>>();
+        #[test]
+        fn test_command_type() {
+            let path = get_fixture_dir();
+            let paths = vec![path.as_str()];
 
-            let r = command_from_paths("nonexists", &vec!(), &paths);
-            assert_eq!("nonexists: not found", r.unwrap_err().to_string());
+            let r = command_type("not_exe", &vec![], &paths);
+            assert_eq!("not_exe: not found", r.unwrap_err().to_string());
 
-            let [output, error] = command_from_paths(
-                "ls",
-                &vec!("executable", "nonexists"),
-                &paths
-            ).unwrap();
+            let r = command_type("exe", &vec!["exe"], &paths);
+            assert_eq!("exe is a shell builtin", r.unwrap());
 
-            //assert_eq!("", output.unwrap());
-            //assert_eq!("", error.unwrap());
-        }*/
-
-        //#[test]
-        /*fn test_command_type() {
-            let commands = vec!["pwd"];
-            let r = get_fixture_dir();
-            let paths = vec![r.as_str()];
-
-            assert_eq!(
-                "pwd is a shell builtin",
-                command_type("pwd", &commands, &paths).unwrap()
-            );
-
-            assert_eq!(
-                format!("executable is {}", format!("{}executable", r)),
-                command_type("executable", &commands, &paths).unwrap()
-            );
-
-            assert_eq!(
-                "another: not found",
-                command_type("another", &commands, &paths).unwrap()
-            );
-
-            assert_eq!(": not found", command_type("", &commands, &paths).unwrap());
-        }*/
-
-        /*#[test]
-        fn test_command_cd_and_command_pwd() {
-            let initial_dir = get_current_dir();
-
-            assert_eq!((), command_cd("/private/tmp").unwrap());
-
-            set_current_dir(Path::new(initial_dir.as_str())).unwrap();
-
-            assert_eq!(
-                "cd: fake: No such file or directory".to_string(),
-                command_cd("fake").unwrap_err().to_string()
-            );
-        }*/
+            let r = command_type("exe", &vec![], &paths);
+            let msg = format!("exe is {}exe", path);
+            assert_eq!(msg, r.unwrap());
+        }
 
         #[test]
         fn test_command_echo() {
