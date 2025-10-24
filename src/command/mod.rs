@@ -25,18 +25,23 @@ pub mod command {
         let mut is_exit = false;
 
         match name {
-            /*COMMAND_TYPE => {
-                let commands = Vec::from([
+            COMMAND_TYPE => {
+                let commands = vec![
                     COMMAND_TYPE,
                     COMMAND_ECHO,
                     COMMAND_PWD,
                     COMMAND_CD,
                     COMMAND_EXIT,
-                ]);
+                ];
 
                 let command = *args.iter().next().unwrap_or(&"");
-                output = command_type(command, &commands, &bin_paths);
-            }*/
+
+                match command_type(command, &commands, bin_paths) {
+                    Ok(r) => output = Some(r),
+                    Err(e) => error = Some(e.to_string()),
+                }
+            }
+
             COMMAND_ECHO => output = Some(command_echo(args)),
 
             COMMAND_PWD => match command_pwd() {
@@ -48,21 +53,17 @@ pub mod command {
                 let path = *args.iter().next().unwrap_or(&"");
 
                 match command_cd(path) {
-                    Ok(_) => output = None,
+                    Ok(_) => {}
                     Err(e) => error = Some(e.to_string()),
                 }
             }
 
             COMMAND_EXIT => is_exit = true,
 
-            another => {
-                let args = args.iter().map(|r| *r).collect();
-
-                match command_from_paths(another, &args, &bin_paths) {
-                    Ok(r) => [output, error] = r,
-                    Err(e) => error = Some(e.to_string()),
-                }
-            }
+            another => match command_from_paths(another, args, bin_paths) {
+                Ok(r) => [error, output] = r,
+                Err(e) => error = Some(e.to_string()),
+            },
         }
 
         (output, error, is_exit)
