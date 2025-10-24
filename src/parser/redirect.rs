@@ -42,7 +42,7 @@ pub mod redirect {
         #[test]
         fn test_normalize_and_parse_redirect() {
             assert_eq!(
-                ["2".to_string(), ">".to_string()],
+                ["2", ">"].map(|r| r.to_string()),
                 normalize_and_parse_redirect("2>")
             )
         }
@@ -54,7 +54,7 @@ pub mod redirect {
 
         #[test]
         fn test_parse_redirect() {
-            assert_eq!(["2".to_string(), ">>".to_string()], parse_redirect("2>>"));
+            assert_eq!(["2", ">>"].map(|r| r.to_string()), parse_redirect("2>>"));
         }
     }
 }
