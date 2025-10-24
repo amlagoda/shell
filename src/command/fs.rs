@@ -89,10 +89,10 @@ pub mod fs {
             let r = get_fixture_dir();
             let paths = vec![r.as_str()];
 
-            let r = search_executable_file_in_paths("executable", &paths).unwrap();
-            assert_eq!(format!("{}executable", get_fixture_dir()), r);
+            let r = search_executable_file_in_paths("exe", &paths).unwrap();
+            assert_eq!(format!("{}exe", get_fixture_dir()), r);
 
-            let r = search_executable_file_in_paths("not_executable", &paths);
+            let r = search_executable_file_in_paths("not_exe", &paths);
             assert!(r.is_none());
 
             let r = search_executable_file_in_paths("not_exists", &paths);
