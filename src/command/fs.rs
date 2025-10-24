@@ -27,7 +27,7 @@ pub mod fs {
                 continue;
             }
 
-            let r = search_executable_file_in_dir(name, &mut dir.unwrap());
+            let r = search_executable_file_in_dir(name, dir.unwrap());
 
             if r.is_some() {
                 return r;
@@ -37,7 +37,7 @@ pub mod fs {
         None
     }
 
-    fn search_executable_file_in_dir(name: &str, dir: &mut ReadDir) -> Option<String> {
+    fn search_executable_file_in_dir(name: &str, dir: ReadDir) -> Option<String> {
         for entry in dir {
             if entry.is_err() {
                 // errors remains here
@@ -86,17 +86,16 @@ pub mod fs {
 
         #[test]
         fn test_search_executable_file_in_paths() {
-            // affected test_command_cd_and_command_pwd
-            let r = get_fixture_path();
+            let r = get_fixture_dir();
             let paths = vec![r.as_str()];
 
             let r = search_executable_file_in_paths("executable", &paths).unwrap();
-            assert_eq!(format!("{}executable", get_fixture_path()), r);
+            assert_eq!(format!("{}executable", get_fixture_dir()), r);
 
-            let r = search_executable_file_in_paths("non_executable", &paths);
+            let r = search_executable_file_in_paths("not_executable", &paths);
             assert!(r.is_none());
 
-            let r = search_executable_file_in_paths("fake", &paths);
+            let r = search_executable_file_in_paths("not_exists", &paths);
             assert!(r.is_none());
         }
 
@@ -123,11 +122,14 @@ pub mod fs {
             assert_eq!("Hello world!Good weather!", r);
         }
 
-        fn get_fixture_path() -> String {
-            format!(
-                "{}/test/fixture/fs/",
-                current_dir().unwrap().to_str().unwrap()
-            )
+        fn get_fixture_dir() -> String {
+            // ends with a slash
+            format!("{}/test/fixture/fs/", get_current_dir())
+        }
+
+        fn get_current_dir() -> String {
+            // does not end with a slash
+            current_dir().unwrap().to_str().unwrap().to_string()
         }
     }
 }
