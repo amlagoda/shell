@@ -13,6 +13,7 @@ use std::process::ExitCode;
 mod command;
 mod env;
 mod parser;
+mod fs;
 
 fn main() -> ExitCode {
     match enable_raw_mode() {

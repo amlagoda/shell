@@ -1,8 +1,7 @@
-mod fs;
 mod process;
 
 pub mod command {
-    use crate::command::fs::fs::search_executable_file_in_paths;
+    use crate::fs::fs::search_executable_file_in_paths;
     use crate::command::process::process::read_process_output;
     use std::env::{current_dir, home_dir, set_current_dir};
     use std::fs::read_dir;
