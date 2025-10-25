@@ -1,10 +1,11 @@
 use crate::command::command::command;
 use crate::env::env::split_env_path;
 use crate::fs::fs::write_to_file;
+use crate::keyboard::keyboard::handle_key;
 use crate::parser::parser::parse;
 use crossterm::{
     cursor::MoveLeft,
-    event::{read, Event, KeyCode, KeyModifiers},
+    event::read,
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, Clear, ClearType},
 };
@@ -14,6 +15,7 @@ use std::process::ExitCode;
 mod command;
 mod env;
 mod fs;
+mod keyboard;
 mod parser;
 
 fn main() -> ExitCode {
@@ -33,6 +35,7 @@ fn main() -> ExitCode {
     let mut redirect: Option<[String; 3]> = None;
     let mut is_exit = false;
     let mut is_enter = false;
+    let mut is_backspace = false;
 
     let r = split_env_path();
     if r.is_err() {
@@ -59,73 +62,28 @@ fn main() -> ExitCode {
 
     loop {
         match read() {
-            Ok(r) => match r {
-                Event::Key(event) => match event.code {
-                    KeyCode::Enter => is_enter = true,
+            Ok(r) => {
+                let key = r.as_key_event();
 
-                    KeyCode::Backspace => {
-                        if input.len() == 0 {
-                            continue;
-                        }
+                if key.is_none() {
+                    continue;
+                }
 
-                        match execute!(stdout, MoveLeft(1), Clear(ClearType::UntilNewLine)) {
-                            Ok(_) => {
-                                input.pop();
-                            }
-                            Err(e) => {
-                                println!("{}", e.to_string());
-                                return ExitCode::FAILURE;
-                            }
-                        }
-                    }
-
-                    KeyCode::Tab => {
-                        if input == "ech" {
-                            input.push_str("o ");
-                            print = Some(String::from("o "));
-                        }
-
-                        if input == "exi" {
-                            input.push_str("t ");
-                            print = Some(String::from("t "));
-                        }
-                    }
-
-                    KeyCode::Char(c) => {
-                        if c == 'c' {
-                            match event.modifiers {
-                                KeyModifiers::CONTROL => {
-                                    print = Some(String::from("^C"));
-                                    is_exit = true;
-                                }
-                                _ => {
-                                    input.push(c);
-                                    print = Some(String::from(c));
-                                }
-                            }
-                        } else if c == 'j' {
-                            match event.modifiers {
-                                KeyModifiers::CONTROL => {
-                                    is_enter = true;
-                                }
-                                _ => {
-                                    input.push(c);
-                                    print = Some(String::from(c));
-                                }
-                            }
-                        } else {
-                            input.push(c);
-                            print = Some(String::from(c));
-                        }
-                    }
-
-                    _ => {}
-                },
-                _ => {}
-            },
+                (input, print, is_enter, is_exit, is_backspace) = handle_key(input, &key.unwrap());
+            }
             Err(e) => {
                 println!("{}", e.to_string());
                 return ExitCode::FAILURE;
+            }
+        }
+
+        if is_backspace {
+            match execute!(stdout, MoveLeft(1), Clear(ClearType::UntilNewLine)) {
+                Ok(_) => {}
+                Err(e) => {
+                    println!("{}", e.to_string());
+                    return ExitCode::FAILURE;
+                }
             }
         }
 

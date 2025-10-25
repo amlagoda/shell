@@ -3,14 +3,14 @@ pub mod keyboard {
 
     pub fn handle_key(
         mut input: String,
-        event: &KeyEvent,
+        key: &KeyEvent,
     ) -> (String, Option<String>, bool, bool, bool) {
         let mut to_print: Option<String> = None;
         let mut is_enter = false;
         let mut is_exit = false;
         let mut is_backspace = false;
 
-        match event.code {
+        match key.code {
             KeyCode::Enter => is_enter = true,
 
             KeyCode::Backspace => {
@@ -33,7 +33,7 @@ pub mod keyboard {
             }
 
             KeyCode::Char(r) => {
-                let is_ctrl = event.modifiers == KeyModifiers::CONTROL;
+                let is_ctrl = key.modifiers == KeyModifiers::CONTROL;
 
                 if r == 'c' && is_ctrl {
                     to_print = Some("^C".to_string());
