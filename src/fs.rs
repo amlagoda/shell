@@ -4,7 +4,7 @@ pub mod fs {
     use std::os::unix::fs::PermissionsExt;
     use std::path::Path;
 
-    fn write_to_file(path: &str, content: &str, append: bool) -> Result<(), Error> {
+    pub fn write_to_file(path: &str, content: &str, append: bool) -> Result<(), Error> {
         OpenOptions::new()
             .create(true)
             .read(true)

@@ -1,5 +1,6 @@
 use crate::command::command::command;
 use crate::env::env::split_env_path;
+use crate::fs::fs::write_to_file;
 use crate::parser::parser::parse;
 use crossterm::{
     cursor::MoveLeft,
@@ -12,8 +13,8 @@ use std::process::ExitCode;
 
 mod command;
 mod env;
-mod parser;
 mod fs;
+mod parser;
 
 fn main() -> ExitCode {
     match enable_raw_mode() {
@@ -36,7 +37,7 @@ fn main() -> ExitCode {
     let r = split_env_path();
     if r.is_err() {
         println!("{}", r.unwrap_err().to_string());
-        return ExitCode::FAILURE;        
+        return ExitCode::FAILURE;
     }
     let r = r.unwrap();
 
@@ -172,10 +173,13 @@ fn main() -> ExitCode {
 
                     output = None;
 
-                    /*match write_to_file(path.as_str(), out.as_str(), mode == ">>") {
+                    match write_to_file(path.as_str(), out.as_str(), mode == ">>") {
                         Ok(_) => {}
-                        Err(e) => println!("{}: {}", path, e.to_string()),
-                    }*/
+                        Err(e) => {
+                            println!("{}: {}", path, e.to_string());
+                            return ExitCode::FAILURE;
+                        }
+                    }
                 } else {
                     let err = match error {
                         Some(e) => format!("{}\n", e),
@@ -184,10 +188,13 @@ fn main() -> ExitCode {
 
                     error = None;
 
-                    /*match write_to_file(path.as_str(), err.as_str(), mode == ">>") {
+                    match write_to_file(path.as_str(), err.as_str(), mode == ">>") {
                         Ok(_) => {}
-                        Err(e) => println!("{}: {}", path, e.to_string()),
-                    }*/
+                        Err(e) => {
+                            println!("{}: {}", path, e.to_string());
+                            return ExitCode::FAILURE;
+                        }
+                    }
                 }
             }
             None => {}
