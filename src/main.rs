@@ -9,7 +9,7 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, Clear, ClearType},
 };
-use std::io::{stdout, Write};
+use std::io::{stdout, Error, ErrorKind, Write};
 use std::process::ExitCode;
 
 mod command;
@@ -18,198 +18,113 @@ mod fs;
 mod keyboard;
 mod parser;
 
-fn main() -> ExitCode {
-    match enable_raw_mode() {
-        Ok(_) => {}
-        Err(e) => {
-            println!("{}", e.to_string());
-            return ExitCode::FAILURE;
-        }
-    }
-
+fn main() -> Result<(), Error> {
     let mut stdout = stdout();
     let mut input = String::new();
     let mut output: Option<String> = None;
     let mut error: Option<String> = None;
     let mut print: Option<String> = None;
-    let mut redirect: Option<[String; 3]> = None;
     let mut is_exit = false;
     let mut is_enter = false;
     let mut is_backspace = false;
 
     let r = split_env_path();
+
     if r.is_err() {
-        println!("{}", r.unwrap_err().to_string());
-        return ExitCode::FAILURE;
+        let msg = r.unwrap_err().to_string();
+        let err = Error::new(ErrorKind::Other, msg);
+        return Err(err);
     }
-    let r = r.unwrap();
 
-    let bin_paths = r.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
+    let bin_paths = r.unwrap();
 
-    match write!(stdout, "$ ") {
-        Ok(_) => match stdout.flush() {
-            Ok(_) => {}
-            Err(e) => {
-                println!("{}", e.to_string());
-                return ExitCode::FAILURE;
-            }
-        },
-        Err(e) => {
-            println!("{}", e.to_string());
-            return ExitCode::FAILURE;
-        }
-    }
+    enable_raw_mode()?;
+    write!(stdout, "$ ")?;
+    stdout.flush()?;
 
     loop {
-        match read() {
-            Ok(r) => {
-                let key = r.as_key_event();
+        let r = read()?;
+        let key = r.as_key_event();
 
-                if key.is_none() {
-                    continue;
-                }
-
-                (input, print, is_enter, is_exit, is_backspace) = handle_key(input, &key.unwrap());
-            }
-            Err(e) => {
-                println!("{}", e.to_string());
-                return ExitCode::FAILURE;
-            }
+        if key.is_none() {
+            continue;
         }
+
+        (input, print, is_enter, is_exit, is_backspace) = handle_key(input, &key.unwrap());
 
         if is_backspace {
-            match execute!(stdout, MoveLeft(1), Clear(ClearType::UntilNewLine)) {
-                Ok(_) => {}
-                Err(e) => {
-                    println!("{}", e.to_string());
-                    return ExitCode::FAILURE;
-                }
-            }
+            execute!(stdout, MoveLeft(1), Clear(ClearType::UntilNewLine))?;
         }
 
-        match print {
-            Some(r) => match write!(stdout, "{}", r) {
-                Ok(_) => match stdout.flush() {
-                    Ok(_) => print = None,
-                    Err(e) => {
-                        println!("{}", e.to_string());
-                        return ExitCode::FAILURE;
-                    }
-                },
-                Err(e) => {
-                    println!("{}", e.to_string());
-                    return ExitCode::FAILURE;
-                }
-            },
-            None => {}
+        if print.is_some() {
+            write!(stdout, "{}", print.unwrap())?;
+            stdout.flush()?;
+            print = None;
         }
 
         if is_enter {
-            let (name, args, r) = parse(input.as_str());
-            redirect = r;
+            let (name, args, redirect) = parse(input.as_str());
 
-            match name {
-                Some(r) => {
-                    let args = args.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
-                    (output, error, is_exit) = command(r.as_str(), &args, &bin_paths);
-                }
-                None => error = Some(String::from(": not found")),
+            if name.is_some() {
+                let name = name.unwrap();
+                let args = args.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
+                let paths = bin_paths.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
+
+                (output, error, is_exit) = command(name.as_str(), &args, &paths);
+            } else {
+                output = None;
+                error = Some(String::from(": not found"));
             }
 
             input.clear();
-        }
 
-        match redirect {
-            Some(rd) => {
-                let [flow, mode, path] = rd;
+            if redirect.is_some() {
+                let [flow, mode, path] = redirect.unwrap();
+                let mut to_write: Option<String> = None;
 
-                if flow == "1" {
-                    let out = match output {
-                        Some(r) => format!("{}\n", r),
-                        None => String::new(),
-                    };
-
+                if flow == "1" && output.is_some() {
+                    to_write = Some(output.unwrap());
                     output = None;
+                }
 
-                    match write_to_file(path.as_str(), out.as_str(), mode == ">>") {
-                        Ok(_) => {}
-                        Err(e) => {
-                            println!("{}: {}", path, e.to_string());
-                            return ExitCode::FAILURE;
-                        }
-                    }
-                } else {
-                    let err = match error {
-                        Some(e) => format!("{}\n", e),
-                        None => String::new(),
-                    };
-
+                if flow == "2" && error.is_some() {
+                    to_write = Some(error.unwrap());
                     error = None;
+                }
 
-                    match write_to_file(path.as_str(), err.as_str(), mode == ">>") {
-                        Ok(_) => {}
-                        Err(e) => {
-                            println!("{}: {}", path, e.to_string());
-                            return ExitCode::FAILURE;
-                        }
-                    }
+                if to_write.is_some() {
+                    let r = format!("{}\n", to_write.unwrap());
+                    write_to_file(path.as_str(), r.as_str(), mode == ">>")?;
                 }
             }
-            None => {}
-        }
 
-        redirect = None;
+            let mut to_print = error
+                .unwrap_or("".to_string())
+                .split("\n")
+                .into_iter()
+                .filter(|r| r.len() > 0)
+                .map(|r| r.to_string())
+                .collect::<Vec<String>>();
+           
+            to_print.append(&mut output
+                .unwrap_or("".to_string())
+                .split("\n")
+                .into_iter()
+                .filter(|r| r.len() > 0)
+                .map(|r| r.to_string())
+                .collect::<Vec<String>>());
 
-        let mut to_print = [error, output].into_iter().peekable();
-
-        loop {
-            match to_print.next() {
-                Some(r) => match r {
-                    Some(r) => {
-                        let mut rows = r.split("\n");
-
-                        loop {
-                            match rows.next() {
-                                Some(r) => match write!(stdout, "\r\n{}", r) {
-                                    Ok(_) => match stdout.flush() {
-                                        Ok(_) => {}
-                                        Err(e) => {
-                                            println!("{}", e.to_string());
-                                            return ExitCode::FAILURE;
-                                        }
-                                    },
-                                    Err(e) => {
-                                        println!("{}", e.to_string());
-                                        return ExitCode::FAILURE;
-                                    }
-                                },
-                                None => break,
-                            }
-                        }
-                    }
-                    None => {}
-                },
-                None => {
-                    error = None;
-                    output = None;
-                    break;
-                }
+            for r in to_print.iter() {
+                write!(stdout, "\r\n{}", r)?;
+                stdout.flush()?;
             }
-        }
 
-        if is_enter && !is_exit {
-            match write!(stdout, "\r\n$ ",) {
-                Ok(_) => match stdout.flush() {
-                    Ok(_) => {}
-                    Err(e) => {
-                        println!("{}", e.to_string());
-                        return ExitCode::FAILURE;
-                    }
-                },
-                Err(e) => {
-                    println!("{}", e.to_string());
-                    return ExitCode::FAILURE;
-                }
+            output = None;
+            error = None;
+
+            if !is_exit {
+                write!(stdout, "\r\n$ ")?;
+                stdout.flush()?;
             }
 
             is_enter = false;
@@ -220,14 +135,8 @@ fn main() -> ExitCode {
         }
     }
 
-    match disable_raw_mode() {
-        Ok(_) => {
-            println!(""); // %
-            ExitCode::SUCCESS
-        }
-        Err(e) => {
-            println!("{}", e.to_string());
-            ExitCode::FAILURE
-        }
-    }
+    disable_raw_mode()?;
+    println!(""); // %
+
+    Ok(())
 }
