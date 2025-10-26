@@ -89,7 +89,7 @@ pub mod command {
 
     fn command_echo(args: &Vec<&str>) -> String {
         args.iter()
-            .map(|r| *r)
+            .copied()
             .collect::<Vec<&str>>()
             .join(" ")
             .to_string()
@@ -122,8 +122,8 @@ pub mod command {
 
         let r = set_current_dir(path.as_str());
         if r.is_err() {
-            let msg = format!("cd: {}: {}", path.as_str(), r.unwrap_err().to_string());
-            return Err(Error::new(ErrorKind::Other, msg));
+            let msg = format!("cd: {}: {}", path.as_str(), r.unwrap_err());
+            return Err(Error::other(msg));
         }
 
         Ok(())

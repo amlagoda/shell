@@ -23,7 +23,7 @@ fn main() -> Result<(), Error> {
 
     if r.is_err() {
         let msg = r.unwrap_err().to_string();
-        let err = Error::new(ErrorKind::Other, msg);
+        let err = Error::other(msg);
         return Err(err);
     }
 
