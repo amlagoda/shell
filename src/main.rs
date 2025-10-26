@@ -92,7 +92,7 @@ fn main() -> Result<(), Error> {
                 .unwrap_or("".to_string())
                 .split("\n")
                 .into_iter()
-                .filter(|r| r.len() > 0)
+                .filter(|r| !r.is_empty())
                 .map(|r| r.to_string())
                 .collect::<Vec<String>>();
 
@@ -101,7 +101,7 @@ fn main() -> Result<(), Error> {
                     .unwrap_or("".to_string())
                     .split("\n")
                     .into_iter()
-                    .filter(|r| r.len() > 0)
+                    .filter(|r| !r.is_empty())
                     .map(|r| r.to_string())
                     .collect::<Vec<String>>(),
             );

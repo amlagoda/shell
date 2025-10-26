@@ -38,7 +38,7 @@ pub mod parser {
             }
         }
 
-        if redirect[2].len() > 0 {
+        if !redirect[2].is_empty() {
             (command, args_new, Some(redirect))
         } else {
             (command, args_new, None)
@@ -60,7 +60,7 @@ pub mod parser {
             let iter = input.next();
 
             if iter.is_none() {
-                if arg.len() > 0 {
+                if !arg.is_empty() {
                     args.push_back(arg);
                 }
                 break;
@@ -101,7 +101,7 @@ pub mod parser {
                     '\'' => mode = [MODE_SINGLE, MODE_NORMAL],
                     '\\' => mode = [MODE_SHIELD, MODE_NORMAL],
                     ' ' => {
-                        if arg.len() > 0 {
+                        if !arg.is_empty() {
                             args.push_back(arg);
                             arg = String::new();
                         }

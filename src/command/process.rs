@@ -11,7 +11,7 @@ pub mod process {
             let mut output = String::new();
             r.read_to_string(&mut output)?;
 
-            if output.len() > 0 {
+            if !output.is_empty() {
                 stderr = Some(output.trim().to_string());
             }
         }
@@ -21,7 +21,7 @@ pub mod process {
             let mut output = String::new();
             r.read_to_string(&mut output)?;
 
-            if output.len() > 0 {
+            if !output.is_empty() {
                 stdout = Some(output.trim().to_string());
             }
         }

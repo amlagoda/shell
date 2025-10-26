@@ -14,7 +14,7 @@ pub mod keyboard {
             KeyCode::Enter => is_enter = true,
 
             KeyCode::Backspace => {
-                if input.len() > 0 {
+                if !input.is_empty() {
                     input.pop();
                     is_backspace = true;
                 }
