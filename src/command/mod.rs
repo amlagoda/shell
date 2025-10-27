@@ -88,11 +88,7 @@ pub mod command {
     }
 
     fn command_echo(args: &Vec<&str>) -> String {
-        args.iter()
-            .copied()
-            .collect::<Vec<&str>>()
-            .join(" ")
-            .to_string()
+        args.to_vec().join(" ").to_string()
     }
 
     fn command_pwd() -> Result<String, Error> {
