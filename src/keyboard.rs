@@ -20,17 +20,17 @@ pub mod keyboard {
                 }
             }
 
-            KeyCode::Tab => {
-                if input == "ech" {
+            KeyCode::Tab => match input.as_str() {
+                "ech" => {
                     input.push_str("o ");
                     to_print = Some("o ".to_string());
                 }
-
-                if input == "exi" {
+                "exi" => {
                     input.push_str("t ");
                     to_print = Some("t ".to_string());
                 }
-            }
+                _ => to_print = Some("\x07".to_string()),
+            },
 
             KeyCode::Char(r) => {
                 let is_ctrl = key.modifiers == KeyModifiers::CONTROL;
