@@ -7,7 +7,7 @@ use crossterm::cursor::MoveLeft;
 use crossterm::event::read;
 use crossterm::execute;
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode, Clear, ClearType};
-use std::io::{stdout, Error, ErrorKind, Write};
+use std::io::{stdout, Error, Write};
 
 mod command;
 mod env;
@@ -21,10 +21,8 @@ fn main() -> Result<(), Error> {
 
     let r = split_env_path();
 
-    if r.is_err() {
-        let msg = r.unwrap_err().to_string();
-        let err = Error::other(msg);
-        return Err(err);
+    if let Err(e) = r {
+        return Err(Error::other(e.to_string()));
     }
 
     let bin_paths = r.unwrap();
@@ -58,8 +56,7 @@ fn main() -> Result<(), Error> {
             let mut error = Some(String::from(": not found"));
             let (name, args, redirect) = parse(input.as_str());
 
-            if name.is_some() {
-                let name = name.unwrap();
+            if let Some(name) = name {
                 let args = args.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
                 let paths = bin_paths.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
 
@@ -68,8 +65,7 @@ fn main() -> Result<(), Error> {
 
             input.clear();
 
-            if redirect.is_some() {
-                let [flow, mode, path] = redirect.unwrap();
+            if let Some([flow, mode, path]) = redirect {
                 let mut to_write: Option<String> = None;
 
                 if flow == "1" && output.is_some() {
@@ -91,7 +87,6 @@ fn main() -> Result<(), Error> {
             let mut to_print = error
                 .unwrap_or("".to_string())
                 .split("\n")
-                .into_iter()
                 .filter(|r| !r.is_empty())
                 .map(|r| r.to_string())
                 .collect::<Vec<String>>();
@@ -100,7 +95,6 @@ fn main() -> Result<(), Error> {
                 &mut output
                     .unwrap_or("".to_string())
                     .split("\n")
-                    .into_iter()
                     .filter(|r| !r.is_empty())
                     .map(|r| r.to_string())
                     .collect::<Vec<String>>(),
