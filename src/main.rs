@@ -66,22 +66,23 @@ fn main() -> Result<(), Error> {
             input.clear();
 
             if let Some([flow, mode, path]) = redirect {
-                let mut to_write: Option<String> = None;
+                let mut to_write = String::new();
 
                 if flow == "1" && output.is_some() {
-                    to_write = Some(output.unwrap());
+                    to_write = output.unwrap();
                     output = None;
                 }
 
                 if flow == "2" && error.is_some() {
-                    to_write = Some(error.unwrap());
+                    to_write = error.unwrap();
                     error = None;
                 }
 
-                if to_write.is_some() {
-                    let r = format!("{}\n", to_write.unwrap());
-                    write_to_file(path.as_str(), r.as_str(), mode == ">>")?;
+                if !to_write.is_empty() {
+                    to_write.push_str("\n");
                 }
+
+                write_to_file(path.as_str(), to_write.as_str(), mode == ">>")?;
             }
 
             let mut to_print = error
