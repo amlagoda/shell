@@ -20,7 +20,7 @@ pub mod redirect {
         let mut mode = String::new();
 
         for r in redirect.chars() {
-            if flow.len() == 0 {
+            if flow.is_empty() {
                 flow.push(r);
             } else {
                 mode.push(r);
