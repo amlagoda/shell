@@ -37,6 +37,35 @@ pub mod fs {
         None
     }
 
+    pub fn search_executable_files_in_paths(
+        starts_with: &str,
+        paths: &Vec<&str>,
+    ) -> Option<Vec<String>> {
+        let mut files = vec![];
+
+        for path in paths {
+            let dir = read_dir(path);
+
+            if dir.is_err() {
+                // errors remains here
+                // because we need to go down the list
+                continue;
+            }
+
+            let r = search_executable_files_in_dir(starts_with, dir.unwrap());
+
+            if let Some(mut f) = r {
+                files.append(&mut f);
+            }
+        }
+
+        if files.is_empty() {
+            None
+        } else {
+            Some(files)
+        }
+    }
+
     fn search_executable_file_in_dir(name: &str, dir: ReadDir) -> Option<String> {
         for entry in dir {
             if entry.is_err() {
@@ -55,12 +84,53 @@ pub mod fs {
         None
     }
 
+    fn search_executable_files_in_dir(starts_with: &str, dir: ReadDir) -> Option<Vec<String>> {
+        let mut files = vec![];
+
+        for entry in dir {
+            if entry.is_err() {
+                // errors remains here
+                // because we need to go down the list
+                continue;
+            };
+
+            let r = name_starts_with_and_executable(starts_with, &entry.unwrap());
+
+            if let Some(f) = r {
+                files.push(f);
+            }
+        }
+
+        if files.is_empty() {
+            None
+        } else {
+            Some(files)
+        }
+    }
+
     fn name_equals_and_executable(name: &str, entry: &DirEntry) -> Option<String> {
         if !is_executable_file(entry).ok()? {
             return None;
         }
 
         if name != entry.file_name().into_string().ok()? {
+            return None;
+        }
+
+        entry.path().to_str().map(|r| Some(r.to_string()))?
+    }
+
+    fn name_starts_with_and_executable(starts_with: &str, entry: &DirEntry) -> Option<String> {
+        if !is_executable_file(entry).ok()? {
+            return None;
+        }
+
+        if !entry
+            .file_name()
+            .into_string()
+            .ok()?
+            .starts_with(starts_with)
+        {
             return None;
         }
 
@@ -96,6 +166,19 @@ pub mod fs {
             assert!(r.is_none());
 
             let r = search_executable_file_in_paths("not_exists", &paths);
+            assert!(r.is_none());
+        }
+
+        #[test]
+        fn test_search_executable_files_in_paths() {
+            let r = get_fixture_dir();
+            let paths = vec![r.as_str()];
+
+            let r = search_executable_files_in_paths("ex", &paths).unwrap();
+            let f = vec![format!("{}exe", get_fixture_dir())];
+            assert_eq!(f, r);
+
+            let r = search_executable_files_in_paths("not", &paths);
             assert!(r.is_none());
         }
 

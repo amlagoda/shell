@@ -79,7 +79,7 @@ fn main() -> Result<(), Error> {
                 }
 
                 if !to_write.is_empty() {
-                    to_write.push_str("\n");
+                    to_write.push('\n');
                 }
 
                 write_to_file(path.as_str(), to_write.as_str(), mode == ">>")?;
