@@ -45,7 +45,7 @@ pub mod fs {
                 continue;
             };
 
-            let r = match_name_and_executable_file(name, &entry.unwrap());
+            let r = name_equals_and_executable(name, &entry.unwrap());
 
             if r.is_some() {
                 return r;
@@ -55,7 +55,7 @@ pub mod fs {
         None
     }
 
-    fn match_name_and_executable_file(name: &str, entry: &DirEntry) -> Option<String> {
+    fn name_equals_and_executable(name: &str, entry: &DirEntry) -> Option<String> {
         if !is_executable_file(entry).ok()? {
             return None;
         }
