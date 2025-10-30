@@ -1,9 +1,12 @@
 pub mod keyboard {
+    use crate::fs::fs::search_executable_files_in_paths;
     use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
     pub fn handle_key(
         mut input: String,
         key: &KeyEvent,
+        commands: &Vec<&str>,
+        bin_paths: &Vec<&str>,
     ) -> (String, Option<String>, bool, bool, bool) {
         let mut to_print: Option<String> = None;
         let mut is_enter = false;
@@ -20,17 +23,18 @@ pub mod keyboard {
                 }
             }
 
-            KeyCode::Tab => match input.as_str() {
-                "ech" => {
-                    input.push_str("o ");
-                    to_print = Some("o ".to_string());
+            KeyCode::Tab => {
+                let r = complete(input.as_str(), commands, bin_paths);
+
+                to_print = Some("\x07".to_string());
+
+                if let Some((end, _)) = r {
+                    if let Some(r) = end {
+                        to_print = Some(format!("{} ", r));
+                        input.push_str(format!("{} ", r).as_str());
+                    }
                 }
-                "exi" => {
-                    input.push_str("t ");
-                    to_print = Some("t ".to_string());
-                }
-                _ => to_print = Some("\x07".to_string()),
-            },
+            }
 
             KeyCode::Char(r) => {
                 let is_ctrl = key.modifiers == KeyModifiers::CONTROL;
@@ -52,6 +56,41 @@ pub mod keyboard {
         (input, to_print, is_enter, is_exit, is_backspace)
     }
 
+    fn complete(
+        input: &str,
+        commands: &Vec<&str>,
+        paths: &Vec<&str>,
+    ) -> Option<(Option<String>, Option<Vec<String>>)> {
+        if let Some(r) = complete_input(input, commands) {
+            let (end, _) = r;
+
+            if end.is_some() {
+                return Some((end, None));
+            }
+        }
+
+        let r = search_executable_files_in_paths(input, paths);
+
+        if r.is_none() {
+            return None;
+        }
+
+        let r = r.unwrap();
+        let r = r.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
+        let r = paths_to_names(&r);
+        let variants = r.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
+
+        if let Some(r) = complete_input(input, &variants) {
+            let (end, _) = r;
+
+            if end.is_some() {
+                return Some((end, None));
+            }
+        }
+
+        None
+    }
+
     fn complete_input(
         input: &str,
         variants: &Vec<&str>,
@@ -63,7 +102,7 @@ pub mod keyboard {
         let mut matches: Vec<String> = vec![];
 
         for r in variants {
-            if r.starts_with(input) {
+            if r.starts_with(input) && r != &input {
                 matches.push(r.to_string());
             }
         }
@@ -128,40 +167,31 @@ pub mod keyboard {
 
             assert_eq!(None, complete_input("foo", &vec!("bar")));
 
-            let (end, matches) = ("oo".to_string(), vec!["foo".to_string()]);
+            assert_eq!(None, complete_input("foo", &vec!("foo")));
+
+            assert_eq!(None, complete_input("foo", &vec!("foo", "bar")));
+
+            assert_eq!(None, complete_input("foo", &vec!("foo", "foo")));
+
+            let end = "oo".to_string();
+            let matches = vec!["foo".to_string()];
             assert_eq!(
                 Some((Some(end), Some(matches))),
                 complete_input("f", &vec!("foo"))
             );
 
-            let (end, matches) = ("".to_string(), vec!["foo".to_string()]);
-            assert_eq!(
-                Some((Some(end), Some(matches))),
-                complete_input("foo", &vec!("foo"))
-            );
-
-            let (end, matches) = ("oo".to_string(), vec!["foo".to_string()]);
+            let end = "oo".to_string();
+            let matches = vec!["foo".to_string()];
             assert_eq!(
                 Some((Some(end), Some(matches))),
                 complete_input("f", &vec!("foo", "bar"))
             );
 
-            let (end, matches) = ("".to_string(), vec!["foo".to_string()]);
-            assert_eq!(
-                Some((Some(end), Some(matches))),
-                complete_input("foo", &vec!("foo", "bar"))
-            );
-
-            let (end, matches) = ("oo".to_string(), vec!["foo".to_string(), "foo".to_string()]);
+            let end = "oo".to_string();
+            let matches = vec!["foo".to_string(), "foo".to_string()];
             assert_eq!(
                 Some((Some(end), Some(matches))),
                 complete_input("f", &vec!("foo", "foo"))
-            );
-
-            let (end, matches) = ("".to_string(), vec!["foo".to_string(), "foo".to_string()]);
-            assert_eq!(
-                Some((Some(end), Some(matches))),
-                complete_input("foo", &vec!("foo", "foo"))
             );
 
             let end: Option<String> = None;
@@ -169,6 +199,13 @@ pub mod keyboard {
             assert_eq!(
                 Some((end, Some(matches))),
                 complete_input("f", &vec!("foo", "fooo"))
+            );
+
+            let end = "o".to_string();
+            let matches = vec!["fooo".to_string()];
+            assert_eq!(
+                Some((Some(end), Some(matches))),
+                complete_input("foo", &vec!("foo", "fooo"))
             );
         }
     }

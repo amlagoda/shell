@@ -1,4 +1,4 @@
-use crate::command::command::command;
+use crate::command::command::{command, list};
 use crate::env::env::split_env_path;
 use crate::fs::fs::write_to_file;
 use crate::keyboard::keyboard::handle_key;
@@ -25,7 +25,8 @@ fn main() -> Result<(), Error> {
         return Err(Error::other(e.to_string()));
     }
 
-    let bin_paths = r.unwrap();
+    let r = r.unwrap();
+    let bin_paths = r.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
 
     enable_raw_mode()?;
     write!(stdout, "$ ")?;
@@ -39,7 +40,11 @@ fn main() -> Result<(), Error> {
             continue;
         }
 
-        let (i, to_print, is_enter, mut is_exit, is_backspace) = handle_key(input, &key.unwrap());
+        let r = list();
+        let commands = r.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
+
+        let (i, to_print, is_enter, mut is_exit, is_backspace) =
+            handle_key(input, &key.unwrap(), &commands, &bin_paths);
         input = i;
 
         if is_backspace {
@@ -58,9 +63,7 @@ fn main() -> Result<(), Error> {
 
             if let Some(name) = name {
                 let args = args.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
-                let paths = bin_paths.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
-
-                (output, error, is_exit) = command(name.as_str(), &args, &paths);
+                (output, error, is_exit) = command(name.as_str(), &args, &bin_paths);
             }
 
             input.clear();

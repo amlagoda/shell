@@ -36,14 +36,8 @@ pub mod command {
 
         match name {
             COMMAND_TYPE => {
-                let commands = vec![
-                    COMMAND_TYPE,
-                    COMMAND_ECHO,
-                    COMMAND_PWD,
-                    COMMAND_CD,
-                    COMMAND_EXIT,
-                ];
-
+                let r = list();
+                let commands = r.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
                 let command = *args.iter().next().unwrap_or(&"");
 
                 match command_type(command, &commands, bin_paths) {
