@@ -8,11 +8,11 @@ pub mod command {
     use std::io::{Error, ErrorKind};
     use std::process::{Command, Stdio};
 
-    const COMMAND_TYPE: &str = "type";
-    const COMMAND_ECHO: &str = "echo";
-    const COMMAND_PWD: &str = "pwd";
-    const COMMAND_CD: &str = "cd";
-    const COMMAND_EXIT: &str = "exit";
+    pub const COMMAND_TYPE: &str = "type";
+    pub const COMMAND_ECHO: &str = "echo";
+    pub const COMMAND_PWD: &str = "pwd";
+    pub const COMMAND_CD: &str = "cd";
+    pub const COMMAND_EXIT: &str = "exit";
 
     pub fn command(
         name: &str,
