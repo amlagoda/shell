@@ -28,11 +28,9 @@ pub mod keyboard {
 
                 to_print = Some("\x07".to_string());
 
-                if let Some((end, _)) = r {
-                    if let Some(r) = end {
-                        to_print = Some(format!("{} ", r));
-                        input.push_str(format!("{} ", r).as_str());
-                    }
+                if let Some((Some(end), _)) = r {
+                    to_print = Some(format!("{} ", end));
+                    input.push_str(format!("{} ", end).as_str());
                 }
             }
 
@@ -61,34 +59,20 @@ pub mod keyboard {
         commands: &Vec<&str>,
         paths: &Vec<&str>,
     ) -> Option<(Option<String>, Option<Vec<String>>)> {
-        if let Some(r) = complete_input(input, commands) {
-            let (end, _) = r;
-
-            if end.is_some() {
-                return Some((end, None));
-            }
+        if let Some((Some(end), _)) = complete_input(input, commands) {
+            return Some((Some(end), None));
         }
 
-        let r = search_executable_files_in_paths(input, paths);
-
-        if r.is_none() {
-            return None;
-        }
-
-        let r = r.unwrap();
+        let r = search_executable_files_in_paths(input, paths)?;
         let r = r.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
         let r = paths_to_names(&r);
         let variants = r.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
 
-        if let Some(r) = complete_input(input, &variants) {
-            let (end, _) = r;
-
-            if end.is_some() {
-                return Some((end, None));
-            }
+        if let Some((Some(end), _)) = complete_input(input, &variants) {
+            Some((Some(end), None))
+        } else {
+            None
         }
-
-        None
     }
 
     fn complete_input(
