@@ -1,8 +1,8 @@
-use crate::command::command::{command, list};
-use crate::env::env::split_env_path;
-use crate::fs::fs::write_to_file;
-use crate::keyboard::keyboard::handle_key;
-use crate::parser::parser::parse;
+use crate::command::{command, list};
+use crate::env::split_env_path;
+use crate::fs::write_to_file;
+use crate::keyboard::handle_key;
+use crate::parser::parse;
 use crossterm::cursor::MoveLeft;
 use crossterm::event::{read, KeyEvent};
 use crossterm::execute;
