@@ -147,7 +147,7 @@ fn command_from_paths(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::env::env::split_env_path;
+    use crate::env::split_env_path;
 
     #[test]
     fn test_command_from_paths() {
