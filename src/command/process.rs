@@ -6,8 +6,7 @@ pub mod process {
         let mut stderr = None;
         let mut stdout = None;
 
-        if process.stderr.is_some() {
-            let mut r = process.stderr.unwrap();
+        if let Some(mut r) = process.stderr {
             let mut output = String::new();
             r.read_to_string(&mut output)?;
 
@@ -16,8 +15,7 @@ pub mod process {
             }
         }
 
-        if process.stdout.is_some() {
-            let mut r = process.stdout.unwrap();
+        if let Some(mut r) = process.stdout {
             let mut output = String::new();
             r.read_to_string(&mut output)?;
 

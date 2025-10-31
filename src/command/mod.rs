@@ -82,14 +82,12 @@ pub mod command {
             return Ok(format!("{} is a shell builtin", command));
         }
 
-        let r = search_executable_file_in_paths(command, paths);
-
-        if r.is_some() {
-            return Ok(format!("{} is {}", command, r.unwrap()));
+        if let Some(r) = search_executable_file_in_paths(command, paths) {
+            Ok(format!("{} is {}", command, r))
+        } else {
+            let msg = format!("{}: not found", command);
+            Err(Error::new(ErrorKind::NotFound, msg))
         }
-
-        let msg = format!("{}: not found", command);
-        Err(Error::new(ErrorKind::NotFound, msg))
     }
 
     fn command_echo(args: &Vec<&str>) -> String {
