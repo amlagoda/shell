@@ -4,7 +4,7 @@ use crate::fs::fs::write_to_file;
 use crate::keyboard::keyboard::handle_key;
 use crate::parser::parser::parse;
 use crossterm::cursor::MoveLeft;
-use crossterm::event::read;
+use crossterm::event::{read, KeyEvent};
 use crossterm::execute;
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode, Clear, ClearType};
 use std::io::{stdout, Error, Write};
@@ -18,6 +18,7 @@ mod parser;
 fn main() -> Result<(), Error> {
     let mut stdout = stdout();
     let mut input = String::new();
+    let mut previous_key: Option<KeyEvent> = None;
 
     let r = split_env_path();
 
@@ -43,16 +44,22 @@ fn main() -> Result<(), Error> {
         let r = list();
         let commands = r.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
 
-        let (i, to_print, is_enter, mut is_exit, is_backspace) =
-            handle_key(input, &key.unwrap(), &commands, &bin_paths);
+        let (i, to_print, hint, is_enter, mut is_exit, is_backspace) =
+            handle_key(input, &key.unwrap(), &previous_key, &commands, &bin_paths);
+        previous_key = Some(key.unwrap());
         input = i;
 
         if is_backspace {
             execute!(stdout, MoveLeft(1), Clear(ClearType::UntilNewLine))?;
         }
 
-        if to_print.is_some() {
-            write!(stdout, "{}", to_print.unwrap())?;
+        if let Some(r) = to_print {
+            write!(stdout, "{}", r)?;
+            stdout.flush()?;
+        }
+
+        if let Some(r) = hint {
+            write!(stdout, "\r\n{}\r\n$ {}", r, input)?;
             stdout.flush()?;
         }
 
