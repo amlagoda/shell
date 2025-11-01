@@ -101,7 +101,19 @@ fn complete(
     if let Some(mut r) = variants {
         r.sort_unstable();
         r.dedup();
-        Some((None, Some(r)))
+
+        let short: String = r.iter().min_by_key(|r| r.len()).unwrap().to_string();
+
+        let is_chain = r
+            .iter()
+            .filter(|&r| r != &short)
+            .all(|r| r.starts_with(short.as_str()));
+
+        if is_chain {
+            Some((Some(short.replacen(input, "", 1)), None))
+        } else {
+            Some((None, Some(r)))
+        }
     } else {
         None
     }
@@ -186,8 +198,12 @@ mod tests {
         let f = complete("f", &vec!["foo"], &vec![]);
         assert_eq!(Some((Some(r), None)), f);
 
-        let r = vec!["foo".to_string(), "fooo".to_string()];
+        let r = "oo".to_string();
         let f = complete("f", &vec!["foo", "fooo"], &vec![]);
+        assert_eq!(Some((Some(r), None)), f);
+
+        let r = vec!["foo".to_string(), "fooo".to_string(), "fz".to_string()];
+        let f = complete("f", &vec!["foo", "fooo", "fz"], &vec![]);
         assert_eq!(Some((None, Some(r))), f);
 
         let path = get_fixture_dir();
@@ -198,9 +214,9 @@ mod tests {
         let f = complete("e", &vec![], &vec![&path]);
         assert_eq!(Some((Some(r), None)), f);
 
-        let r = vec!["foo".to_string(), "fooo".to_string()];
+        let r = "oo".to_string();
         let f = complete("f", &vec![], &vec![&path]);
-        assert_eq!(Some((None, Some(r))), f);
+        assert_eq!(Some((Some(r), None)), f);
 
         let r = "ar".to_string();
         let f = complete("b", &vec!["bar"], &vec![&path]);
@@ -210,17 +226,17 @@ mod tests {
         let f = complete("e", &vec!["bar"], &vec![&path]);
         assert_eq!(Some((Some(r), None)), f);
 
-        let r = vec!["bar".to_string(), "barr".to_string()];
+        let r = "ar".to_string();
         let f = complete("b", &vec!["bar", "barr"], &vec![&path]);
-        assert_eq!(Some((None, Some(r))), f);
+        assert_eq!(Some((Some(r), None)), f);
 
-        let r = vec!["foo".to_string(), "fooo".to_string()];
+        let r = "oo".to_string();
         let f = complete("f", &vec!["bar"], &vec![&path]);
-        assert_eq!(Some((None, Some(r))), f);
+        assert_eq!(Some((Some(r), None)), f);
 
-        let r = vec!["foo".to_string(), "fooo".to_string()];
+        let r = "oo".to_string();
         let f = complete("f", &vec!["foo", "fooo"], &vec![&path]);
-        assert_eq!(Some((None, Some(r))), f);
+        assert_eq!(Some((Some(r), None)), f);
     }
 
     #[test]
