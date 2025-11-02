@@ -38,8 +38,8 @@ pub fn handle_key(
                         }
                     }
                 } else if let Some(r) = end {
-                    input.push_str(format!("{} ", r).as_str());
-                    to_print = Some(format!("{} ", r));
+                    input.push_str(r.as_str());
+                    to_print = Some(r);
                 }
             }
         }
@@ -102,18 +102,7 @@ fn complete(
         r.sort_unstable();
         r.dedup();
 
-        let short: String = r.iter().min_by_key(|r| r.len()).unwrap().to_string();
-
-        let is_chain = r
-            .iter()
-            .filter(|&r| r != &short)
-            .all(|r| r.starts_with(short.as_str()));
-
-        if is_chain {
-            Some((Some(short.replacen(input, "", 1)), None))
-        } else {
-            Some((None, Some(r)))
-        }
+        Some((None, Some(r)))
     } else {
         None
     }
@@ -135,35 +124,31 @@ fn complete_input(
         }
     }
 
+    matches.sort_unstable();
+    matches.dedup();
+
     let len = matches.len();
 
     if len == 0 {
         return None;
     }
 
-    if len == 1 {
-        let end = matches[0].replacen(input, "", 1);
-        let matches = matches
-            .iter()
-            .map(|r| r.to_string())
-            .collect::<Vec<String>>();
+    let short = matches.iter().min_by_key(|r| r.len()).unwrap();
 
-        return Some((Some(end), Some(matches)));
+    if len == 1 {
+        let end = format!("{} ", short.replacen(input, "", 1));
+        return Some((Some(end), None));
     }
 
-    let mut unique = matches.clone();
-    unique.sort_unstable();
-    unique.dedup();
-
-    let matches = matches
+    let is_chain = matches
         .iter()
-        .map(|r| r.to_string())
-        .collect::<Vec<String>>();
+        .filter(|&r| r != short)
+        .all(|r| r.starts_with(short.as_str()));
 
-    if len == unique.len() {
-        Some((None, Some(matches)))
+    if is_chain {
+        Some((Some(short.replacen(input, "", 1)), None))
     } else {
-        Some((Some(matches[0].replace(input, "")), Some(matches)))
+        Some((None, Some(matches)))
     }
 }
 
@@ -181,62 +166,27 @@ mod tests {
 
     #[test]
     fn test_complete() {
-        assert_eq!(None, complete("", &vec!(), &vec!()));
-
-        assert_eq!(None, complete("foo", &vec!(), &vec!()));
-
-        assert_eq!(None, complete("", &vec!("foo"), &vec!()));
-
-        assert_eq!(None, complete("", &vec!(), &vec!("foo")));
-
-        assert_eq!(None, complete("", &vec!("foo"), &vec!("bar")));
-
-        let f = complete("foo", &vec!["bar"], &vec![]);
-        assert_eq!(None, f);
-
-        let r = "oo".to_string();
-        let f = complete("f", &vec!["foo"], &vec![]);
-        assert_eq!(Some((Some(r), None)), f);
-
-        let r = "oo".to_string();
-        let f = complete("f", &vec!["foo", "fooo"], &vec![]);
-        assert_eq!(Some((Some(r), None)), f);
-
-        let r = vec!["foo".to_string(), "fooo".to_string(), "fz".to_string()];
-        let f = complete("f", &vec!["foo", "fooo", "fz"], &vec![]);
-        assert_eq!(Some((None, Some(r))), f);
-
         let path = get_fixture_dir();
 
-        assert_eq!(None, complete("bar", &vec!(), &vec!(&path)));
+        let r = complete("f", &vec!["bar"], &vec![format!("{}1/", path).as_str()]);
+        let f = (Some("oo ".to_string()), None);
+        assert_eq!(Some(f), r);
 
-        let r = "xe".to_string();
-        let f = complete("e", &vec![], &vec![&path]);
-        assert_eq!(Some((Some(r), None)), f);
+        let r = complete("f", &vec!["fooo"], &vec![format!("{}1/", path).as_str()]);
+        let f = (Some("ooo ".to_string()), None);
+        assert_eq!(Some(f), r);
 
-        let r = "oo".to_string();
-        let f = complete("f", &vec![], &vec![&path]);
-        assert_eq!(Some((Some(r), None)), f);
-
-        let r = "ar".to_string();
-        let f = complete("b", &vec!["bar"], &vec![&path]);
-        assert_eq!(Some((Some(r), None)), f);
-
-        let r = "xe".to_string();
-        let f = complete("e", &vec!["bar"], &vec![&path]);
-        assert_eq!(Some((Some(r), None)), f);
-
-        let r = "ar".to_string();
-        let f = complete("b", &vec!["bar", "barr"], &vec![&path]);
-        assert_eq!(Some((Some(r), None)), f);
-
-        let r = "oo".to_string();
-        let f = complete("f", &vec!["bar"], &vec![&path]);
-        assert_eq!(Some((Some(r), None)), f);
-
-        let r = "oo".to_string();
-        let f = complete("f", &vec!["foo", "fooo"], &vec![&path]);
-        assert_eq!(Some((Some(r), None)), f);
+        let r = complete(
+            "f",
+            &vec!["foo", "fii"],
+            &vec![format!("{}2/", path).as_str()],
+        );
+        let m = vec!["fii", "foo", "fyy"]
+            .iter()
+            .map(|r| r.to_string())
+            .collect::<Vec<String>>();
+        let f = (None, Some(m));
+        assert_eq!(Some(f), r);
     }
 
     #[test]
@@ -248,54 +198,35 @@ mod tests {
 
     #[test]
     fn test_complete_input() {
-        assert_eq!(None, complete_input("", &vec!()));
-
-        assert_eq!(None, complete_input("foo", &vec!()));
-
-        assert_eq!(None, complete_input("", &vec!("foo")));
+        assert_eq!(None, complete_input("foo", &vec!("foo")));
 
         assert_eq!(None, complete_input("foo", &vec!("bar")));
 
-        assert_eq!(None, complete_input("foo", &vec!("foo")));
-
-        assert_eq!(None, complete_input("foo", &vec!("foo", "bar")));
-
         assert_eq!(None, complete_input("foo", &vec!("foo", "foo")));
 
-        let end = "oo".to_string();
-        let matches = vec!["foo".to_string()];
-        assert_eq!(
-            Some((Some(end), Some(matches))),
-            complete_input("f", &vec!("foo"))
-        );
+        let r = complete_input("f", &vec!["fo", "foo", "fooo"]);
+        let f = (Some("o".to_string()), None);
+        assert_eq!(Some(f), r);
 
-        let end = "oo".to_string();
-        let matches = vec!["foo".to_string()];
-        assert_eq!(
-            Some((Some(end), Some(matches))),
-            complete_input("f", &vec!("foo", "bar"))
-        );
+        let r = complete_input("f", &vec!["fo", "foo"]);
+        let f = (Some("o".to_string()), None);
+        assert_eq!(Some(f), r);
 
-        let end = "oo".to_string();
-        let matches = vec!["foo".to_string(), "foo".to_string()];
-        assert_eq!(
-            Some((Some(end), Some(matches))),
-            complete_input("f", &vec!("foo", "foo"))
-        );
+        let r = complete_input("f", &vec!["foo", "foo"]);
+        let f = (Some("oo ".to_string()), None);
+        assert_eq!(Some(f), r);
 
-        let end: Option<String> = None;
-        let matches = vec!["foo".to_string(), "fooo".to_string()];
-        assert_eq!(
-            Some((end, Some(matches))),
-            complete_input("f", &vec!("foo", "fooo"))
-        );
+        let r = complete_input("f", &vec!["foo"]);
+        let f = (Some("oo ".to_string()), None);
+        assert_eq!(Some(f), r);
 
-        let end = "o".to_string();
-        let matches = vec!["fooo".to_string()];
-        assert_eq!(
-            Some((Some(end), Some(matches))),
-            complete_input("foo", &vec!("foo", "fooo"))
-        );
+        let r = complete_input("f", &vec!["fo", "foo", "fi", "fii"]);
+        let m = vec!["fi", "fii", "fo", "foo"]
+            .iter()
+            .map(|r| r.to_string())
+            .collect::<Vec<String>>();
+        let f = (None, Some(m));
+        assert_eq!(Some(f), r);
     }
 
     fn get_fixture_dir() -> String {
