@@ -17,19 +17,13 @@ pub fn write_to_file(path: &str, content: &str, append: bool) -> Result<(), Erro
 }
 
 pub fn search_executable_file_in_paths(name: &str, paths: &Vec<&str>) -> Option<String> {
+    // errors remains here
+    // because we need to go down the list
     for path in paths {
-        let dir = read_dir(path);
-
-        if dir.is_err() {
-            // errors remains here
-            // because we need to go down the list
-            continue;
-        }
-
-        let r = search_executable_file_in_dir(name, dir.unwrap());
-
-        if r.is_some() {
-            return r;
+        if let Ok(dir) = read_dir(path) {
+            if let Some(r) = search_executable_file_in_dir(name, dir) {
+                return Some(r);
+            }
         }
     }
 
@@ -43,18 +37,12 @@ pub fn search_executable_files_in_paths(
     let mut files = vec![];
 
     for path in paths {
-        let dir = read_dir(path);
-
-        if dir.is_err() {
-            // errors remains here
-            // because we need to go down the list
-            continue;
-        }
-
-        let r = search_executable_files_in_dir(starts_with, dir.unwrap());
-
-        if let Some(mut f) = r {
-            files.append(&mut f);
+        // errors remains here
+        // because we need to go down the list
+        if let Ok(dir) = read_dir(path) {
+            if let Some(mut r) = search_executable_files_in_dir(starts_with, dir) {
+                files.append(&mut r);
+            }
         }
     }
 
@@ -66,17 +54,11 @@ pub fn search_executable_files_in_paths(
 }
 
 fn search_executable_file_in_dir(name: &str, dir: ReadDir) -> Option<String> {
-    for entry in dir {
-        if entry.is_err() {
-            // errors remains here
-            // because we need to go down the list
-            continue;
-        };
-
-        let r = name_equals_and_executable(name, &entry.unwrap());
-
-        if r.is_some() {
-            return r;
+    // errors remains here
+    // because we need to go down the list
+    for entry in dir.flatten() {
+        if let Some(r) = name_equals_and_executable(name, &entry) {
+            return Some(r);
         }
     }
 
@@ -84,19 +66,13 @@ fn search_executable_file_in_dir(name: &str, dir: ReadDir) -> Option<String> {
 }
 
 fn search_executable_files_in_dir(starts_with: &str, dir: ReadDir) -> Option<Vec<String>> {
+    // errors remains here
+    // because we need to go down the list
     let mut files = vec![];
 
-    for entry in dir {
-        if entry.is_err() {
-            // errors remains here
-            // because we need to go down the list
-            continue;
-        };
-
-        let r = name_starts_with_and_executable(starts_with, &entry.unwrap());
-
-        if let Some(f) = r {
-            files.push(f);
+    for entry in dir.flatten() {
+        if let Some(r) = name_starts_with_and_executable(starts_with, &entry) {
+            files.push(r);
         }
     }
 

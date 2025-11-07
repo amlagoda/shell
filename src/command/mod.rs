@@ -108,15 +108,13 @@ fn command_cd(path: &str) -> Result<(), Error> {
         path = home_dir().ok_or(e1)?.to_str().ok_or(e2)?.to_string();
     }
 
-    let r = read_dir(path.as_str()); // exists, is dir, allowed
-    if r.is_err() {
+    if read_dir(path.as_str()).is_err() {
         let msg = format!("cd: {}: No such file or directory", path);
         return Err(Error::new(ErrorKind::NotFound, msg));
     }
 
-    let r = set_current_dir(path.as_str());
-    if r.is_err() {
-        let msg = format!("cd: {}: {}", path.as_str(), r.unwrap_err());
+    if let Err(r) = set_current_dir(path.as_str()) {
+        let msg = format!("cd: {}: {}", path.as_str(), r);
         return Err(Error::other(msg));
     }
 
