@@ -2,13 +2,20 @@ pub fn is_redirect(arg: &str) -> bool {
     [">", "1>", "2>", ">>", "1>>", "2>>"].contains(&arg)
 }
 
-pub fn normalize_and_parse_redirect(arg: &str) -> Redirect {
-    parse_redirect(&normalize_redirect(arg))
+pub fn to_redirect(redirect: &str, path: &str) -> Redirect {
+    let (flow, mode) = parse_redirect(normalize_redirect(redirect).as_str());
+
+    Redirect {
+        flow: flow,
+        mode: mode,
+        path: path.to_string(),
+    }
 }
 
 pub struct Redirect {
     flow: RedirectFlow,
     mode: RedirectMode,
+    path: String,
 }
 
 pub enum RedirectFlow {
@@ -29,23 +36,24 @@ fn normalize_redirect(redirect: &str) -> String {
     }
 }
 
-fn parse_redirect(redirect: &str) -> Redirect {
+fn parse_redirect(redirect: &str) -> (RedirectFlow, RedirectMode) {
     let chars = redirect.chars().collect::<Vec<char>>();
     let is_stderr = chars.first().is_some_and(|r| r == &'2');
     let is_append = chars.len() == 3;
 
-    Redirect {
-        flow: if is_stderr {
-            RedirectFlow::Stderr
-        } else {
-            RedirectFlow::Stdout
-        },
-        mode: if is_append {
-            RedirectMode::Append
-        } else {
-            RedirectMode::Rewrite
-        },
-    }
+    let flow = if is_stderr {
+        RedirectFlow::Stderr
+    } else {
+        RedirectFlow::Stdout
+    };
+
+    let mode = if is_append {
+        RedirectMode::Append
+    } else {
+        RedirectMode::Rewrite
+    };
+
+    (flow, mode)
 }
 
 #[cfg(test)]
@@ -58,8 +66,8 @@ mod tests {
     }
 
     #[test]
-    fn test_normalize_and_parse_redirect() {
-        let r = normalize_and_parse_redirect("2>");
+    fn test_to_redirect() {
+        let r = to_redirect("2>", "path");
 
         let flow = match r.flow {
             RedirectFlow::Stdout => "stdout",
@@ -73,6 +81,7 @@ mod tests {
 
         assert_eq!("stderr", flow);
         assert_eq!("rewrite", mode);
+        assert_eq!("path", r.path);
     }
 
     #[test]
@@ -82,14 +91,14 @@ mod tests {
 
     #[test]
     fn test_parse_redirect() {
-        let r = parse_redirect("2>>");
+        let (flow, mode) = parse_redirect("2>>");
 
-        let flow = match r.flow {
+        let flow = match flow {
             RedirectFlow::Stdout => "stdout",
             RedirectFlow::Stderr => "stderr",
         };
 
-        let mode = match r.mode {
+        let mode = match mode {
             RedirectMode::Rewrite => "rewrite",
             RedirectMode::Append => "append",
         };
