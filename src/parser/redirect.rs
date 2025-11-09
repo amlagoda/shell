@@ -2,8 +2,23 @@ pub fn is_redirect(arg: &str) -> bool {
     [">", "1>", "2>", ">>", "1>>", "2>>"].contains(&arg)
 }
 
-pub fn normalize_and_parse_redirect(arg: &str) -> [String; 2] {
+pub fn normalize_and_parse_redirect(arg: &str) -> Redirect {
     parse_redirect(&normalize_redirect(arg))
+}
+
+pub struct Redirect {
+    flow: RedirectFlow,
+    mode: RedirectMode,
+}
+
+pub enum RedirectFlow {
+    Stdout,
+    Stderr,
+}
+
+pub enum RedirectMode {
+    Rewrite,
+    Append,
 }
 
 fn normalize_redirect(redirect: &str) -> String {
@@ -14,19 +29,23 @@ fn normalize_redirect(redirect: &str) -> String {
     }
 }
 
-fn parse_redirect(redirect: &str) -> [String; 2] {
-    let mut flow = String::new();
-    let mut mode = String::new();
+fn parse_redirect(redirect: &str) -> Redirect {
+    let chars = redirect.chars().collect::<Vec<char>>();
+    let is_stderr = chars.first().is_some_and(|r| r == &'2');
+    let is_append = chars.len() == 3;
 
-    for r in redirect.chars() {
-        if flow.is_empty() {
-            flow.push(r);
+    Redirect {
+        flow: if is_stderr {
+            RedirectFlow::Stderr
         } else {
-            mode.push(r);
-        }
+            RedirectFlow::Stdout
+        },
+        mode: if is_append {
+            RedirectMode::Append
+        } else {
+            RedirectMode::Rewrite
+        },
     }
-
-    [flow, mode]
 }
 
 #[cfg(test)]
@@ -40,10 +59,20 @@ mod tests {
 
     #[test]
     fn test_normalize_and_parse_redirect() {
-        assert_eq!(
-            ["2", ">"].map(|r| r.to_string()),
-            normalize_and_parse_redirect("2>")
-        )
+        let r = normalize_and_parse_redirect("2>");
+
+        let flow = match r.flow {
+            RedirectFlow::Stdout => "stdout",
+            RedirectFlow::Stderr => "stderr",
+        };
+
+        let mode = match r.mode {
+            RedirectMode::Rewrite => "rewrite",
+            RedirectMode::Append => "append",
+        };
+
+        assert_eq!("stderr", flow);
+        assert_eq!("rewrite", mode);
     }
 
     #[test]
@@ -53,6 +82,19 @@ mod tests {
 
     #[test]
     fn test_parse_redirect() {
-        assert_eq!(["2", ">>"].map(|r| r.to_string()), parse_redirect("2>>"));
+        let r = parse_redirect("2>>");
+
+        let flow = match r.flow {
+            RedirectFlow::Stdout => "stdout",
+            RedirectFlow::Stderr => "stderr",
+        };
+
+        let mode = match r.mode {
+            RedirectMode::Rewrite => "rewrite",
+            RedirectMode::Append => "append",
+        };
+
+        assert_eq!("stderr", flow);
+        assert_eq!("append", mode);
     }
 }
