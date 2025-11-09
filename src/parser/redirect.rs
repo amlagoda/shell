@@ -12,17 +12,20 @@ pub fn to_redirect(redirect: &str, path: &str) -> Redirect {
     }
 }
 
+#[derive(Debug)]
 pub struct Redirect {
     flow: RedirectFlow,
     mode: RedirectMode,
     path: String,
 }
 
+#[derive(Debug)]
 pub enum RedirectFlow {
     Stdout,
     Stderr,
 }
 
+#[derive(Debug)]
 pub enum RedirectMode {
     Rewrite,
     Append,

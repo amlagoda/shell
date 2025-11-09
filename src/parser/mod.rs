@@ -8,10 +8,11 @@ pub fn parse(input: &str) -> Result<Parsed, Error> {
     to_parsed(parse_input(input))
 }
 
+#[derive(Debug)]
 pub struct Parsed {
-    command: Option<String>,
-    args: Option<Vec<String>>,
-    redirect: Option<Redirect>,
+    pub command: Option<String>,
+    pub args: Option<Vec<String>>,
+    pub redirect: Option<Redirect>,
 }
 
 fn to_parsed(mut args: VecDeque<String>) -> Result<Parsed, Error> {
