@@ -1,47 +1,54 @@
 mod redirect;
 
-use crate::parser::redirect::{is_redirect, normalize_and_parse_redirect};
+use crate::parser::redirect::{is_redirect, to_redirect, Redirect};
 use std::collections::VecDeque;
+use std::io::{Error, ErrorKind};
 
-pub fn parse(input: &str) -> (Option<String>, VecDeque<String>, Option<[String; 3]>) {
-    group_args(parse_input(input))
+pub fn parse(input: &str) -> Result<Parsed, Error> {
+    to_parsed(parse_input(input))
 }
 
-fn group_args(
-    mut args: VecDeque<String>,
-) -> (Option<String>, VecDeque<String>, Option<[String; 3]>) {
-    let command = args.pop_front();
-    let mut args_new: VecDeque<String> = VecDeque::new();
-    let mut redirect = [String::new(), String::new(), String::new()];
-    let mut is_path = false;
+pub struct Parsed {
+    command: Option<String>,
+    args: Option<Vec<String>>,
+    redirect: Option<Redirect>,
+}
 
-    loop {
-        let r = args.pop_front();
+fn to_parsed(mut args: VecDeque<String>) -> Result<Parsed, Error> {
+    let mut parsed = Parsed {
+        command: None,
+        args: None,
+        redirect: None,
+    };
 
-        if r.is_none() {
-            break;
-        }
+    let mut args_new: Vec<String> = vec![];
 
-        let arg = r.unwrap();
-
-        if is_path {
-            redirect[2] = arg;
-            break;
-        }
+    while !args.is_empty() {
+        let arg = args.pop_front().unwrap();
 
         if is_redirect(arg.as_str()) {
-            [redirect[0], redirect[1]] = normalize_and_parse_redirect(arg.as_str());
-            is_path = true;
+            let path = args.pop_front();
+
+            if parsed.command.is_none() || path.is_none() {
+                return Err(Error::new(ErrorKind::InvalidInput, "parse error"));
+            }
+
+            let redirect = to_redirect(arg.as_str(), path.unwrap().as_str());
+            parsed.redirect = Some(redirect);
+        } else if parsed.command.is_none() {
+            parsed.command = Some(arg);
+        } else if parsed.redirect.is_none() {
+            args_new.push(arg);
         } else {
-            args_new.push_back(arg);
+            return Err(Error::new(ErrorKind::InvalidInput, "parse error"));
         }
     }
 
-    if !redirect[2].is_empty() {
-        (command, args_new, Some(redirect))
-    } else {
-        (command, args_new, None)
+    if !args_new.is_empty() {
+        parsed.args = Some(args_new);
     }
+
+    Ok(parsed)
 }
 
 fn parse_input(input: &str) -> VecDeque<String> {
@@ -119,25 +126,38 @@ mod tests {
 
     #[test]
     fn test_parse() {
-        let expected = (
-            Some("echo".to_string()),
-            VecDeque::from(["foo".to_string()]),
-            Some(["1", ">", "path"].map(|r| r.to_string())),
-        );
+        let r = parse("").unwrap();
+        assert!(r.command.is_none());
+        assert!(r.args.is_none());
+        assert!(r.redirect.is_none());
 
-        assert_eq!(expected, parse("echo foo > path"));
-    }
+        let r = parse("command").unwrap();
+        assert_eq!("command", r.command.unwrap());
+        assert!(r.args.is_none());
+        assert!(r.redirect.is_none());
 
-    #[test]
-    fn test_group_args() {
-        let expected = (
-            Some("echo".to_string()),
-            VecDeque::from(["foo", "bar"].map(|r| r.to_string())),
-            None,
-        );
-        let r = VecDeque::from(["echo", "foo", "bar", ">"].map(|r| r.to_string()));
+        let r = parse("command arg1 arg2").unwrap();
+        assert_eq!("command", r.command.unwrap());
+        assert_eq!(vec!["arg1", "arg2"], r.args.unwrap());
+        assert!(r.redirect.is_none());
 
-        assert_eq!(expected, group_args(r));
+        let r = parse("command arg > path").unwrap();
+        assert_eq!("command", r.command.unwrap());
+        assert_eq!(vec!["arg"], r.args.unwrap());
+        assert!(r.redirect.is_some());
+
+        let r = parse("command > path").unwrap();
+        assert_eq!("command", r.command.unwrap());
+        assert!(r.args.is_none());
+        assert!(r.redirect.is_some());
+
+        assert!(parse("command > path some").is_err());
+
+        assert!(parse("command >").is_err());
+
+        assert!(parse("> path").is_err());
+
+        assert!(parse(">").is_err());
     }
 
     #[test]
