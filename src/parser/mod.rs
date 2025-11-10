@@ -22,34 +22,24 @@ impl Parsed {
         redirect: Option<Redirect>,
     ) -> Parsed {
         Parsed {
-            command: command,
-            args: args,
-            redirect: redirect,
+            command,
+            args,
+            redirect,
         }
     }
 
     pub fn command(&self) -> Option<&str> {
-        if let Some(r) = &self.command {
-            Some(r.as_str())
-        } else {
-            None
-        }
+        self.command.as_ref().map(|r| r.as_str())
     }
 
     pub fn args(&self) -> Option<Vec<&str>> {
-        if let Some(r) = &self.args {
-            Some(r.iter().map(|r| r.as_str()).collect::<Vec<&str>>())
-        } else {
-            None
-        }
+        self.args
+            .as_ref()
+            .map(|r| r.iter().map(|r| r.as_str()).collect::<Vec<&str>>())
     }
 
     pub fn redirect(&self) -> Option<&Redirect> {
-        if let Some(r) = &self.redirect {
-            Some(r)
-        } else {
-            None
-        }
+        self.redirect.as_ref()
     }
 }
 

@@ -17,11 +17,7 @@ pub struct Redirect {
 
 impl Redirect {
     fn new(flow: RedirectFlow, mode: RedirectMode, path: String) -> Redirect {
-        Redirect {
-            flow: flow,
-            mode: mode,
-            path: path,
-        }
+        Redirect { flow, mode, path }
     }
 
     pub fn is_stderr(&self) -> bool {
