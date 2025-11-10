@@ -5,11 +5,7 @@ pub fn is_redirect(arg: &str) -> bool {
 pub fn to_redirect(redirect: &str, path: &str) -> Redirect {
     let (flow, mode) = parse_redirect(normalize_redirect(redirect).as_str());
 
-    Redirect {
-        flow: flow,
-        mode: mode,
-        path: path.to_string(),
-    }
+    Redirect::new(flow, mode, path.to_string())
 }
 
 #[derive(Debug)]
@@ -19,16 +15,56 @@ pub struct Redirect {
     path: String,
 }
 
+impl Redirect {
+    fn new(flow: RedirectFlow, mode: RedirectMode, path: String) -> Redirect {
+        Redirect {
+            flow: flow,
+            mode: mode,
+            path: path,
+        }
+    }
+
+    fn is_stderr(&self) -> bool {
+        self.flow.is_stderr()
+    }
+
+    fn is_append(&self) -> bool {
+        self.mode.is_append()
+    }
+
+    fn path(&self) -> &str {
+        self.path.as_str()
+    }
+}
+
 #[derive(Debug)]
-pub enum RedirectFlow {
+enum RedirectFlow {
     Stdout,
     Stderr,
 }
 
+impl RedirectFlow {
+    fn is_stderr(&self) -> bool {
+        match self {
+            RedirectFlow::Stdout => false,
+            RedirectFlow::Stderr => true,
+        }
+    }
+}
+
 #[derive(Debug)]
-pub enum RedirectMode {
+enum RedirectMode {
     Rewrite,
     Append,
+}
+
+impl RedirectMode {
+    fn is_append(&self) -> bool {
+        match self {
+            RedirectMode::Rewrite => false,
+            RedirectMode::Append => true,
+        }
+    }
 }
 
 fn normalize_redirect(redirect: &str) -> String {
@@ -70,21 +106,13 @@ mod tests {
 
     #[test]
     fn test_to_redirect() {
-        let r = to_redirect("2>", "path");
+        let redirect = to_redirect("2>", "path");
 
-        let flow = match r.flow {
-            RedirectFlow::Stdout => "stdout",
-            RedirectFlow::Stderr => "stderr",
-        };
+        assert!(redirect.is_stderr());
 
-        let mode = match r.mode {
-            RedirectMode::Rewrite => "rewrite",
-            RedirectMode::Append => "append",
-        };
+        assert!(!redirect.is_append());
 
-        assert_eq!("stderr", flow);
-        assert_eq!("rewrite", mode);
-        assert_eq!("path", r.path);
+        assert_eq!("path", redirect.path());
     }
 
     #[test]
@@ -96,17 +124,8 @@ mod tests {
     fn test_parse_redirect() {
         let (flow, mode) = parse_redirect("2>>");
 
-        let flow = match flow {
-            RedirectFlow::Stdout => "stdout",
-            RedirectFlow::Stderr => "stderr",
-        };
+        assert!(flow.is_stderr());
 
-        let mode = match mode {
-            RedirectMode::Rewrite => "rewrite",
-            RedirectMode::Append => "append",
-        };
-
-        assert_eq!("stderr", flow);
-        assert_eq!("append", mode);
+        assert!(mode.is_append());
     }
 }
