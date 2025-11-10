@@ -3,13 +3,11 @@ pub fn is_pipeline(arg: &str) -> bool {
 }
 
 pub fn to_pipeline(pipeline: &str, input: String) -> Pipeline {
-    Pipeline {
-        flow: pipeline_flow(pipeline),
-        input,
-    }
+    Pipeline::new(pipeline_flow(pipeline), input)
 }
 
-struct Pipeline {
+#[derive(Debug)]
+pub struct Pipeline {
     flow: PipelineFlow,
     input: String,
 }
@@ -19,15 +17,16 @@ impl Pipeline {
         Pipeline { flow, input }
     }
 
-    fn is_stdout(&self) -> bool {
+    pub fn is_stdout(&self) -> bool {
         self.flow.is_stdout()
     }
 
-    fn input(&self) -> &str {
+    pub fn input(&self) -> &str {
         self.input.as_str()
     }
 }
 
+#[derive(Debug)]
 enum PipelineFlow {
     Stdout,
     StdoutStderr,

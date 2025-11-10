@@ -1,5 +1,7 @@
+mod pipeline;
 mod redirect;
 
+use crate::parser::pipeline::{is_pipeline, to_pipeline, Pipeline};
 use crate::parser::redirect::{is_redirect, to_redirect, Redirect};
 use std::collections::VecDeque;
 use std::io::{Error, ErrorKind};
@@ -13,6 +15,7 @@ pub struct Parsed {
     command: Option<String>,
     args: Option<Vec<String>>,
     redirect: Option<Redirect>,
+    pipeline: Option<Pipeline>,
 }
 
 impl Parsed {
@@ -20,11 +23,13 @@ impl Parsed {
         command: Option<String>,
         args: Option<Vec<String>>,
         redirect: Option<Redirect>,
+        pipeline: Option<Pipeline>,
     ) -> Parsed {
         Parsed {
             command,
             args,
             redirect,
+            pipeline,
         }
     }
 
@@ -41,11 +46,16 @@ impl Parsed {
     pub fn redirect(&self) -> Option<&Redirect> {
         self.redirect.as_ref()
     }
+
+    pub fn pipeline(&self) -> Option<&Pipeline> {
+        self.pipeline.as_ref()
+    }
 }
 
 fn to_parsed(mut args: VecDeque<String>) -> Result<Parsed, Error> {
-    let mut parsed = Parsed::new(None, None, None);
+    let mut parsed = Parsed::new(None, None, None, None);
     let mut args_new: Vec<String> = vec![];
+    let err = Error::new(ErrorKind::InvalidInput, "parse error");
 
     while !args.is_empty() {
         let arg = args.pop_front().unwrap();
@@ -54,17 +64,36 @@ fn to_parsed(mut args: VecDeque<String>) -> Result<Parsed, Error> {
             let path = args.pop_front();
 
             if parsed.command.is_none() || path.is_none() {
-                return Err(Error::new(ErrorKind::InvalidInput, "parse error"));
+                return Err(err);
             }
 
-            let redirect = to_redirect(arg.as_str(), path.unwrap().as_str());
+            let path = path.unwrap();
+
+            if is_pipeline(path.as_str()) {
+                return Err(err);
+            }
+
+            let redirect = to_redirect(arg.as_str(), path.as_str());
             parsed.redirect = Some(redirect);
+        } else if is_pipeline(arg.as_str()) {
+            if parsed.command.is_none() || args.is_empty() {
+                return Err(err);
+            }
+
+            let input = args
+                .iter()
+                .map(|r| r.as_str())
+                .collect::<Vec<&str>>()
+                .join(" ");
+            let pipeline = to_pipeline(arg.as_str(), input.to_string());
+            parsed.pipeline = Some(pipeline);
+            break;
         } else if parsed.command.is_none() {
             parsed.command = Some(arg);
         } else if parsed.redirect.is_none() {
             args_new.push(arg);
         } else {
-            return Err(Error::new(ErrorKind::InvalidInput, "parse error"));
+            return Err(err);
         }
     }
 
@@ -182,6 +211,30 @@ mod tests {
         assert!(parse("> path").is_err());
 
         assert!(parse(">").is_err());
+
+        assert!(parse("|").is_err());
+
+        assert!(parse("command |").is_err());
+
+        assert!(parse("| command").is_err());
+
+        assert!(parse("command arg > |").is_err());
+
+        let r = parse("command1 | command2").unwrap();
+        assert_eq!("command1", r.command().unwrap());
+        assert!(r.args().is_none());
+        assert!(r.redirect().is_none());
+        let pipeline = r.pipeline().unwrap();
+        assert!(pipeline.is_stdout());
+        assert_eq!("command2", pipeline.input());
+
+        let r = parse("command1 arg > path |& command2 arg > path").unwrap();
+        assert_eq!("command1", r.command().unwrap());
+        assert!(r.args().is_some());
+        assert!(r.redirect().is_some());
+        let pipeline = r.pipeline().unwrap();
+        assert!(!pipeline.is_stdout());
+        assert_eq!("command2 arg > path", pipeline.input());
     }
 
     #[test]
