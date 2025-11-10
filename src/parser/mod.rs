@@ -10,18 +10,51 @@ pub fn parse(input: &str) -> Result<Parsed, Error> {
 
 #[derive(Debug)]
 pub struct Parsed {
-    pub command: Option<String>,
-    pub args: Option<Vec<String>>,
-    pub redirect: Option<Redirect>,
+    command: Option<String>,
+    args: Option<Vec<String>>,
+    redirect: Option<Redirect>,
+}
+
+impl Parsed {
+    fn new(
+        command: Option<String>,
+        args: Option<Vec<String>>,
+        redirect: Option<Redirect>,
+    ) -> Parsed {
+        Parsed {
+            command: command,
+            args: args,
+            redirect: redirect,
+        }
+    }
+
+    pub fn command(&self) -> Option<&str> {
+        if let Some(r) = &self.command {
+            Some(r.as_str())
+        } else {
+            None
+        }
+    }
+
+    pub fn args(&self) -> Option<Vec<&str>> {
+        if let Some(r) = &self.args {
+            Some(r.iter().map(|r| r.as_str()).collect::<Vec<&str>>())
+        } else {
+            None
+        }
+    }
+
+    pub fn redirect(&self) -> Option<&Redirect> {
+        if let Some(r) = &self.redirect {
+            Some(r)
+        } else {
+            None
+        }
+    }
 }
 
 fn to_parsed(mut args: VecDeque<String>) -> Result<Parsed, Error> {
-    let mut parsed = Parsed {
-        command: None,
-        args: None,
-        redirect: None,
-    };
-
+    let mut parsed = Parsed::new(None, None, None);
     let mut args_new: Vec<String> = vec![];
 
     while !args.is_empty() {
@@ -128,29 +161,29 @@ mod tests {
     #[test]
     fn test_parse() {
         let r = parse("").unwrap();
-        assert!(r.command.is_none());
-        assert!(r.args.is_none());
-        assert!(r.redirect.is_none());
+        assert!(r.command().is_none());
+        assert!(r.args().is_none());
+        assert!(r.redirect().is_none());
 
         let r = parse("command").unwrap();
-        assert_eq!("command", r.command.unwrap());
-        assert!(r.args.is_none());
-        assert!(r.redirect.is_none());
+        assert_eq!("command", r.command().unwrap());
+        assert!(r.args().is_none());
+        assert!(r.redirect().is_none());
 
         let r = parse("command arg1 arg2").unwrap();
-        assert_eq!("command", r.command.unwrap());
-        assert_eq!(vec!["arg1", "arg2"], r.args.unwrap());
-        assert!(r.redirect.is_none());
+        assert_eq!("command", r.command().unwrap());
+        assert_eq!(vec!["arg1", "arg2"], r.args().unwrap());
+        assert!(r.redirect().is_none());
 
         let r = parse("command arg > path").unwrap();
-        assert_eq!("command", r.command.unwrap());
-        assert_eq!(vec!["arg"], r.args.unwrap());
-        assert!(r.redirect.is_some());
+        assert_eq!("command", r.command().unwrap());
+        assert_eq!(vec!["arg"], r.args().unwrap());
+        assert!(r.redirect().is_some());
 
         let r = parse("command > path").unwrap();
-        assert_eq!("command", r.command.unwrap());
-        assert!(r.args.is_none());
-        assert!(r.redirect.is_some());
+        assert_eq!("command", r.command().unwrap());
+        assert!(r.args().is_none());
+        assert!(r.redirect().is_some());
 
         assert!(parse("command > path some").is_err());
 
