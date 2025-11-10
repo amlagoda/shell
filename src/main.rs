@@ -66,34 +66,43 @@ fn main() -> Result<(), Error> {
         if is_enter {
             let mut output: Option<String> = None;
             let mut error = Some(String::from(": not found"));
-            let (name, args, redirect) = parse(input.as_str());
+            let r = parse(input.as_str());
 
-            if let Some(name) = name {
-                let args = args.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
-                (output, error, is_exit) = command(name.as_str(), &args, &bin_paths);
+            if let Ok(parsed) = r {
+                if let Some(name) = parsed.command() {
+                    let mut args: Vec<&str> = vec![];
+
+                    if let Some(r) = parsed.args() {
+                        args = r;
+                    }
+
+                    (output, error, is_exit) = command(name, &args, &bin_paths);
+                }
+
+                if let Some(redirect) = parsed.redirect() {
+                    let mut to_write = String::new();
+
+                    if !redirect.is_stderr() && output.is_some() {
+                        to_write = output.unwrap();
+                        output = None;
+                    }
+
+                    if redirect.is_stderr() && error.is_some() {
+                        to_write = error.unwrap();
+                        error = None;
+                    }
+
+                    if !to_write.is_empty() {
+                        to_write.push('\n');
+                    }
+
+                    write_to_file(redirect.path(), to_write.as_str(), redirect.is_append())?;
+                }
+            } else {
+                error = Some(r.unwrap_err().to_string());
             }
 
             input.clear();
-
-            if let Some([flow, mode, path]) = redirect {
-                let mut to_write = String::new();
-
-                if flow == "1" && output.is_some() {
-                    to_write = output.unwrap();
-                    output = None;
-                }
-
-                if flow == "2" && error.is_some() {
-                    to_write = error.unwrap();
-                    error = None;
-                }
-
-                if !to_write.is_empty() {
-                    to_write.push('\n');
-                }
-
-                write_to_file(path.as_str(), to_write.as_str(), mode == ">>")?;
-            }
 
             let mut to_print = error
                 .unwrap_or("".to_string())

@@ -24,15 +24,15 @@ impl Redirect {
         }
     }
 
-    fn is_stderr(&self) -> bool {
+    pub fn is_stderr(&self) -> bool {
         self.flow.is_stderr()
     }
 
-    fn is_append(&self) -> bool {
+    pub fn is_append(&self) -> bool {
         self.mode.is_append()
     }
 
-    fn path(&self) -> &str {
+    pub fn path(&self) -> &str {
         self.path.as_str()
     }
 }
