@@ -1,11 +1,8 @@
-mod process;
-
-use crate::command::process::read_process_output;
 use crate::fs::search_executable_file_in_paths;
+use crate::process::{new_process, ProcessOutput};
 use std::env::{current_dir, home_dir, set_current_dir};
 use std::fs::read_dir;
 use std::io::{Error, ErrorKind};
-use std::process::{Command, Stdio};
 
 const COMMAND_TYPE: &str = "type";
 const COMMAND_ECHO: &str = "echo";
@@ -64,7 +61,10 @@ pub fn command(
         COMMAND_EXIT => is_exit = true,
 
         another => match command_from_paths(another, args, bin_paths) {
-            Ok(r) => [error, output] = r,
+            Ok(r) => {
+                error = r.stderr().map(|r| r.to_string());
+                output = r.stdout().map(|r| r.to_string());
+            }
             Err(e) => error = Some(e.to_string()),
         },
     }
@@ -125,21 +125,13 @@ fn command_from_paths(
     command: &str,
     args: &Vec<&str>,
     paths: &Vec<&str>,
-) -> Result<[Option<String>; 2], Error> {
+) -> Result<ProcessOutput, Error> {
     if search_executable_file_in_paths(command, paths).is_none() {
         let msg = format!("{}: not found", command);
         return Err(Error::new(ErrorKind::NotFound, msg));
     }
 
-    let mut process = Command::new(command)
-        .args(args)
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()?;
-
-    process.wait()?;
-
-    read_process_output(process)
+    new_process(command, args)
 }
 
 #[cfg(test)]
@@ -155,13 +147,13 @@ mod tests {
         let r = split_env_path().unwrap();
         let paths = r.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
 
-        let [stderr, stdout] = command_from_paths("ls", &args, &paths).unwrap();
+        let process = command_from_paths("ls", &args, &paths).unwrap();
 
         let msg = "ls: not_exists: No such file or directory";
-        assert_eq!(msg, stderr.unwrap());
+        assert_eq!(msg, process.stderr().unwrap());
 
         let msg = format!("{}:\nexe\nnot_exe", path);
-        assert_eq!(msg, stdout.unwrap());
+        assert_eq!(msg, process.stdout().unwrap());
     }
 
     #[test]
@@ -194,7 +186,7 @@ mod tests {
 
     fn get_fixture_dir() -> String {
         // ends with a slash
-        format!("{}/test/fixture/command/mod/", get_current_dir())
+        format!("{}/test/fixture/command/", get_current_dir())
     }
 
     fn get_current_dir() -> String {
