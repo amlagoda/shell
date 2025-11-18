@@ -1,38 +1,34 @@
 use std::io::{Error, Read};
 use std::process::{Child, Command, Stdio};
 
-pub fn new_process(command: &str, args: &Vec<&str>) -> Result<ProcessOutput, Error> {
+pub fn run_process(command: &str, args: &Vec<&str>) -> Result<ProcessResult, Error> {
     let mut process = Command::new(command)
         .args(args)
-        .stdout(Stdio::piped())
         .stderr(Stdio::piped())
+        .stdout(Stdio::piped())
         .spawn()?;
 
     process.wait()?;
 
-    read_process_output(process)
+    to_result(process)
 }
 
-pub struct ProcessOutput {
-    stdout: Option<String>,
+pub struct ProcessResult {
     stderr: Option<String>,
+    stdout: Option<String>,
 }
 
-impl ProcessOutput {
-    fn new(stdout: Option<String>, stderr: Option<String>) -> ProcessOutput {
-        ProcessOutput { stdout, stderr }
+impl ProcessResult {
+    pub fn stderr(&self) -> Option<&str> {
+        self.stderr.as_ref().map(|r| r.as_str())
     }
 
     pub fn stdout(&self) -> Option<&str> {
         self.stdout.as_ref().map(|r| r.as_str())
     }
-
-    pub fn stderr(&self) -> Option<&str> {
-        self.stderr.as_ref().map(|r| r.as_str())
-    }
 }
 
-fn read_process_output(process: Child) -> Result<ProcessOutput, Error> {
+fn to_result(process: Child) -> Result<ProcessResult, Error> {
     let mut stderr = None;
     let mut stdout = None;
 
@@ -54,7 +50,7 @@ fn read_process_output(process: Child) -> Result<ProcessOutput, Error> {
         }
     }
 
-    Ok(ProcessOutput::new(stdout, stderr))
+    Ok(ProcessResult { stderr, stdout })
 }
 
 #[cfg(test)]
@@ -63,15 +59,19 @@ mod tests {
     use std::env::current_dir;
 
     #[test]
-    fn test_new_process() {
-        let r = get_fixture_dir();
-        let process = new_process("ls", &vec!["notexists", r.as_str()]).unwrap();
+    fn test_run_process() {
+        let path = get_fixture_dir();
+        let result = run_process("ls", &vec!["notexists", path.as_str()]).unwrap();
 
         assert_eq!(
             "ls: notexists: No such file or directory",
-            process.stderr().unwrap()
+            result.stderr().unwrap()
         );
-        assert_eq!(format!("{}:\nfile", r), process.stdout().unwrap());
+
+        assert_eq!(
+            format!("{}:\nfile", path.as_str()),
+            result.stdout().unwrap()
+        );
     }
 
     fn get_fixture_dir() -> String {
