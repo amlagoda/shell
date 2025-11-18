@@ -142,7 +142,7 @@ mod tests {
 
     fn get_fixture_dir() -> String {
         // ends with a slash
-        format!("{}/test/fixture/command/", get_current_dir())
+        format!("{}/test/fixture/command/builtin/", get_current_dir())
     }
 
     fn get_current_dir() -> String {
