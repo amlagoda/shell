@@ -1,14 +1,14 @@
-use crate::command::CommandResult;
+use crate::command::Command;
 use crate::fs::search_executable_file_in_paths;
 use std::io::{Error, Read};
-use std::process::{Child, Command, Stdio};
+use std::process::{Child, Command as Process, Stdio};
 
 pub fn is_external(command: &str, bin_paths: &Vec<&str>) -> bool {
     search_executable_file_in_paths(command, bin_paths).is_some()
 }
 
-pub fn run_external(command: &str, args: &Vec<&str>) -> Result<CommandResult, Error> {
-    let mut process = Command::new(command)
+pub fn run_external(command: &str, args: &Vec<&str>) -> Result<Command, Error> {
+    let mut process = Process::new(command)
         .args(args)
         .stderr(Stdio::piped())
         .stdout(Stdio::piped())
@@ -19,7 +19,7 @@ pub fn run_external(command: &str, args: &Vec<&str>) -> Result<CommandResult, Er
     to_result(process)
 }
 
-fn to_result(process: Child) -> Result<CommandResult, Error> {
+fn to_result(process: Child) -> Result<Command, Error> {
     let mut stderr = None;
     let mut stdout = None;
 
@@ -41,7 +41,7 @@ fn to_result(process: Child) -> Result<CommandResult, Error> {
         }
     }
 
-    Ok(CommandResult::new(stderr, stdout))
+    Ok(Command::new(stderr, stdout))
 }
 
 #[cfg(test)]

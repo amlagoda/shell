@@ -1,4 +1,4 @@
-use crate::command::CommandResult;
+use crate::command::Command;
 use crate::fs::search_executable_file_in_paths;
 use std::env::{current_dir, home_dir, set_current_dir};
 use std::fs::read_dir;
@@ -19,13 +19,13 @@ pub fn run_builtin(
     command: &Builtin,
     args: &Vec<&str>,
     bin_paths: &Vec<&str>,
-) -> Result<CommandResult, Error> {
+) -> Result<Command, Error> {
     match command {
         Builtin::Type => run_command_type(to_string(command).as_str(), bin_paths),
         Builtin::Echo => run_command_echo(args),
         Builtin::Pwd => run_command_pwd(),
         Builtin::Cd => run_command_cd(args.first().unwrap_or(&"")),
-        Builtin::Exit => Ok(CommandResult::new_exit()),
+        Builtin::Exit => Ok(Command::new_exit()),
     }
 }
 
@@ -47,28 +47,28 @@ fn to_string(builtin: &Builtin) -> String {
     }
 }
 
-fn run_command_type(command: &str, bin_paths: &Vec<&str>) -> Result<CommandResult, Error> {
+fn run_command_type(command: &str, bin_paths: &Vec<&str>) -> Result<Command, Error> {
     if to_builtin(command).is_some() {
         let msg = format!("{} is a shell builtin", command);
-        return Ok(CommandResult::new(None, Some(msg)));
+        return Ok(Command::new(None, Some(msg)));
     }
 
     if let Some(path) = search_executable_file_in_paths(command, bin_paths) {
         let msg = format!("{} is {}", command, path);
-        return Ok(CommandResult::new(None, Some(msg)));
+        return Ok(Command::new(None, Some(msg)));
     }
 
     let msg = format!("{}: not found", command);
-    Ok(CommandResult::new(Some(msg), None))
+    Ok(Command::new(Some(msg), None))
 }
 
-fn run_command_echo(args: &Vec<&str>) -> Result<CommandResult, Error> {
+fn run_command_echo(args: &Vec<&str>) -> Result<Command, Error> {
     let join = args.to_vec().join(" ").to_string();
 
-    Ok(CommandResult::new(None, Some(join)))
+    Ok(Command::new(None, Some(join)))
 }
 
-fn run_command_pwd() -> Result<CommandResult, Error> {
+fn run_command_pwd() -> Result<Command, Error> {
     let err = Error::other("path is invalid");
 
     let path = current_dir()?
@@ -76,10 +76,10 @@ fn run_command_pwd() -> Result<CommandResult, Error> {
         .into_string()
         .map_err(|_| err)?;
 
-    Ok(CommandResult::new(None, Some(path)))
+    Ok(Command::new(None, Some(path)))
 }
 
-fn run_command_cd(path: &str) -> Result<CommandResult, Error> {
+fn run_command_cd(path: &str) -> Result<Command, Error> {
     let mut path = path.to_string();
 
     if path == "~" {
@@ -95,12 +95,12 @@ fn run_command_cd(path: &str) -> Result<CommandResult, Error> {
 
     if read_dir(path.as_str()).is_err() {
         let msg = format!("cd: {}: No such file or directory", path);
-        return Ok(CommandResult::new(Some(msg), None));
+        return Ok(Command::new(Some(msg), None));
     }
 
     set_current_dir(path.as_str())?;
 
-    Ok(CommandResult::new(None, None))
+    Ok(Command::new(None, None))
 }
 
 #[cfg(test)]
