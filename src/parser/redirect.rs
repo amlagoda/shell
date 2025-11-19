@@ -8,7 +8,6 @@ pub fn to_redirect(redirect: &str, path: &str) -> Redirect {
     Redirect::new(flow, mode, path.to_string())
 }
 
-#[derive(Debug)]
 pub struct Redirect {
     flow: RedirectFlow,
     mode: RedirectMode,
@@ -33,7 +32,6 @@ impl Redirect {
     }
 }
 
-#[derive(Debug)]
 enum RedirectFlow {
     Stdout,
     Stderr,
@@ -48,7 +46,6 @@ impl RedirectFlow {
     }
 }
 
-#[derive(Debug)]
 enum RedirectMode {
     Rewrite,
     Append,
