@@ -207,6 +207,47 @@ mod tests {
 
     #[test]
     fn test_parse() -> Result<(), Error> {
+        assert!(parse(">").is_err());
+        assert!(parse("cmd >").is_err());
+        assert!(parse("> path").is_err());
+        assert!(parse("> > path").is_err());
+        assert!(parse("| > path").is_err());
+        assert!(parse("cmd > >").is_err());
+        assert!(parse("cmd > |").is_err());
+
+        assert!(parse("|").is_err());
+        assert!(parse("cmd |").is_err());
+        assert!(parse("| cmd").is_err());
+        assert!(parse("> | cmd").is_err());
+        assert!(parse("| | cmd").is_err());
+        assert!(parse("cmd | |").is_err());
+        assert!(parse("cmd | >").is_err());
+
+        assert!(parse("")?.is_empty());
+
+        let r = "cmd1 arg1 arg2 > path | cmd2 | cmd3 arg > path1";
+        let mut parseds = parse(r)?.into_iter();
+
+        let p1 = parseds.next().unwrap();
+        assert_eq!("cmd1", p1.command().unwrap());
+        assert_eq!(vec!("arg1", "arg2"), p1.args().unwrap());
+        assert!(!p1.redirect().unwrap().is_stderr());
+        assert!(!p1.redirect().unwrap().is_append());
+        assert_eq!("path", p1.redirect().unwrap().path());
+        assert!(p1.pipeline().unwrap().is_stdout());
+
+        let p2 = parseds.next().unwrap();
+        assert_eq!("cmd2", p2.command().unwrap());
+        assert!(p2.args().is_none());
+        assert!(p2.redirect().is_none());
+        assert!(p2.pipeline().unwrap().is_stdout());
+
+        let p3 = parseds.next().unwrap();
+        assert_eq!("cmd3", p3.command().unwrap());
+        assert_eq!(vec!("arg"), p3.args().unwrap());
+        assert!(p3.redirect().is_some());
+        assert!(p3.pipeline().is_none());
+
         Ok(())
     }
 
