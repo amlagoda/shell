@@ -4,7 +4,7 @@ use std::env::{current_dir, home_dir, set_current_dir};
 use std::fs::read_dir;
 use std::io::Error;
 
-fn to_builtin(command: &str) -> Option<Builtin> {
+pub fn to_builtin(command: &str) -> Option<Builtin> {
     match command {
         "type" => Some(Builtin::Type),
         "echo" => Some(Builtin::Echo),
@@ -15,7 +15,7 @@ fn to_builtin(command: &str) -> Option<Builtin> {
     }
 }
 
-fn run_builtin(
+pub fn run_builtin(
     command: &Builtin,
     args: &Vec<&str>,
     bin_paths: &Vec<&str>,

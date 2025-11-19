@@ -3,11 +3,11 @@ use crate::fs::search_executable_file_in_paths;
 use std::io::{Error, Read};
 use std::process::{Child, Command, Stdio};
 
-fn is_external(command: &str, bin_paths: &Vec<&str>) -> bool {
+pub fn is_external(command: &str, bin_paths: &Vec<&str>) -> bool {
     search_executable_file_in_paths(command, bin_paths).is_some()
 }
 
-fn run_external(command: &str, args: &Vec<&str>) -> Result<CommandResult, Error> {
+pub fn run_external(command: &str, args: &Vec<&str>) -> Result<CommandResult, Error> {
     let mut process = Command::new(command)
         .args(args)
         .stderr(Stdio::piped())
