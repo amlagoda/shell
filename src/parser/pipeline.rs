@@ -2,50 +2,25 @@ pub fn is_pipeline(arg: &str) -> bool {
     ["|", "|&"].contains(&arg)
 }
 
-pub fn to_pipeline(pipeline: &str, input: String) -> Pipeline {
-    Pipeline::new(pipeline_flow(pipeline), input)
-}
-
-#[derive(Debug)]
-pub struct Pipeline {
-    flow: PipelineFlow,
-    input: String,
-}
-
-impl Pipeline {
-    fn new(flow: PipelineFlow, input: String) -> Pipeline {
-        Pipeline { flow, input }
-    }
-
-    pub fn is_stdout(&self) -> bool {
-        self.flow.is_stdout()
-    }
-
-    pub fn input(&self) -> &str {
-        self.input.as_str()
+pub fn to_pipeline(pipeline: &str) -> Pipeline {
+    if pipeline == "|&" {
+        Pipeline::StdoutStderr
+    } else {
+        Pipeline::Stdout
     }
 }
 
-#[derive(Debug)]
-enum PipelineFlow {
+pub enum Pipeline {
     Stdout,
     StdoutStderr,
 }
 
-impl PipelineFlow {
-    fn is_stdout(&self) -> bool {
+impl Pipeline {
+    pub fn is_stdout(&self) -> bool {
         match self {
-            PipelineFlow::Stdout => true,
-            PipelineFlow::StdoutStderr => false,
+            Pipeline::Stdout => true,
+            Pipeline::StdoutStderr => false,
         }
-    }
-}
-
-fn pipeline_flow(pipeline: &str) -> PipelineFlow {
-    if pipeline == "|&" {
-        PipelineFlow::StdoutStderr
-    } else {
-        PipelineFlow::Stdout
     }
 }
 
@@ -59,7 +34,7 @@ mod tests {
     }
 
     #[test]
-    fn test_pipeline_flow() {
-        assert!(!pipeline_flow("|&").is_stdout());
+    fn test_to_pipeline() {
+        assert!(!to_pipeline("|&").is_stdout());
     }
 }
