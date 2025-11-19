@@ -29,7 +29,7 @@ pub fn run_builtin(
     }
 }
 
-enum Builtin {
+pub enum Builtin {
     Type,
     Echo,
     Pwd,
