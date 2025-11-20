@@ -16,7 +16,7 @@ fn run_command(command: &str, args: &Vec<&str>, bin_paths: &Vec<&str>) -> Result
     }
 }
 
-struct Command {
+pub struct Command {
     error: Option<String>,
     output: Option<String>,
     is_exit: bool,
@@ -39,15 +39,15 @@ impl Command {
         }
     }
 
-    fn error(&self) -> Option<&str> {
+    pub fn error(&self) -> Option<&str> {
         self.error.as_ref().map(|r| r.as_str())
     }
 
-    fn output(&self) -> Option<&str> {
+    pub fn output(&self) -> Option<&str> {
         self.output.as_ref().map(|r| r.as_str())
     }
 
-    fn is_exit(&self) -> bool {
+    pub fn is_exit(&self) -> bool {
         self.is_exit
     }
 }
