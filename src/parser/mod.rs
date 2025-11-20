@@ -6,12 +6,12 @@ use crate::parser::redirect::{is_redirect, to_redirect, Redirect};
 use std::collections::VecDeque;
 use std::io::Error;
 
-pub fn parse(input: &str) -> Result<Vec<Parsed>, Error> {
+pub fn parse(input: &str) -> Result<Option<Vec<Parsed>>, Error> {
     to_parsed(parse_input(input))
 }
 
 pub struct Parsed {
-    command: Option<String>,
+    command: String,
     args: Option<Vec<String>>,
     redirect: Option<Redirect>,
     pipeline: Option<Pipeline>,
@@ -19,7 +19,7 @@ pub struct Parsed {
 
 impl Parsed {
     fn new(
-        command: Option<String>,
+        command: String,
         args: Option<Vec<String>>,
         redirect: Option<Redirect>,
         pipeline: Option<Pipeline>,
@@ -32,8 +32,8 @@ impl Parsed {
         }
     }
 
-    pub fn command(&self) -> Option<&str> {
-        self.command.as_ref().map(|r| r.as_str())
+    pub fn command(&self) -> &str {
+        self.command.as_str()
     }
 
     pub fn args(&self) -> Option<Vec<&str>> {
@@ -51,10 +51,10 @@ impl Parsed {
     }
 }
 
-fn to_parsed(mut args: VecDeque<String>) -> Result<Vec<Parsed>, Error> {
+fn to_parsed(mut args: VecDeque<String>) -> Result<Option<Vec<Parsed>>, Error> {
     let err = Error::other("parse error");
     let mut previous: Option<String> = None;
-    let mut parsed = Parsed::new(None, None, None, None);
+    let mut parsed = Parsed::new(String::new(), None, None, None);
     let mut parseds: Vec<Parsed> = vec![];
     let mut command_mode = false;
     let mut redirect_mode = false;
@@ -79,12 +79,12 @@ fn to_parsed(mut args: VecDeque<String>) -> Result<Vec<Parsed>, Error> {
         if is_command(current.as_str(), prev) {
             if pipeline_mode {
                 parseds.push(parsed);
-                parsed = Parsed::new(None, None, None, None);
+                parsed = Parsed::new(String::new(), None, None, None);
             }
 
             command_mode = true;
             pipeline_mode = false;
-            parsed.command = Some(current.clone());
+            parsed.command = current.clone();
         } else if is_redirect(current.as_str()) {
             redirect_mode = true;
         } else if is_redirect_path(current.as_str(), prev) {
@@ -112,11 +112,15 @@ fn to_parsed(mut args: VecDeque<String>) -> Result<Vec<Parsed>, Error> {
         return Err(err);
     }
 
-    if parsed.command().is_some() {
+    if !parsed.command().is_empty() {
         parseds.push(parsed);
     }
 
-    Ok(parseds)
+    if !parseds.is_empty() {
+        Ok(Some(parseds))
+    } else {
+        Ok(None)
+    }
 }
 
 fn is_command(current: &str, previous: Option<&str>) -> bool {
@@ -223,13 +227,14 @@ mod tests {
         assert!(parse("cmd | |").is_err());
         assert!(parse("cmd | >").is_err());
 
-        assert!(parse("")?.is_empty());
+        assert!(parse("")?.is_none());
 
+        //Result<Option<Vec<Parsed>>, Error>
         let r = "cmd1 arg1 arg2 > path | cmd2 | cmd3 arg > path1";
-        let mut parseds = parse(r)?.into_iter();
+        let mut parseds = parse(r)?.unwrap().into_iter();
 
         let p1 = parseds.next().unwrap();
-        assert_eq!("cmd1", p1.command().unwrap());
+        assert_eq!("cmd1", p1.command());
         assert_eq!(vec!("arg1", "arg2"), p1.args().unwrap());
         assert!(!p1.redirect().unwrap().is_stderr());
         assert!(!p1.redirect().unwrap().is_append());
@@ -237,13 +242,13 @@ mod tests {
         assert!(p1.pipeline().unwrap().is_stdout());
 
         let p2 = parseds.next().unwrap();
-        assert_eq!("cmd2", p2.command().unwrap());
+        assert_eq!("cmd2", p2.command());
         assert!(p2.args().is_none());
         assert!(p2.redirect().is_none());
         assert!(p2.pipeline().unwrap().is_stdout());
 
         let p3 = parseds.next().unwrap();
-        assert_eq!("cmd3", p3.command().unwrap());
+        assert_eq!("cmd3", p3.command());
         assert_eq!(vec!("arg"), p3.args().unwrap());
         assert!(p3.redirect().is_some());
         assert!(p3.pipeline().is_none());
