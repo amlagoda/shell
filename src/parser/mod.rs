@@ -62,7 +62,7 @@ fn to_parsed(mut args: VecDeque<String>) -> Result<Option<Vec<Parsed>>, Error> {
 
     while !args.is_empty() {
         let current = args.pop_front().unwrap();
-        let prev = previous.as_ref().map(|r| r.as_str());
+        let prev = previous.as_deref();
 
         if !command_mode && !is_command(current.as_str(), prev) {
             return Err(err);

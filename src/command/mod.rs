@@ -127,11 +127,11 @@ impl CommandResult {
     }
 
     pub fn error(&self) -> Option<&str> {
-        self.error.as_ref().map(|r| r.as_str())
+        self.error.as_deref()
     }
 
     pub fn output(&self) -> Option<&str> {
-        self.output.as_ref().map(|r| r.as_str())
+        self.output.as_deref()
     }
 
     pub fn is_exit(&self) -> bool {
