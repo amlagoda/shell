@@ -5,34 +5,38 @@ use crate::command::builtin::{run_builtin, to_builtin};
 use crate::command::external::{is_external, run_external};
 use std::io::Error;
 
-fn run_command(command: &str, args: &Vec<&str>, bin_paths: &Vec<&str>) -> Result<Command, Error> {
+pub fn run_command(
+    command: &str,
+    args: &Vec<&str>,
+    bin_paths: &Vec<&str>,
+) -> Result<CommandResult, Error> {
     if let Some(builtin) = to_builtin(command) {
         run_builtin(&builtin, args, bin_paths)
     } else if is_external(command, bin_paths) {
         run_external(command, args)
     } else {
         let msg = format!("{}: not found", command);
-        Ok(Command::new(Some(msg), None))
+        Ok(CommandResult::new(Some(msg), None))
     }
 }
 
-pub struct Command {
+pub struct CommandResult {
     error: Option<String>,
     output: Option<String>,
     is_exit: bool,
 }
 
-impl Command {
-    fn new(error: Option<String>, output: Option<String>) -> Command {
-        Command {
+impl CommandResult {
+    fn new(error: Option<String>, output: Option<String>) -> CommandResult {
+        CommandResult {
             error,
             output,
             is_exit: false,
         }
     }
 
-    fn new_exit() -> Command {
-        Command {
+    fn new_exit() -> CommandResult {
+        CommandResult {
             error: None,
             output: None,
             is_exit: true,
