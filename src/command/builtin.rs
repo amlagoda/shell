@@ -21,7 +21,7 @@ pub fn run_builtin(
     bin_paths: &Vec<&str>,
 ) -> Result<CommandResult, Error> {
     match command {
-        Builtin::Type => run_command_type(to_string(command).as_str(), bin_paths),
+        Builtin::Type => run_command_type(builtin_to_string(command).as_str(), bin_paths),
         Builtin::Echo => run_command_echo(args),
         Builtin::Pwd => run_command_pwd(),
         Builtin::Cd => run_command_cd(args.first().unwrap_or(&"")),
@@ -37,7 +37,7 @@ pub enum Builtin {
     Exit,
 }
 
-fn to_string(builtin: &Builtin) -> String {
+pub fn builtin_to_string(builtin: &Builtin) -> String {
     match builtin {
         Builtin::Type => String::from("type"),
         Builtin::Echo => String::from("echo"),

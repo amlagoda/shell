@@ -1,11 +1,21 @@
 mod builtin;
 mod external;
 
-use crate::command::builtin::{run_builtin, to_builtin};
+use crate::command::builtin::{builtin_to_string, run_builtin, to_builtin, Builtin};
 use crate::command::external::{is_external, run_external};
 use crate::fs::write_to_file;
 use crate::parser::Parsed;
 use std::io::Error;
+
+pub fn builtin_list() -> Vec<String> {
+    vec![
+        builtin_to_string(&Builtin::Type),
+        builtin_to_string(&Builtin::Echo),
+        builtin_to_string(&Builtin::Pwd),
+        builtin_to_string(&Builtin::Cd),
+        builtin_to_string(&Builtin::Exit),
+    ]
+}
 
 pub fn run_commands(parseds: Vec<Parsed>, bin_paths: &Vec<&str>) -> Result<CommandResult, Error> {
     let mut result = CommandResult::new(Some(": not found".to_string()), None);

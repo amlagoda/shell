@@ -1,6 +1,5 @@
-use crate::command::{command, list};
+use crate::command::{builtin_list, run_commands};
 use crate::env::split_env_path;
-use crate::fs::write_to_file;
 use crate::keyboard::handle_key;
 use crate::parser::parse;
 use crossterm::cursor::MoveLeft;
@@ -41,7 +40,7 @@ fn main() -> Result<(), Error> {
             continue;
         }
 
-        let r = list();
+        let r = builtin_list();
         let commands = r.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
 
         let (i, to_print, hint, is_enter, mut is_exit, is_backspace) =
@@ -66,40 +65,16 @@ fn main() -> Result<(), Error> {
         if is_enter {
             let mut output: Option<String> = None;
             let mut error = Some(String::from(": not found"));
-            let r = parse(input.as_str());
 
-            if let Ok(parsed) = r {
-                if let Some(name) = parsed.command() {
-                    let mut args: Vec<&str> = vec![];
+            if let Some(parseds) = parse(input.as_str())? {
+                let result = run_commands(parseds, &bin_paths)?;
 
-                    if let Some(r) = parsed.args() {
-                        args = r;
-                    }
+                error = result.error().map(|r| r.to_string());
+                output = result.output().map(|r| r.to_string());
 
-                    (output, error, is_exit) = command(name, &args, &bin_paths);
+                if result.is_exit() {
+                    is_exit = true;
                 }
-
-                if let Some(redirect) = parsed.redirect() {
-                    let mut to_write = String::new();
-
-                    if !redirect.is_stderr() && output.is_some() {
-                        to_write = output.unwrap();
-                        output = None;
-                    }
-
-                    if redirect.is_stderr() && error.is_some() {
-                        to_write = error.unwrap();
-                        error = None;
-                    }
-
-                    if !to_write.is_empty() {
-                        to_write.push('\n');
-                    }
-
-                    write_to_file(redirect.path(), to_write.as_str(), redirect.is_append())?;
-                }
-            } else {
-                error = Some(r.unwrap_err().to_string());
             }
 
             input.clear();
