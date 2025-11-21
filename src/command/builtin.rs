@@ -25,7 +25,7 @@ pub fn run_builtin(
         Builtin::Echo => run_command_echo(args),
         Builtin::Pwd => run_command_pwd(),
         Builtin::Cd => run_command_cd(args.first().unwrap_or(&"")),
-        Builtin::Exit => Ok(CommandResult::new_exit()),
+        Builtin::Exit => Ok(CommandResult::new_exit(None)),
     }
 }
 

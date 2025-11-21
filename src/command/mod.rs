@@ -35,10 +35,10 @@ impl CommandResult {
         }
     }
 
-    fn new_exit() -> CommandResult {
+    fn new_exit(output: Option<String>) -> CommandResult {
         CommandResult {
             error: None,
-            output: None,
+            output,
             is_exit: true,
         }
     }
