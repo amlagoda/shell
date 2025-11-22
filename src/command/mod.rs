@@ -19,21 +19,13 @@ pub fn builtin_list() -> Vec<String> {
 
 pub fn run_commands(parseds: Vec<Parsed>, bin_paths: &Vec<&str>) -> Result<CommandResult, Error> {
     let mut result = CommandResult::new(Some(": not found".to_string()), None);
-    let mut pipeline_args: Vec<String> = vec![];
+    let mut stdin: Option<String> = None;
 
     for parsed in parseds {
-        let mut args = parsed.args().unwrap_or(vec![]);
+        let args = parsed.args().unwrap_or(vec![]);
 
-        if !pipeline_args.is_empty() {
-            let mut r = pipeline_args
-                .iter()
-                .map(|r| r.as_str())
-                .collect::<Vec<&str>>();
-
-            args.append(&mut r);
-        }
-
-        let temp = run_command(parsed.command(), &args, bin_paths)?;
+        let temp = run_command(parsed.command(), &args, bin_paths, stdin)?;
+        stdin = None;
 
         if let Some(redirect) = parsed.redirect() {
             let mut to_write = String::new();
@@ -61,17 +53,19 @@ pub fn run_commands(parseds: Vec<Parsed>, bin_paths: &Vec<&str>) -> Result<Comma
         }
 
         if let Some(pipeline) = parsed.pipeline() {
-            let mut args = vec![];
+            let mut output = vec![];
 
-            if let Some(output) = temp.output() {
-                args.push(output.to_string());
+            if let Some(out) = temp.output() {
+                output.push(out.to_string());
             }
 
             if !pipeline.is_stdout() && temp.error().is_some() {
-                args.push(temp.error().unwrap().to_string());
+                output.push(temp.error().unwrap().to_string());
             }
 
-            pipeline_args = args;
+            if !output.is_empty() {
+                stdin = Some(output.join(" "));
+            }
         }
 
         if parsed.redirect().is_some() && parsed.pipeline().is_none() {
@@ -92,11 +86,12 @@ fn run_command(
     command: &str,
     args: &Vec<&str>,
     bin_paths: &Vec<&str>,
+    stdin: Option<String>,
 ) -> Result<CommandResult, Error> {
     if let Some(builtin) = to_builtin(command) {
-        run_builtin(&builtin, args, bin_paths)
+        run_builtin(&builtin, args, bin_paths) // нужен ли stdin?
     } else if is_external(command, bin_paths) {
-        run_external(command, args)
+        run_external(command, args, stdin)
     } else {
         let msg = format!("{}: not found", command);
         Ok(CommandResult::new(Some(msg), None))
@@ -149,10 +144,10 @@ mod tests {
         let r = split_env_path().unwrap();
         let paths = r.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
 
-        let r = run_command("type", &vec!["type"], &paths)?;
+        let r = run_command("type", &vec!["type"], &paths, None)?;
         assert_eq!("type is a shell builtin", r.output().unwrap());
 
-        let r = run_command("ls", &vec!["h&6#"], &paths)?;
+        let r = run_command("ls", &vec!["h&6#"], &paths, None)?;
         assert_eq!("ls: h&6#: No such file or directory", r.error().unwrap());
 
         Ok(())
