@@ -1,43 +1,59 @@
 use crate::command::CommandResult;
 use crate::fs::search_executable_file_in_paths;
-use std::io::{Error, Read};
-use std::process::{Child, Command as Process, Stdio};
+use std::io::{Error, Write};
+use std::process::{Command as Process, Output, Stdio};
+use std::thread::spawn;
 
 pub fn is_external(command: &str, bin_paths: &Vec<&str>) -> bool {
     search_executable_file_in_paths(command, bin_paths).is_some()
 }
 
-pub fn run_external(command: &str, args: &Vec<&str>) -> Result<CommandResult, Error> {
+pub fn run_external(
+    command: &str,
+    args: &Vec<&str>,
+    stdin: Option<String>,
+) -> Result<CommandResult, Error> {
     let mut process = Process::new(command)
         .args(args)
+        .stdin(Stdio::piped())
         .stderr(Stdio::piped())
         .stdout(Stdio::piped())
         .spawn()?;
 
-    process.wait()?;
+    if let Some(stdin) = stdin {
+        let err = Error::other("stdin opening error");
+        let mut std = process.stdin.take().ok_or(err)?;
 
-    to_result(process)
+        spawn(move || -> Result<(), Error> {
+            let err = Error::other("stdin write error");
+            std.write_all(stdin.as_bytes()).map_err(|_| err)
+        })
+        .join()
+        .unwrap()?;
+    }
+
+    to_result(process.wait_with_output()?)
 }
 
-fn to_result(process: Child) -> Result<CommandResult, Error> {
-    let mut stderr = None;
-    let mut stdout = None;
+fn to_result(output: Output) -> Result<CommandResult, Error> {
+    let mut stdout: Option<String> = None;
+    let mut stderr: Option<String> = None;
 
-    if let Some(mut r) = process.stderr {
-        let mut output = String::new();
-        r.read_to_string(&mut output)?;
+    if !output.stdout.is_empty() {
+        let err = Error::other("stdout reading error");
+        let r = String::from_utf8(output.stdout).map_err(|_| err)?;
 
-        if !output.is_empty() {
-            stderr = Some(output.trim().to_string());
+        if !r.trim().is_empty() {
+            stdout = Some(r.trim().to_string());
         }
     }
 
-    if let Some(mut r) = process.stdout {
-        let mut output = String::new();
-        r.read_to_string(&mut output)?;
+    if !output.stderr.is_empty() {
+        let err = Error::other("stderr reading error");
+        let r = String::from_utf8(output.stderr).map_err(|_| err)?;
 
-        if !output.is_empty() {
-            stdout = Some(output.trim().to_string());
+        if !r.trim().is_empty() {
+            stderr = Some(r.trim().to_string());
         }
     }
 
@@ -61,7 +77,7 @@ mod tests {
     #[test]
     fn test_run_external() -> Result<(), Error> {
         let path = get_fixture_dir();
-        let r = run_external("ls", &vec!["not_exists", path.as_str()])?;
+        let r = run_external("ls", &vec!["not_exists", path.as_str()], None)?;
 
         assert_eq!(
             "ls: not_exists: No such file or directory",
