@@ -229,7 +229,6 @@ mod tests {
 
         assert!(parse("")?.is_none());
 
-        //Result<Option<Vec<Parsed>>, Error>
         let r = "cmd1 arg1 arg2 > path | cmd2 | cmd3 arg > path1";
         let mut parseds = parse(r)?.unwrap().into_iter();
 
