@@ -89,7 +89,7 @@ fn run_command(
     stdin: Option<String>,
 ) -> Result<CommandResult, Error> {
     if let Some(builtin) = to_builtin(command) {
-        run_builtin(&builtin, args, bin_paths) // нужен ли stdin?
+        run_builtin(&builtin, args, bin_paths)
     } else if is_external(command, bin_paths) {
         run_external(command, args, stdin)
     } else {
