@@ -40,8 +40,9 @@ pub fn run_commands(parseds: Vec<Parsed>, bin_paths: &Vec<&str>) -> Result<Comma
 
             if !to_write.is_empty() {
                 to_write.push('\n');
-                write_to_file(redirect.path(), to_write.as_str(), redirect.is_append())?;
             }
+
+            write_to_file(redirect.path(), to_write.as_str(), redirect.is_append())?;
         }
 
         if temp.is_exit() {
