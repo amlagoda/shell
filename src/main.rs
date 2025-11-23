@@ -81,7 +81,7 @@ fn main() -> Result<(), Error> {
 
             let mut to_print = error
                 .unwrap_or("".to_string())
-                .split("\\n")
+                .split("\n")
                 .filter(|r| !r.is_empty())
                 .map(|r| r.to_string())
                 .collect::<Vec<String>>();
@@ -89,7 +89,7 @@ fn main() -> Result<(), Error> {
             to_print.append(
                 &mut output
                     .unwrap_or("".to_string())
-                    .split("\\n")
+                    .split("\n")
                     .filter(|r| !r.is_empty())
                     .map(|r| r.to_string())
                     .collect::<Vec<String>>(),
