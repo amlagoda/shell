@@ -1,20 +1,14 @@
 mod builtin;
 mod external;
 
-use crate::command::builtin::{builtin_to_string, run_builtin, to_builtin, Builtin};
+use crate::command::builtin::{run_builtin, Builtin};
 use crate::command::external::{is_external, run_external};
 use crate::fs::write_to_file;
 use crate::parser::Parsed;
 use std::io::Error;
 
 pub fn builtin_list() -> Vec<String> {
-    vec![
-        builtin_to_string(&Builtin::Type),
-        builtin_to_string(&Builtin::Echo),
-        builtin_to_string(&Builtin::Pwd),
-        builtin_to_string(&Builtin::Cd),
-        builtin_to_string(&Builtin::Exit),
-    ]
+    Builtin::list_as_strings()
 }
 
 pub fn run_commands(parseds: Vec<Parsed>, bin_paths: &Vec<&str>) -> Result<CommandResult, Error> {
@@ -65,7 +59,8 @@ pub fn run_commands(parseds: Vec<Parsed>, bin_paths: &Vec<&str>) -> Result<Comma
             }
 
             if !output.is_empty() {
-                stdin = Some(output.join(" "));
+                output.push("\n".to_string());
+                stdin = Some(output.join(""));
             }
         }
 
@@ -89,7 +84,7 @@ fn run_command(
     bin_paths: &Vec<&str>,
     stdin: Option<String>,
 ) -> Result<CommandResult, Error> {
-    if let Some(builtin) = to_builtin(command) {
+    if let Some(builtin) = Builtin::to_builtin(command) {
         run_builtin(&builtin, args, bin_paths)
     } else if is_external(command, bin_paths) {
         run_external(command, args, stdin)
