@@ -3,82 +3,13 @@ mod external;
 
 use crate::command::builtin::{run_builtin, Builtin};
 use crate::command::external::{is_external, run_external};
-use crate::fs::write_to_file;
-use crate::parser::Parsed;
 use std::io::Error;
 
 pub fn builtin_list() -> Vec<String> {
     Builtin::list_as_strings()
 }
 
-pub fn run_commands(parseds: Vec<Parsed>, bin_paths: &Vec<&str>) -> Result<CommandResult, Error> {
-    let mut result = CommandResult::new(Some(": not found".to_string()), None);
-    let mut stdin: Option<String> = None;
-
-    for parsed in parseds {
-        let args = parsed.args().unwrap_or(vec![]);
-
-        let temp = run_command(parsed.command(), &args, bin_paths, stdin)?;
-        stdin = None;
-
-        if let Some(redirect) = parsed.redirect() {
-            let mut to_write = String::new();
-
-            if !redirect.is_stderr() && temp.output().is_some() {
-                to_write.push_str(temp.output().unwrap());
-            }
-
-            if redirect.is_stderr() && temp.error().is_some() {
-                to_write.push_str(temp.error().unwrap());
-            }
-
-            if !to_write.is_empty() {
-                to_write.push('\n');
-            }
-
-            write_to_file(redirect.path(), to_write.as_str(), redirect.is_append())?;
-        }
-
-        if temp.is_exit() {
-            if parsed.redirect().is_none() || parsed.redirect().unwrap().is_stderr() {
-                return Ok(temp);
-            }
-
-            return Ok(CommandResult::new(None, None));
-        }
-
-        if let Some(pipeline) = parsed.pipeline() {
-            let mut output = vec![];
-
-            if let Some(out) = temp.output() {
-                output.push(out.to_string());
-            }
-
-            if !pipeline.is_stdout() && temp.error().is_some() {
-                output.push(temp.error().unwrap().to_string());
-            }
-
-            if !output.is_empty() {
-                output.push("\n".to_string());
-                stdin = Some(output.join(""));
-            }
-        }
-
-        if parsed.redirect().is_some() && parsed.pipeline().is_none() {
-            if parsed.redirect().unwrap().is_stderr() {
-                result = CommandResult::new(None, temp.output);
-            } else {
-                result = CommandResult::new(temp.error, None);
-            }
-        } else {
-            result = temp;
-        }
-    }
-
-    Ok(result)
-}
-
-fn run_command(
+pub fn run_command(
     command: &str,
     args: &Vec<&str>,
     bin_paths: &Vec<&str>,
@@ -101,7 +32,7 @@ pub struct CommandResult {
 }
 
 impl CommandResult {
-    fn new(error: Option<String>, output: Option<String>) -> CommandResult {
+    pub fn new(error: Option<String>, output: Option<String>) -> CommandResult {
         CommandResult {
             error,
             output,
@@ -109,7 +40,7 @@ impl CommandResult {
         }
     }
 
-    fn new_exit(output: Option<String>) -> CommandResult {
+    pub fn new_exit(output: Option<String>) -> CommandResult {
         CommandResult {
             error: None,
             output,
