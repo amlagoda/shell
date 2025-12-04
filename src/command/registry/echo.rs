@@ -12,7 +12,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_command() -> Result<(), Error> {
+    fn test_run_command() -> Result<(), Error> {
         let r = vec!["foo", "bar"];
         assert_eq!("foo bar", run_command(&r)?.output().unwrap());
 

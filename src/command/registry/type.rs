@@ -1,4 +1,4 @@
-use crate::command::builtin::Builtin;
+use crate::command::registry::Builtin;
 use crate::command::CommandResult;
 use crate::fs::search_executable_file_in_paths;
 use std::io::Error;
@@ -42,7 +42,7 @@ mod tests {
 
     fn get_fixture_dir() -> String {
         // ends with a slash
-        format!("{}/test/fixture/command/builtin/type", get_current_dir())
+        format!("{}/test/fixture/command/registry/type", get_current_dir())
     }
 
     fn get_current_dir() -> String {
