@@ -14,15 +14,22 @@ pub fn to_builtin(command: &str) -> Option<Builtin> {
 
 pub fn run_command(
     command: &Builtin,
-    args: &Vec<&str>,
-    bin_paths: &Vec<&str>,
+    args: Option<&Vec<&str>>,
+    bin_paths: Option<&Vec<&str>>,
 ) -> Result<CommandResult, Error> {
     match command {
-        Builtin::Cd => run_command_cd(args.first().unwrap_or(&"")),
+        Builtin::Cd => {
+            let args = args.ok_or(&vec![] as &[&str]).unwrap();
+            run_command_cd(args.first().copied())
+        }
         Builtin::Echo => run_command_echo(args),
         Builtin::Exit => run_command_exit(),
         Builtin::Pwd => run_command_pwd(),
-        Builtin::Type => run_command_type(args.first().unwrap_or(&""), bin_paths),
+        Builtin::Type => {
+            let command = args.ok_or(&vec![""]).unwrap().first().unwrap();
+            let bin_paths = bin_paths.ok_or(&vec![] as &[&str]).unwrap();
+            run_command_type(command, bin_paths)
+        }
     }
 }
 

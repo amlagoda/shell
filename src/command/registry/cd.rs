@@ -3,8 +3,8 @@ use std::env::{home_dir, set_current_dir};
 use std::fs::read_dir;
 use std::io::Error;
 
-pub fn run_command(path: &str) -> Result<CommandResult, Error> {
-    let mut path = path.to_string();
+pub fn run_command(path: Option<&str>) -> Result<CommandResult, Error> {
+    let mut path = path.ok_or("~").map(|r| r.to_string()).unwrap();
 
     if path == "~" {
         let err1 = Error::other("HOME is not set");
