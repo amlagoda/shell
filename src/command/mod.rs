@@ -1,28 +1,33 @@
-mod builtin;
-mod external;
+mod registry;
 
-use crate::command::builtin::{run_builtin, Builtin};
-use crate::command::external::{is_external, run_external};
+use crate::command::registry::cd::run_command as run_command_cd;
+use crate::command::registry::echo::run_command as run_command_echo;
+use crate::command::registry::exit::run_command as run_command_exit;
+use crate::command::registry::pwd::run_command as run_command_pwd;
+use crate::command::registry::r#type::run_command as run_command_type;
+use crate::command::registry::Builtin;
 use std::io::Error;
 
-pub fn builtin_list() -> Vec<String> {
-    Builtin::list_as_strings()
+pub fn to_builtin(command: &str) -> Option<Builtin> {
+    Builtin::to_builtin(command)
 }
 
 pub fn run_command(
-    command: &str,
+    command: &Builtin,
     args: &Vec<&str>,
     bin_paths: &Vec<&str>,
-    stdin: Option<String>,
 ) -> Result<CommandResult, Error> {
-    if let Some(builtin) = Builtin::to_builtin(command) {
-        run_builtin(&builtin, args, bin_paths)
-    } else if is_external(command, bin_paths) {
-        run_external(command, args, stdin)
-    } else {
-        let msg = format!("{}: not found", command);
-        Ok(CommandResult::new(Some(msg), None))
+    match command {
+        Builtin::Cd => run_command_cd(args.first().unwrap_or(&"")),
+        Builtin::Echo => run_command_echo(args),
+        Builtin::Exit => run_command_exit(),
+        Builtin::Pwd => run_command_pwd(),
+        Builtin::Type => run_command_type(args.first().unwrap_or(&""), bin_paths),
     }
+}
+
+pub fn get_command_list() -> Vec<String> {
+    Builtin::list_as_strings()
 }
 
 pub struct CommandResult {
@@ -32,6 +37,18 @@ pub struct CommandResult {
 }
 
 impl CommandResult {
+    pub fn error(&self) -> Option<&str> {
+        self.error.as_deref()
+    }
+
+    pub fn output(&self) -> Option<&str> {
+        self.output.as_deref()
+    }
+
+    pub fn is_exit(&self) -> bool {
+        self.is_exit
+    }
+
     pub fn new(error: Option<String>, output: Option<String>) -> CommandResult {
         CommandResult {
             error,
@@ -46,37 +63,5 @@ impl CommandResult {
             output,
             is_exit: true,
         }
-    }
-
-    pub fn error(&self) -> Option<&str> {
-        self.error.as_deref()
-    }
-
-    pub fn output(&self) -> Option<&str> {
-        self.output.as_deref()
-    }
-
-    pub fn is_exit(&self) -> bool {
-        self.is_exit
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::env::split_env_path;
-
-    #[test]
-    fn test_run_command() -> Result<(), Error> {
-        let r = split_env_path().unwrap();
-        let paths = r.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
-
-        let r = run_command("type", &vec!["type"], &paths, None)?;
-        assert_eq!("type is a shell builtin", r.output().unwrap());
-
-        let r = run_command("ls", &vec!["h&6#"], &paths, None)?;
-        assert_eq!("ls: h&6#: No such file or directory", r.error().unwrap());
-
-        Ok(())
     }
 }
