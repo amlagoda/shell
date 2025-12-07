@@ -4,7 +4,7 @@ use std::fs::read_dir;
 use std::io::Error;
 
 pub fn run_command(path: Option<&str>) -> Result<CommandResult, Error> {
-    let mut path = path.ok_or("~").map(|r| r.to_string()).unwrap();
+    let mut path = path.unwrap_or("~").to_string();
 
     if path == "~" {
         let err1 = Error::other("HOME is not set");

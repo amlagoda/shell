@@ -2,12 +2,7 @@ use crate::command::CommandResult;
 use std::io::Error;
 
 pub fn run_command(args: Option<&Vec<&str>>) -> Result<CommandResult, Error> {
-    let join = args
-        .ok_or(&vec![" "])
-        .unwrap()
-        .to_vec()
-        .join(" ")
-        .to_string();
+    let join = args.unwrap_or(&vec![" "]).to_vec().join(" ").to_string();
 
     Ok(CommandResult::new(None, Some(join)))
 }

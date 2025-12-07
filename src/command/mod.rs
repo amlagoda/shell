@@ -19,16 +19,17 @@ pub fn run_command(
 ) -> Result<CommandResult, Error> {
     match command {
         Builtin::Cd => {
-            let args = args.ok_or(&vec![] as &[&str]).unwrap();
-            run_command_cd(args.first().copied())
+            let def: Vec<&str> = vec![];
+            run_command_cd(args.unwrap_or(&def).first().copied())
         }
         Builtin::Echo => run_command_echo(args),
         Builtin::Exit => run_command_exit(),
         Builtin::Pwd => run_command_pwd(),
         Builtin::Type => {
-            let command = args.ok_or(&vec![""]).unwrap().first().unwrap();
-            let bin_paths = bin_paths.ok_or(&vec![] as &[&str]).unwrap();
-            run_command_type(command, bin_paths)
+            let def = vec![""];
+            let command = args.unwrap_or(&def).first().unwrap();
+            let def: Vec<&str> = vec![];
+            run_command_type(command, bin_paths.unwrap_or(&def))
         }
     }
 }
