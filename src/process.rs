@@ -8,11 +8,11 @@ pub fn spawn_pipe_process(
     stdout: Option<PipeWriter>,
     stderr: Option<PipeWriter>,
 ) -> Result<Child, Error> {
-    Ok(build_process(bin, args, stdin, stdout, stderr).spawn()?)
+    build_process(bin, args, stdin, stdout, stderr).spawn()
 }
 
 pub fn spawn_process(bin: &str, args: Option<&Vec<&str>>) -> Result<Child, Error> {
-    Ok(build_process(bin, args, None, None, None).spawn()?)
+    build_process(bin, args, None, None, None).spawn()
 }
 
 fn build_process(
