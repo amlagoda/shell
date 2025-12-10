@@ -1,4 +1,5 @@
-use std::env::{var, VarError};
+use std::env::{current_exe, var, VarError};
+use std::io::Error;
 
 pub fn split_env_path() -> Result<Vec<String>, VarError> {
     Ok(var("PATH")?
@@ -8,10 +9,13 @@ pub fn split_env_path() -> Result<Vec<String>, VarError> {
 }
 // tested in command/mod.rs::test_command_from_paths
 
-pub fn get_env_builtin() -> Result<String, VarError> {
-    Ok(var(get_env_builtin_name())?)
-}
+pub fn get_current_exe() -> Result<String, Error> {
+    let err = Error::other("path is invalid");
 
-pub fn get_env_builtin_name() -> String {
-    String::from("YOUR_PROGRAM_BUILTIN")
+    let path = current_exe()?
+        .into_os_string()
+        .into_string()
+        .map_err(|_| err)?;
+
+    Ok(path)
 }
