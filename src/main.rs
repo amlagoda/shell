@@ -1,4 +1,5 @@
-use crate::command::{builtin_list, run_commands};
+use crate::command::get_command_list;
+use crate::core::run;
 use crate::env::split_env_path;
 use crate::keyboard::handle_key;
 use crate::parser::parse;
@@ -9,10 +10,12 @@ use crossterm::terminal::{disable_raw_mode, enable_raw_mode, Clear, ClearType};
 use std::io::{stdout, Error, Write};
 
 mod command;
+mod core;
 mod env;
 mod fs;
 mod keyboard;
 mod parser;
+mod process;
 
 fn main() -> Result<(), Error> {
     let mut stdout = stdout();
@@ -40,7 +43,7 @@ fn main() -> Result<(), Error> {
             continue;
         }
 
-        let r = builtin_list();
+        let r = get_command_list();
         let commands = r.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
 
         let (i, to_print, hint, is_enter, mut is_exit, is_backspace) =
@@ -67,7 +70,7 @@ fn main() -> Result<(), Error> {
             let mut error = Some(String::from(": not found"));
 
             if let Some(parseds) = parse(input.as_str())? {
-                let result = run_commands(parseds, &bin_paths)?;
+                let result = run(parseds, &bin_paths)?;
 
                 error = result.error().map(|r| r.to_string());
                 output = result.output().map(|r| r.to_string());
