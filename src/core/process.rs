@@ -1,5 +1,8 @@
-use libc::{dup2 as c_dup2, fork as c_fork};
+use libc::{c_char, dup2 as c_dup2, execvp as c_execvp, fork as c_fork};
+use std::ffi::CString;
 use std::io::Error;
+use std::iter::once;
+use std::ptr::null;
 
 struct Process {
     pid: Pid,
@@ -42,6 +45,35 @@ impl Process {
         } else {
             Ok(())
         }
+    }
+
+    // reload the binary file of the process and transfer control to it
+    // any return value means failure
+    fn hot_reload_bin(bin: &str, args: Option<Vec<&str>>) -> Error {
+        let merged_args: Vec<&str> = vec![bin]
+            .into_iter()
+            .chain(args.unwrap_or(vec![]).into_iter())
+            .collect();
+        let mut args: Vec<CString> = vec![];
+
+        for arg in merged_args {
+            match CString::new(arg) {
+                Ok(arg) => args.push(arg),
+                Err(_) => return Error::other("cstring error"),
+            }
+        }
+
+        let args: Vec<*const c_char> = args
+            .into_iter()
+            .map(|arg| arg.as_ptr())
+            .chain(once(null()))
+            .collect();
+
+        unsafe {
+            c_execvp(args[0].clone(), args.as_ptr());
+        }
+
+        Error::other("execvp error")
     }
 }
 
