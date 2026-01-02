@@ -109,10 +109,25 @@ fn run_chain(parseds: Vec<Parsed>, mut stdout: Stdout) -> Result<Stdout, Error> 
     }
 
     let mut last_read_end = result.unwrap();
+    match read_file_to_stdout(last_read_end, stdout) {
+        Ok(std) => stdout = std,
+        Err(err) => return Err(err),
+    }
+    close_all(pipelines);
+    let last_process_pid = processes.last().unwrap().get_pid();
+    blocking_wait_process(last_process_pid);
+
+    // kill all processes
+
+    Ok(stdout)
+    // Ok(CommandResult::new(None, None))
+}
+
+fn read_file_to_stdout(mut file: File, mut stdout: Stdout) -> Result<Stdout, Error> {
     let mut buffer = [0; 4096];
 
     loop {
-        match last_read_end.read(&mut buffer) {
+        match file.read(&mut buffer) {
             Ok(read_bytes) => {
                 if read_bytes == 0 {
                     break;
@@ -137,15 +152,8 @@ fn run_chain(parseds: Vec<Parsed>, mut stdout: Stdout) -> Result<Stdout, Error> 
             }
         }
     }
-    drop(last_read_end);
-    close_all(pipelines);
-    let last_process_pid = processes.last().unwrap().get_pid();
-    blocking_wait_process(last_process_pid);
-
-    // kill all processes
 
     Ok(stdout)
-    // Ok(CommandResult::new(None, None))
 }
 
 fn close_all(pipelines: Vec<Pipeline>) {
