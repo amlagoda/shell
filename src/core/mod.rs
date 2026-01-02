@@ -137,8 +137,11 @@ fn read_file_to_stdout(mut file: File, mut stdout: Stdout) -> Result<Stdout, Err
                     Err(err) => err.to_string(),
                 };
 
-                let _ = write!(stdout, "{}", output);
-                let _ = stdout.flush();
+                for line in output.split("\n") {
+                    let _ = write!(stdout, "\r\n{}", line);
+                    let _ = stdout.flush();
+                }
+
                 buffer = [0; 4096];
             }
             Err(err) => {
