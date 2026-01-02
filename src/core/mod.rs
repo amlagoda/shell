@@ -45,7 +45,7 @@ fn run_chain(parseds: Vec<Parsed>, mut stdout: Stdout) -> Result<Stdout, Error> 
         if let Err(err) = result {
             close_all(pipelines);
 
-            return Err(err); // not exit
+            return Err(err);
         }
 
         pipelines.push(result.unwrap());
@@ -59,7 +59,7 @@ fn run_chain(parseds: Vec<Parsed>, mut stdout: Stdout) -> Result<Stdout, Error> 
         if let Err(err) = result {
             close_all(pipelines);
             // kill all processes
-            return Err(err); // exit
+            return Err(err);
         }
 
         let process: Process = result.unwrap();
@@ -73,7 +73,7 @@ fn run_chain(parseds: Vec<Parsed>, mut stdout: Stdout) -> Result<Stdout, Error> 
                 if let Err(err) = result {
                     close_all(pipelines);
                     // kill this process
-                    return Err(err); // exit
+                    return Err(err);
                 }
             }
 
@@ -82,13 +82,13 @@ fn run_chain(parseds: Vec<Parsed>, mut stdout: Stdout) -> Result<Stdout, Error> 
             if let Err(err) = result {
                 close_all(pipelines);
                 // kill this process
-                return Err(err); // exit
+                return Err(err);
             }
 
             close_all(pipelines);
             let err = process.hot_reload_bin(parsed.command(), parsed.args());
 
-            return Err(err); // exit
+            return Err(err);
         }
 
         processes.push(process);
@@ -105,7 +105,7 @@ fn run_chain(parseds: Vec<Parsed>, mut stdout: Stdout) -> Result<Stdout, Error> 
     let result = unlock_buf_and_wrap_to_file(last_read_end);
 
     if let Err(err) = result {
-        return Err(err); // exit
+        return Err(err);
     }
 
     let mut last_read_end = result.unwrap();
@@ -120,7 +120,6 @@ fn run_chain(parseds: Vec<Parsed>, mut stdout: Stdout) -> Result<Stdout, Error> 
     // kill all processes
 
     Ok(stdout)
-    // Ok(CommandResult::new(None, None))
 }
 
 fn read_file_to_stdout(mut file: File, mut stdout: Stdout) -> Result<Stdout, Error> {

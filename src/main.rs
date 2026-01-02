@@ -7,7 +7,9 @@ use crossterm::cursor::MoveLeft;
 use crossterm::event::{read, KeyEvent};
 use crossterm::execute;
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode, Clear, ClearType};
+use libc::{signal, SIGCHLD, SIG_IGN};
 use std::io::{stdout, Error, Write};
+use std::process::exit;
 
 mod command;
 mod core;
@@ -18,6 +20,11 @@ mod parser;
 mod process;
 
 fn main() -> Result<(), Error> {
+    unsafe {
+        libc::signal(libc::SIGPIPE, libc::SIG_IGN);
+        signal(SIGCHLD, SIG_IGN);
+    }
+
     let mut stdout = stdout();
     let mut input = String::new();
     let mut previous_key: Option<KeyEvent> = None;
@@ -66,52 +73,61 @@ fn main() -> Result<(), Error> {
         }
 
         if is_enter {
-            let mut output: Option<String> = None;
-            let mut error = Some(String::from(": not found"));
+            // let mut output: Option<String> = None;
+            // let mut error = Some(String::from(": not found"));
 
             if let Some(parseds) = parse(input.as_str())? {
-                let result = run(parseds, &bin_paths)?;
+                stdout = run(parseds, &bin_paths, stdout)?;
+                // let result = run(parseds, &bin_paths, stdout);
 
-                error = result.error().map(|r| r.to_string());
-                output = result.output().map(|r| r.to_string());
+                // if let Err(_) = result {
+                // exit(1);
+                // }
 
-                if result.is_exit() {
-                    is_exit = true;
-                }
+                // stdout = result.unwrap();
+
+                // stdout = run(parseds, &bin_paths, stdout)?;
+
+                // error = result.error().map(|r| r.to_string());
+                // output = result.output().map(|r| r.to_string());
+
+                // if result.is_exit() {
+                //     is_exit = true;
+                // }
             }
 
             input.clear();
 
-            let mut to_print = error
-                .unwrap_or("".to_string())
-                .split("\n")
-                .filter(|r| !r.is_empty())
-                .map(|r| r.to_string())
-                .collect::<Vec<String>>();
+            // let mut to_print = error
+            //     .unwrap_or("".to_string())
+            //     .split("\n")
+            //     .filter(|r| !r.is_empty())
+            //     .map(|r| r.to_string())
+            //     .collect::<Vec<String>>();
 
-            to_print.append(
-                &mut output
-                    .unwrap_or("".to_string())
-                    .split("\n")
-                    .filter(|r| !r.is_empty())
-                    .map(|r| r.to_string())
-                    .collect::<Vec<String>>(),
-            );
+            // to_print.append(
+            //     &mut output
+            //         .unwrap_or("".to_string())
+            //         .split("\n")
+            //         .filter(|r| !r.is_empty())
+            //         .map(|r| r.to_string())
+            //         .collect::<Vec<String>>(),
+            // );
 
-            for r in to_print.iter() {
-                write!(stdout, "\r\n{}", r)?;
-                stdout.flush()?;
-            }
+            // for r in to_print.iter() {
+            //     write!(stdout, "\r\n{}", r)?;
+            //     stdout.flush()?;
+            // }
 
-            if !is_exit {
-                write!(stdout, "\r\n$ ")?;
-                stdout.flush()?;
-            }
+            // if !is_exit {
+            //     write!(stdout, "\r\n$ ")?;
+            //     stdout.flush()?;
+            // }
         }
 
-        if is_exit {
-            break;
-        }
+        // if is_exit {
+        //     break;
+        // }
     }
 
     disable_raw_mode()?;
