@@ -43,9 +43,7 @@ fn run_chain(parseds: Vec<Parsed>, mut stdout: Stdout) -> Result<Stdout, Error> 
         let result = Pipeline::try_new();
 
         if let Err(err) = result {
-            for mut pipeline in pipelines {
-                pipeline.close();
-            }
+            close_all(pipelines);
 
             return Err(err); // not exit
         }
@@ -59,9 +57,7 @@ fn run_chain(parseds: Vec<Parsed>, mut stdout: Stdout) -> Result<Stdout, Error> 
         let result = Process::try_new();
 
         if let Err(err) = result {
-            for mut pipeline in pipelines {
-                pipeline.close();
-            }
+            close_all(pipelines);
             // kill all processes
             return Err(err); // exit
         }
@@ -75,9 +71,7 @@ fn run_chain(parseds: Vec<Parsed>, mut stdout: Stdout) -> Result<Stdout, Error> 
                 let result = process.set_stdin(pipelines[number - 1].get_read_end());
 
                 if let Err(err) = result {
-                    for mut pipeline in pipelines {
-                        pipeline.close();
-                    }
+                    close_all(pipelines);
                     // kill this process
                     return Err(err); // exit
                 }
@@ -86,17 +80,12 @@ fn run_chain(parseds: Vec<Parsed>, mut stdout: Stdout) -> Result<Stdout, Error> 
             let result = process.set_stdout(pipelines[number].get_write_end());
 
             if let Err(err) = result {
-                for mut pipeline in pipelines {
-                    pipeline.close();
-                }
+                close_all(pipelines);
                 // kill this process
                 return Err(err); // exit
             }
 
-            for mut pipeline in pipelines {
-                pipeline.close();
-            }
-
+            close_all(pipelines);
             let err = process.hot_reload_bin(parsed.command(), parsed.args());
 
             return Err(err); // exit
@@ -149,19 +138,20 @@ fn run_chain(parseds: Vec<Parsed>, mut stdout: Stdout) -> Result<Stdout, Error> 
         }
     }
     drop(last_read_end);
-
-    for mut pipeline in pipelines {
-        pipeline.close();
-    }
-
+    close_all(pipelines);
     let last_process_pid = processes.last().unwrap().get_pid();
-
     blocking_wait_process(last_process_pid);
 
     // kill all processes
 
     Ok(stdout)
     // Ok(CommandResult::new(None, None))
+}
+
+fn close_all(pipelines: Vec<Pipeline>) {
+    for mut pipeline in pipelines {
+        pipeline.close();
+    }
 }
 
 fn blocking_wait_process(pid: u32) {
