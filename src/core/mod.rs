@@ -105,13 +105,19 @@ fn run_chain(parseds: Vec<Parsed>, mut stdout: Stdout) -> Result<Stdout, Error> 
     let result = unlock_buf_and_wrap_to_file(last_read_end);
 
     if let Err(err) = result {
+        close_all(pipelines);
+        // kill all pocesses
         return Err(err);
     }
 
     let mut last_read_end = result.unwrap();
     match read_file_to_stdout(last_read_end, stdout) {
         Ok(std) => stdout = std,
-        Err(err) => return Err(err),
+        Err(err) => {
+            close_all(pipelines);
+            // kill app processes
+            return Err(err);
+        }
     }
     close_all(pipelines);
     let last_process_pid = processes.last().unwrap().get_pid();
