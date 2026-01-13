@@ -1,9 +1,8 @@
-use crate::command::CommandResult;
 use std::env::{home_dir, set_current_dir};
 use std::fs::read_dir;
-use std::io::Error;
+use std::io::{Error, Stderr, Write};
 
-pub fn run_command(path: Option<&str>) -> Result<CommandResult, Error> {
+pub fn run_command(mut stderr: Stderr, path: Option<&str>) -> Result<(), Error> {
     let mut path = path.unwrap_or("~").to_string();
 
     if path == "~" {
@@ -19,12 +18,16 @@ pub fn run_command(path: Option<&str>) -> Result<CommandResult, Error> {
 
     if read_dir(path.as_str()).is_err() {
         let msg = format!("cd: {}: No such file or directory", path);
-        return Ok(CommandResult::new(Some(msg), None));
+
+        write!(stderr, "{}", msg)?;
+        stderr.flush()?;
+
+        return Ok(());
     }
 
     set_current_dir(path.as_str())?;
 
-    Ok(CommandResult::new(None, None))
+    Ok(())
 }
 
 // I'm not testing the command cd because
