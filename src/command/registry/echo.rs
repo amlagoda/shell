@@ -1,7 +1,9 @@
-use std::io::{Error, Stdout, Write};
+use crate::command::Stdio;
+use std::io::{Error, Write};
 
-pub fn run_command(mut stdout: Stdout, args: Option<&Vec<&str>>) -> Result<(), Error> {
+pub fn run_command(mut stdio: Stdio, args: Option<&Vec<&str>>) -> Result<(), Error> {
     let join = args.unwrap_or(&vec![" "]).to_vec().join(" ").to_string();
+    let stdout = stdio.stdout();
 
     write!(stdout, "{}", join)?;
     stdout.flush()?;

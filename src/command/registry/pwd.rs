@@ -1,7 +1,8 @@
+use crate::command::Stdio;
 use std::env::current_dir;
-use std::io::{Error, Stdout, Write};
+use std::io::{Error, Write};
 
-pub fn run_command(mut stdout: Stdout) -> Result<(), Error> {
+pub fn run_command(mut stdio: Stdio) -> Result<(), Error> {
     let err = Error::other("path is invalid");
 
     let path = current_dir()?
@@ -9,6 +10,7 @@ pub fn run_command(mut stdout: Stdout) -> Result<(), Error> {
         .into_string()
         .map_err(|_| err)?;
 
+    let stdout = stdio.stdout();
     write!(stdout, "{}", path)?;
     stdout.flush()?;
 

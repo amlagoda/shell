@@ -1,13 +1,9 @@
 use crate::command::registry::Builtin;
+use crate::command::Stdio;
 use crate::fs::search_executable_file_in_paths;
-use std::io::{Error, Stderr, Stdout, Write};
+use std::io::{Error, Write};
 
-pub fn run_command(
-    mut stderr: Stderr,
-    mut stdout: Stdout,
-    command: &str,
-    bin_paths: &Vec<&str>,
-) -> Result<(), Error> {
+pub fn run_command(mut stdio: Stdio, command: &str, bin_paths: &Vec<&str>) -> Result<(), Error> {
     let mut msg = format!("type: {}: not found", command);
     let mut to_stderr = true;
 
@@ -20,9 +16,11 @@ pub fn run_command(
     }
 
     if to_stderr {
+        let stderr = stdio.stderr();
         write!(stderr, "{}", msg)?;
         stderr.flush()?;
     } else {
+        let stdout = stdio.stdout();
         write!(stdout, "{}", msg)?;
         stdout.flush()?;
     }
