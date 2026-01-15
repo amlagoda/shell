@@ -2,74 +2,79 @@ mod registry;
 
 use crate::command::registry::cd::run_command as run_command_cd;
 use crate::command::registry::echo::run_command as run_command_echo;
-use crate::command::registry::exit::run_command as run_command_exit;
 use crate::command::registry::pwd::run_command as run_command_pwd;
 use crate::command::registry::r#type::run_command as run_command_type;
 use crate::command::registry::Builtin;
-use std::io::Error;
+use std::io::{Error, Stderr, Stdout};
 
 pub fn to_builtin(command: &str) -> Option<Builtin> {
     Builtin::to_builtin(command)
 }
 
 pub fn run_command(
+    stdio: Stdio,
     command: &Builtin,
     args: Option<&Vec<&str>>,
     bin_paths: Option<&Vec<&str>>,
-) -> Result<CommandResult, Error> {
+) -> Result<Exit, Error> {
+    let mut exit = Exit::No;
+
     match command {
         Builtin::Cd => {
-            let def: Vec<&str> = vec![];
-            run_command_cd(args.unwrap_or(&def).first().copied())
+            let default: Vec<&str> = vec![];
+            run_command_cd(stdio, args.unwrap_or(&default).first().copied())
         }
-        Builtin::Echo => run_command_echo(args),
-        Builtin::Exit => run_command_exit(),
-        Builtin::Pwd => run_command_pwd(),
+        Builtin::Echo => run_command_echo(stdio, args),
+        Builtin::Exit => {
+            exit = Exit::Yes;
+            let args = vec!["^C"];
+            run_command_echo(stdio, Some(&args))
+        }
+        Builtin::Pwd => run_command_pwd(stdio),
         Builtin::Type => {
-            let def = vec![""];
-            let command = args.unwrap_or(&def).first().unwrap();
-            let def: Vec<&str> = vec![];
-            run_command_type(command, bin_paths.unwrap_or(&def))
+            let default = vec![""];
+            let command = args.unwrap_or(&default).first().unwrap();
+            let default: Vec<&str> = vec![];
+            run_command_type(stdio, command, bin_paths.unwrap_or(&default))
         }
-    }
+    };
+
+    Ok(exit)
 }
 
 pub fn get_command_list() -> Vec<String> {
     Builtin::list_as_strings()
 }
 
-pub struct CommandResult {
-    error: Option<String>,
-    output: Option<String>,
-    is_exit: bool,
+pub struct Stdio {
+    stdout: Stdout,
+    stderr: Stderr,
 }
 
-impl CommandResult {
-    pub fn error(&self) -> Option<&str> {
-        self.error.as_deref()
+impl Stdio {
+    pub fn new(stdout: Stdout, stderr: Stderr) -> Stdio {
+        Stdio { stdout, stderr }
     }
 
-    pub fn output(&self) -> Option<&str> {
-        self.output.as_deref()
+    pub fn stdout(&mut self) -> &mut Stdout {
+        &mut self.stdout
     }
 
-    pub fn is_exit(&self) -> bool {
-        self.is_exit
+    pub fn stderr(&mut self) -> &mut Stderr {
+        &mut self.stderr
     }
+}
 
-    pub fn new(error: Option<String>, output: Option<String>) -> CommandResult {
-        CommandResult {
-            error,
-            output,
-            is_exit: false,
-        }
-    }
+pub enum Exit {
+    Yes,
+    No,
+}
 
-    pub fn new_exit(output: Option<String>) -> CommandResult {
-        CommandResult {
-            error: None,
-            output,
-            is_exit: true,
+impl Exit {
+    pub fn yes(&self) -> bool {
+        match self {
+            Exit::Yes => true,
+            Exit::No => false,
         }
     }
 }
