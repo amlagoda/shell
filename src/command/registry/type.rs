@@ -3,7 +3,7 @@ use crate::command::Stdio;
 use crate::fs::search_executable_file_in_paths;
 use std::io::{Error, Write};
 
-pub fn run_command(mut stdio: Stdio, command: &str, bin_paths: &Vec<&str>) -> Result<(), Error> {
+pub fn run_command(stdio: &mut Stdio, command: &str, bin_paths: &Vec<&str>) -> Result<(), Error> {
     let mut msg = format!("type: {}: not found", command);
     let mut to_stderr = true;
 

@@ -1,7 +1,7 @@
 use crate::command::Stdio;
 use std::io::{Error, Write};
 
-pub fn run_command(mut stdio: Stdio, args: Option<&Vec<&str>>) -> Result<(), Error> {
+pub fn run_command(stdio: &mut Stdio, args: Option<&Vec<&str>>) -> Result<(), Error> {
     let join = args.unwrap_or(&vec![" "]).to_vec().join(" ").to_string();
     let stdout = stdio.stdout();
 

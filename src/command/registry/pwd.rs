@@ -2,7 +2,7 @@ use crate::command::Stdio;
 use std::env::current_dir;
 use std::io::{Error, Write};
 
-pub fn run_command(mut stdio: Stdio) -> Result<(), Error> {
+pub fn run_command(stdio: &mut Stdio) -> Result<(), Error> {
     let err = Error::other("path is invalid");
 
     let path = current_dir()?

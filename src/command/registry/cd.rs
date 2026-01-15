@@ -3,7 +3,7 @@ use std::env::{home_dir, set_current_dir};
 use std::fs::read_dir;
 use std::io::{Error, Write};
 
-pub fn run_command(mut stdio: Stdio, path: Option<&str>) -> Result<(), Error> {
+pub fn run_command(stdio: &mut Stdio, path: Option<&str>) -> Result<(), Error> {
     let mut path = path.unwrap_or("~").to_string();
 
     if path == "~" {
