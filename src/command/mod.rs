@@ -12,7 +12,7 @@ pub fn to_builtin(command: &str) -> Option<Builtin> {
 }
 
 pub fn run_command(
-    stdio: Stdio,
+    stdio: &mut Stdio,
     command: &Builtin,
     args: Option<&Vec<&str>>,
     bin_paths: Option<&Vec<&str>>,
