@@ -16,20 +16,14 @@ pub fn run_command(
     command: &Builtin,
     args: Option<&Vec<&str>>,
     bin_paths: Option<&Vec<&str>>,
-) -> Result<Exit, Error> {
-    let mut exit = Exit::No;
-
+) -> Result<(), Error> {
     match command {
         Builtin::Cd => {
             let default: Vec<&str> = vec![];
             run_command_cd(stdio, args.unwrap_or(&default).first().copied())
         }
         Builtin::Echo => run_command_echo(stdio, args),
-        Builtin::Exit => {
-            exit = Exit::Yes;
-            let args = vec!["^C"];
-            run_command_echo(stdio, Some(&args))
-        }
+        Builtin::Exit => Ok(()),
         Builtin::Pwd => run_command_pwd(stdio),
         Builtin::Type => {
             let default = vec![""];
@@ -37,9 +31,7 @@ pub fn run_command(
             let default: Vec<&str> = vec![];
             run_command_type(stdio, command, bin_paths.unwrap_or(&default))
         }
-    };
-
-    Ok(exit)
+    }
 }
 
 pub fn get_command_list() -> Vec<String> {
@@ -71,19 +63,5 @@ impl Stdio {
 
     pub fn stderr(&mut self) -> &mut Stderr {
         &mut self.stderr
-    }
-}
-
-pub enum Exit {
-    Yes,
-    No,
-}
-
-impl Exit {
-    pub fn yes(&self) -> bool {
-        match self {
-            Exit::Yes => true,
-            Exit::No => false,
-        }
     }
 }
