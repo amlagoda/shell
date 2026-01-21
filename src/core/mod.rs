@@ -1,42 +1,52 @@
 mod pipeline;
 mod process;
 
-use crate::command::CommandResult;
-use crate::command::{run_command as run_builtin, to_builtin};
+use crate::command::{run_command as run_builtin, to_builtin, Stdio};
 use crate::core::pipeline::Pipeline;
 use crate::core::process::Process;
 use crate::env::get_current_exe;
 use crate::fs::{search_executable_file_in_paths as find_bin, write_to_file};
 use crate::parser::Parsed;
 use crate::process::{spawn_pipe_process, spawn_process};
+use crate::Exit;
 use libc::{fcntl as c_fcntl, waitpid as c_waitpid, F_SETFL, O_NONBLOCK};
 use std::fs::File;
 use std::io::{pipe, Error, PipeReader, PipeWriter};
 use std::io::{ErrorKind, Stdout};
 use std::io::{Read, Write};
 use std::os::fd::FromRawFd;
-use std::process::{Child, Output};
+use std::process::{exit, Child, Output};
 use std::ptr;
 use std::thread::sleep;
 use std::time::Duration;
 
-pub fn run(parseds: Vec<Parsed>, bin_paths: &Vec<&str>, stdout: Stdout) -> Result<Stdout, Error> {
+pub fn run(stdio: &mut Stdio, parseds: Vec<Parsed>, bin_paths: &Vec<&str>) -> Result<Exit, Error> {
     let len = parseds.len();
 
-    if len > 1 {
-        Ok(run_chain(parseds, stdout)?)
-    } else if len == 1 {
-        Ok(run_single(
-            parseds.into_iter().next().unwrap(),
-            bin_paths,
-            stdout,
-        )?)
-    } else {
-        Err(Error::other("empty parseds"))
+    if len == 0 {
+        return Err(Error::other("empty parseds"));
     }
+
+    run_chain(parseds, stdio, bin_paths)
+
+    // if len > 1 {
+    //     Ok(run_chain(parseds, stdout)?)
+    // } else if len == 1 {
+    //     Ok(run_single(
+    //         parseds.into_iter().next().unwrap(),
+    //         bin_paths,
+    //         stdout,
+    //     )?)
+    // } else {
+    //     Err(Error::other("empty parseds"))
+    // }
 }
 
-fn run_chain(parseds: Vec<Parsed>, mut stdout: Stdout) -> Result<Stdout, Error> {
+fn run_chain(
+    parseds: Vec<Parsed>,
+    stdio: &mut Stdio,
+    bin_paths: &Vec<&str>,
+) -> Result<Exit, Error> {
     let mut pipelines: Vec<Pipeline> = vec![];
 
     for _ in 0..parseds.len() {
@@ -54,6 +64,12 @@ fn run_chain(parseds: Vec<Parsed>, mut stdout: Stdout) -> Result<Stdout, Error> 
     let mut processes: Vec<Process> = vec![];
 
     for (number, parsed) in parseds.iter().enumerate() {
+        if parsed.command() == "exit" {
+            close_all(pipelines);
+            // kill all processes
+            return Ok(Exit::Yes);
+        }
+
         let result = Process::try_new();
 
         if let Err(err) = result {
@@ -86,9 +102,16 @@ fn run_chain(parseds: Vec<Parsed>, mut stdout: Stdout) -> Result<Stdout, Error> 
             }
 
             close_all(pipelines);
-            let err = process.hot_reload_bin(parsed.command(), parsed.args());
 
-            return Err(err);
+            if let Some(command) = to_builtin(parsed.command()) {
+                let _ = run_builtin(stdio, &command, parsed.args().as_ref(), Some(bin_paths));
+
+                return Ok(Exit::Yes);
+            } else {
+                let err = process.hot_reload_bin(parsed.command(), parsed.args());
+
+                return Err(err);
+            }
         }
 
         processes.push(process);
@@ -111,8 +134,9 @@ fn run_chain(parseds: Vec<Parsed>, mut stdout: Stdout) -> Result<Stdout, Error> 
     }
 
     let mut last_read_end = result.unwrap();
-    match read_file_to_stdout(last_read_end, stdout) {
-        Ok(std) => stdout = std,
+    match read_file_to_stdout(last_read_end, stdio.stdout()) {
+        // Ok(std) => stdout = std,
+        Ok(std) => {}
         Err(err) => {
             close_all(pipelines);
             // kill app processes
@@ -125,10 +149,10 @@ fn run_chain(parseds: Vec<Parsed>, mut stdout: Stdout) -> Result<Stdout, Error> 
 
     // kill all processes
 
-    Ok(stdout)
+    Ok(Exit::No)
 }
 
-fn read_file_to_stdout(mut file: File, mut stdout: Stdout) -> Result<Stdout, Error> {
+fn read_file_to_stdout(mut file: File, stdout: &mut Stdout) -> Result<(), Error> {
     let mut buffer = [0; 4096];
 
     loop {
@@ -143,7 +167,8 @@ fn read_file_to_stdout(mut file: File, mut stdout: Stdout) -> Result<Stdout, Err
                     Err(err) => err.to_string(),
                 };
 
-                for line in output.split("\n") {
+                for line in output.split("\n").filter(|r| !["\n", "\0"].contains(r)) {
+                    // println!("{:?}", line);
                     let _ = write!(stdout, "\r\n{}", line);
                     let _ = stdout.flush();
                 }
@@ -161,7 +186,7 @@ fn read_file_to_stdout(mut file: File, mut stdout: Stdout) -> Result<Stdout, Err
         }
     }
 
-    Ok(stdout)
+    Ok(())
 }
 
 fn close_all(pipelines: Vec<Pipeline>) {
@@ -192,7 +217,7 @@ fn unlock_buf_and_wrap_to_file(file_descriptor: u32) -> Result<File, Error> {
     Ok(file)
 }
 
-fn run_chain_old(parseds: Vec<Parsed>) -> Result<CommandResult, Error> {
+/*fn run_chain_old(parseds: Vec<Parsed>) -> Result<(), Error> {
     let current_exe = get_current_exe()?;
     let mut processes: Vec<Child> = vec![];
     let mut previous_output: Option<PipeReader> = None;
@@ -233,14 +258,19 @@ fn run_chain_old(parseds: Vec<Parsed>) -> Result<CommandResult, Error> {
     } else {
         Err(Error::other("parseds is empty"))
     }
-}
+}*/
 
-fn run_single(parsed: Parsed, bin_paths: &Vec<&str>, stdout: Stdout) -> Result<Stdout, Error> {
+/*fn run_single(
+    stdio: &mut Stdio,
+    parsed: Parsed,
+    bin_paths: &Vec<&str>,
+    mut stdout: Stdout,
+) -> Result<Stdout, Error> {
     let msg = format!("{}: not found", parsed.command());
     let mut result = CommandResult::new(Some(msg), None);
 
     if let Some(builtin) = to_builtin(parsed.command()) {
-        result = run_builtin(&builtin, parsed.args().as_ref(), Some(bin_paths))?;
+        result = run_builtin(stdio, &builtin, parsed.args().as_ref(), Some(bin_paths))?;
     } else if find_bin(parsed.command(), bin_paths).is_some() {
         let process = spawn_process(parsed.command(), parsed.args().as_ref())?;
         result = output_to_result(process.wait_with_output()?)?;
@@ -271,31 +301,16 @@ fn run_single(parsed: Parsed, bin_paths: &Vec<&str>, stdout: Stdout) -> Result<S
         write_to_file(redirect.path(), to_write.as_str(), redirect.is_append())?;
     }
 
+    if let Some(error) = result.error() {
+        let _ = write!(stdout, "{}", error);
+        let _ = stdout.flush();
+    }
+
+    if let Some(output) = result.output() {
+        let _ = write!(stdout, "{}", output);
+        let _ = stdout.flush();
+    }
+
     Ok(stdout)
     // Ok(result)
-}
-
-fn output_to_result(output: Output) -> Result<CommandResult, Error> {
-    let mut stdout: Option<String> = None;
-    let mut stderr: Option<String> = None;
-
-    if !output.stdout.is_empty() {
-        let err = Error::other("stdout reading error");
-        let r = String::from_utf8(output.stdout).map_err(|_| err)?;
-
-        if !r.trim().is_empty() {
-            stdout = Some(r.trim().to_string());
-        }
-    }
-
-    if !output.stderr.is_empty() {
-        let err = Error::other("stderr reading error");
-        let r = String::from_utf8(output.stderr).map_err(|_| err)?;
-
-        if !r.trim().is_empty() {
-            stderr = Some(r.trim().to_string());
-        }
-    }
-
-    Ok(CommandResult::new(stderr, stdout))
-}
+}*/

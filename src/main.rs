@@ -1,4 +1,4 @@
-use crate::command::get_command_list;
+use crate::command::{get_command_list, Stdio};
 use crate::core::run;
 use crate::env::split_env_path;
 use crate::keyboard::handle_key;
@@ -8,7 +8,7 @@ use crossterm::event::{read, KeyEvent};
 use crossterm::execute;
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode, Clear, ClearType};
 use libc::{signal, SIGCHLD, SIG_IGN};
-use std::io::{stdout, Error, Write};
+use std::io::{stderr, stdin, stdout, Error, Write};
 use std::process::exit;
 
 mod command;
@@ -20,12 +20,12 @@ mod parser;
 mod process;
 
 fn main() -> Result<(), Error> {
-    unsafe {
-        libc::signal(libc::SIGPIPE, libc::SIG_IGN);
-        signal(SIGCHLD, SIG_IGN);
-    }
+    // unsafe {
+    //     libc::signal(libc::SIGPIPE, libc::SIG_IGN);
+    //     signal(SIGCHLD, SIG_IGN);
+    // }
 
-    let mut stdout = stdout();
+    let mut stdout1 = stdout();
     let mut input = String::new();
     let mut previous_key: Option<KeyEvent> = None;
 
@@ -39,8 +39,8 @@ fn main() -> Result<(), Error> {
     let bin_paths = r.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
 
     enable_raw_mode()?;
-    write!(stdout, "$ ")?;
-    stdout.flush()?;
+    write!(stdout1, "$ ")?;
+    stdout1.flush()?;
 
     loop {
         let r = read()?;
@@ -59,17 +59,20 @@ fn main() -> Result<(), Error> {
         input = i;
 
         if is_backspace {
-            execute!(stdout, MoveLeft(1), Clear(ClearType::UntilNewLine))?;
+            execute!(stdout(), MoveLeft(1), Clear(ClearType::UntilNewLine))?;
+            // execute!(stdout1, MoveLeft(1), Clear(ClearType::UntilNewLine))?;
         }
 
         if let Some(r) = to_print {
-            write!(stdout, "{}", r)?;
-            stdout.flush()?;
+            let mut stdout1 = stdout();
+            write!(stdout1, "{}", r)?;
+            stdout1.flush()?;
         }
 
         if let Some(r) = hint {
-            write!(stdout, "\r\n{}\r\n$ {}", r, input)?;
-            stdout.flush()?;
+            let mut stdout1 = stdout();
+            write!(stdout1, "\r\n{}\r\n$ {}", r, input)?;
+            stdout1.flush()?;
         }
 
         if is_enter {
@@ -77,7 +80,10 @@ fn main() -> Result<(), Error> {
             // let mut error = Some(String::from(": not found"));
 
             if let Some(parseds) = parse(input.as_str())? {
-                stdout = run(parseds, &bin_paths, stdout)?;
+                let stdout1 = stdout();
+                let mut stdio = Stdio::new(stdin(), stdout1, stderr());
+                let _ = stdio.stdin();
+                let exit = run(&mut stdio, parseds, &bin_paths)?;
                 // let result = run(parseds, &bin_paths, stdout);
 
                 // if let Err(_) = result {
@@ -91,9 +97,9 @@ fn main() -> Result<(), Error> {
                 // error = result.error().map(|r| r.to_string());
                 // output = result.output().map(|r| r.to_string());
 
-                // if result.is_exit() {
-                //     is_exit = true;
-                // }
+                if exit.yes() {
+                    is_exit = true;
+                }
             }
 
             input.clear();
@@ -123,15 +129,32 @@ fn main() -> Result<(), Error> {
             //     write!(stdout, "\r\n$ ")?;
             //     stdout.flush()?;
             // }
+            let mut stdout1 = stdout();
+            write!(stdout1, "\n\r$ ")?;
+            stdout1.flush()?;
         }
 
-        // if is_exit {
-        //     break;
-        // }
+        if is_exit {
+            break;
+        }
     }
 
     disable_raw_mode()?;
     println!(""); // %
 
     Ok(())
+}
+
+pub enum Exit {
+    Yes,
+    No,
+}
+
+impl Exit {
+    pub fn yes(&self) -> bool {
+        match self {
+            Exit::Yes => true,
+            Exit::No => false,
+        }
+    }
 }
