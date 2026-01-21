@@ -83,7 +83,9 @@ fn main() -> Result<(), Error> {
                 let stdout1 = stdout();
                 let mut stdio = Stdio::new(stdin(), stdout1, stderr());
                 let _ = stdio.stdin();
+                disable_raw_mode()?;
                 let exit = run(&mut stdio, parseds, &bin_paths)?;
+                enable_raw_mode()?;
                 // let result = run(parseds, &bin_paths, stdout);
 
                 // if let Err(_) = result {
@@ -129,9 +131,12 @@ fn main() -> Result<(), Error> {
             //     write!(stdout, "\r\n$ ")?;
             //     stdout.flush()?;
             // }
-            let mut stdout1 = stdout();
-            write!(stdout1, "\n\r$ ")?;
-            stdout1.flush()?;
+
+            if !is_exit {
+                let mut stdout1 = stdout();
+                write!(stdout1, "\n\r$ ")?;
+                stdout1.flush()?;
+            }
         }
 
         if is_exit {
