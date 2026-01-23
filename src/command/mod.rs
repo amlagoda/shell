@@ -4,6 +4,7 @@ use crate::command::registry::cd::run_command as run_command_cd;
 use crate::command::registry::echo::run_command as run_command_echo;
 use crate::command::registry::pwd::run_command as run_command_pwd;
 use crate::command::registry::r#type::run_command as run_command_type;
+use crate::command::registry::yes::run_command as run_command_yes;
 use crate::command::registry::Builtin;
 use std::io::{Error, Stderr, Stdin, Stdout};
 
@@ -31,6 +32,7 @@ pub fn run_command(
             let default: Vec<&str> = vec![];
             run_command_type(stdio, command, bin_paths.unwrap_or(&default))
         }
+        Builtin::Yes => run_command_yes(stdio),
     }
 }
 

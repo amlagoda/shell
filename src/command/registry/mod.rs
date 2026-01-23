@@ -2,6 +2,7 @@ pub mod cd;
 pub mod echo;
 pub mod pwd;
 pub mod r#type;
+pub mod yes;
 
 pub enum Builtin {
     Cd,
@@ -9,6 +10,7 @@ pub enum Builtin {
     Exit,
     Pwd,
     Type,
+    Yes,
 }
 
 impl Builtin {
@@ -32,6 +34,7 @@ impl Builtin {
             Builtin::Exit,
             Builtin::Pwd,
             Builtin::Type,
+            Builtin::Yes,
         ]
     }
 }
@@ -44,6 +47,7 @@ impl ToString for Builtin {
             Builtin::Exit => String::from("exit"),
             Builtin::Pwd => String::from("pwd"),
             Builtin::Type => String::from("type"),
+            Builtin::Yes => String::from("yes"),
         }
     }
 }
