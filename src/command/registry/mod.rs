@@ -27,6 +27,13 @@ impl Builtin {
             .collect::<Vec<String>>()
     }
 
+    pub fn is_blocking(&self) -> bool {
+        match self {
+            Builtin::Yes => true,
+            _ => false,
+        }
+    }
+
     fn list() -> Vec<Builtin> {
         vec![
             Builtin::Cd,

@@ -6,7 +6,8 @@ use crate::command::registry::pwd::run_command as run_command_pwd;
 use crate::command::registry::r#type::run_command as run_command_type;
 use crate::command::registry::yes::run_command as run_command_yes;
 use crate::command::registry::Builtin;
-use std::io::{Error, Stderr, Stdin, Stdout};
+use std::fs::File;
+use std::io::Error;
 
 pub fn to_builtin(command: &str) -> Option<Builtin> {
     Builtin::to_builtin(command)
@@ -41,13 +42,13 @@ pub fn get_command_list() -> Vec<String> {
 }
 
 pub struct Stdio {
-    stdin: Stdin,
-    stdout: Stdout,
-    stderr: Stderr,
+    stdin: File,
+    stdout: File,
+    stderr: File,
 }
 
 impl Stdio {
-    pub fn new(stdin: Stdin, stdout: Stdout, stderr: Stderr) -> Stdio {
+    pub fn new(stdin: File, stdout: File, stderr: File) -> Stdio {
         Stdio {
             stdin,
             stdout,
@@ -55,15 +56,15 @@ impl Stdio {
         }
     }
 
-    pub fn stdin(&mut self) -> &mut Stdin {
+    pub fn stdin(&mut self) -> &mut File {
         &mut self.stdin
     }
 
-    pub fn stdout(&mut self) -> &mut Stdout {
+    pub fn stdout(&mut self) -> &mut File {
         &mut self.stdout
     }
 
-    pub fn stderr(&mut self) -> &mut Stderr {
+    pub fn stderr(&mut self) -> &mut File {
         &mut self.stderr
     }
 }
