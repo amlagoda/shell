@@ -1,6 +1,7 @@
 pub mod cd;
 pub mod echo;
 pub mod pwd;
+// pub mod tee;
 pub mod r#type;
 pub mod yes;
 
@@ -9,6 +10,7 @@ pub enum Builtin {
     Echo,
     Exit,
     Pwd,
+    // Tee,
     Type,
     Yes,
 }
@@ -30,6 +32,7 @@ impl Builtin {
     pub fn is_blocking(&self) -> bool {
         match self {
             Builtin::Yes => true,
+            // Builtin::Tee => true,
             _ => false,
         }
     }
@@ -40,6 +43,7 @@ impl Builtin {
             Builtin::Echo,
             Builtin::Exit,
             Builtin::Pwd,
+            // Builtin::Tee,
             Builtin::Type,
             Builtin::Yes,
         ]
@@ -53,6 +57,7 @@ impl ToString for Builtin {
             Builtin::Echo => String::from("echo"),
             Builtin::Exit => String::from("exit"),
             Builtin::Pwd => String::from("pwd"),
+            // Builtin::Tee => String::from("tee"),
             Builtin::Type => String::from("type"),
             Builtin::Yes => String::from("yes"),
         }
