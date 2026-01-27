@@ -5,7 +5,7 @@ pub fn run_command(stdio: &mut Stdio, args: Option<&Vec<&str>>) -> Result<(), Er
     let join = args.unwrap_or(&vec![" "]).to_vec().join(" ").to_string();
     let stdout = stdio.stdout();
 
-    write!(stdout, "\r\n{}", join)?;
+    write!(stdout, "{}\r\n", join)?;
     stdout.flush()?;
 
     Ok(())

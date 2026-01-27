@@ -17,11 +17,11 @@ pub fn run_command(stdio: &mut Stdio, command: &str, bin_paths: &Vec<&str>) -> R
 
     if to_stderr {
         let stderr = stdio.stderr();
-        write!(stderr, "\r\n{}", msg)?;
+        write!(stderr, "{}\r\n", msg)?;
         stderr.flush()?;
     } else {
         let stdout = stdio.stdout();
-        write!(stdout, "\r\n{}", msg)?;
+        write!(stdout, "{}\r\n", msg)?;
         stdout.flush()?;
     }
 

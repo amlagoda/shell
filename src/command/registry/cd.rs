@@ -21,7 +21,7 @@ pub fn run_command(stdio: &mut Stdio, path: Option<&str>) -> Result<(), Error> {
         let msg = format!("cd: {}: No such file or directory", path);
         let stderr = stdio.stderr();
 
-        write!(stderr, "\r\n{}", msg)?;
+        write!(stderr, "{}\r\n", msg)?;
         stderr.flush()?;
 
         return Ok(());

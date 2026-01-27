@@ -11,7 +11,7 @@ pub fn run_command(stdio: &mut Stdio) -> Result<(), Error> {
         .map_err(|_| err)?;
 
     let stdout = stdio.stdout();
-    write!(stdout, "\r\n{}", path)?;
+    write!(stdout, "{}\r\n", path)?;
     stdout.flush()?;
 
     Ok(())
