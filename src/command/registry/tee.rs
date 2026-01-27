@@ -4,12 +4,7 @@ use std::io::{Error, ErrorKind, Read, Write};
 use std::thread::sleep;
 use std::time::Duration;
 
-pub fn run_command(
-    stdio: &mut Stdio,
-    file_path: &str,
-    file_append: bool,
-    write_stdout: bool,
-) -> Result<(), Error> {
+pub fn run_command(stdio: &mut Stdio, file_path: &str, file_append: bool) -> Result<(), Error> {
     let mut file = open_file(file_path, file_append)?;
     let mut buffer = [0; 4096];
 
@@ -24,11 +19,8 @@ pub fn run_command(
                     .map_err(|err| Error::other(err.to_string()))?;
 
                 write!(file, "{}", &readed)?;
-
-                if write_stdout {
-                    write!(stdio.stdout(), "{}", readed)?;
-                    stdio.stdout().flush()?;
-                }
+                write!(stdio.stdout(), "{}", readed)?;
+                stdio.stdout().flush()?;
 
                 buffer = [0; 4096];
             }

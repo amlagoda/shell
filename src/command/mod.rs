@@ -14,6 +14,7 @@ pub fn to_builtin(command: &str) -> Option<Builtin> {
     Builtin::to_builtin(command)
 }
 
+// exit - nominal command without realization processed from the outside
 pub fn run_command(
     stdio: &mut Stdio,
     command: &Builtin,

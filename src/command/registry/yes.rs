@@ -5,7 +5,7 @@ pub fn run_command(stdio: &mut Stdio) -> Result<(), Error> {
     let stdout = stdio.stdout();
 
     loop {
-        write!(stdout, "{}\r\n", "y")?;
+        write!(stdout, "{}\r\n", "y")?; // infinite output, so at the end \r\n
         stdout.flush()?;
     }
 }

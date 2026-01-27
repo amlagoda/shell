@@ -3,10 +3,9 @@ use std::io::{Error, Write};
 
 pub fn run_command(stdio: &mut Stdio, args: Option<&Vec<&str>>) -> Result<(), Error> {
     let join = args.unwrap_or(&vec![" "]).to_vec().join(" ").to_string();
-    let stdout = stdio.stdout();
 
-    write!(stdout, "{}\r\n", join)?;
-    stdout.flush()?;
+    write!(stdio.stdout(), "{}", join)?;
+    stdio.stdout().flush()?;
 
     Ok(())
 }

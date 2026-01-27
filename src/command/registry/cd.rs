@@ -19,10 +19,9 @@ pub fn run_command(stdio: &mut Stdio, path: Option<&str>) -> Result<(), Error> {
 
     if read_dir(path.as_str()).is_err() {
         let msg = format!("cd: {}: No such file or directory", path);
-        let stderr = stdio.stderr();
 
-        write!(stderr, "{}\r\n", msg)?;
-        stderr.flush()?;
+        write!(stdio.stderr(), "{}", msg)?;
+        stdio.stderr().flush()?;
 
         return Ok(());
     }

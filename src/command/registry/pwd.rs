@@ -10,9 +10,8 @@ pub fn run_command(stdio: &mut Stdio) -> Result<(), Error> {
         .into_string()
         .map_err(|_| err)?;
 
-    let stdout = stdio.stdout();
-    write!(stdout, "{}\r\n", path)?;
-    stdout.flush()?;
+    write!(stdio.stdout(), "{}", path)?;
+    stdio.stdout().flush()?;
 
     Ok(())
 }

@@ -5,6 +5,9 @@ pub mod pwd;
 pub mod r#type;
 pub mod yes;
 
+// the output of the commands must not start or end \r\n
+// exit - nominal command without realization processed from the outside
+// is_blocking - commands that block the program (like "yes")
 pub enum Builtin {
     Cd,
     Echo,
