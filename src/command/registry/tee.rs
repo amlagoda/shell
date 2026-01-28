@@ -1,10 +1,15 @@
+use crate::command::registry::PrintFact;
 use crate::command::Stdio;
 use crate::fs::open_file;
 use std::io::{Error, ErrorKind, Read, Write};
 use std::thread::sleep;
 use std::time::Duration;
 
-pub fn run_command(stdio: &mut Stdio, file_path: &str, file_append: bool) -> Result<(), Error> {
+pub fn run_command(
+    stdio: &mut Stdio,
+    file_path: &str,
+    file_append: bool,
+) -> Result<PrintFact, Error> {
     let mut file = open_file(file_path, file_append)?;
     let mut buffer = [0; 4096];
 
@@ -35,5 +40,5 @@ pub fn run_command(stdio: &mut Stdio, file_path: &str, file_append: bool) -> Res
         }
     }
 
-    Ok(())
+    Ok(PrintFact::new(true, false))
 }

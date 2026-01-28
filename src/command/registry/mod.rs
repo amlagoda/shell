@@ -6,8 +6,6 @@ pub mod r#type;
 pub mod yes;
 
 // the output of the commands must not start or end \r\n
-// exit - nominal command without realization processed from the outside
-// is_blocking - commands that block the program (like "yes")
 pub enum Builtin {
     Cd,
     Echo,
@@ -32,10 +30,18 @@ impl Builtin {
             .collect::<Vec<String>>()
     }
 
+    // is_blocking - commands that block the program (like "yes")
     pub fn is_blocking(&self) -> bool {
         match self {
             Builtin::Yes => true,
             // Builtin::Tee => true,
+            _ => false,
+        }
+    }
+
+    pub fn is_exit(&self) -> bool {
+        match self {
+            Builtin::Exit => true,
             _ => false,
         }
     }
@@ -64,5 +70,28 @@ impl ToString for Builtin {
             Builtin::Type => String::from("type"),
             Builtin::Yes => String::from("yes"),
         }
+    }
+}
+
+pub struct PrintFact {
+    stdout: bool,
+    stderr: bool,
+}
+
+impl PrintFact {
+    pub fn new(stdout: bool, stderr: bool) -> PrintFact {
+        PrintFact { stdout, stderr }
+    }
+
+    pub fn is_stdout(&self) -> bool {
+        self.stdout
+    }
+
+    pub fn is_stderr(&self) -> bool {
+        self.stderr
+    }
+
+    pub fn is_any(&self) -> bool {
+        self.is_stdout() || self.is_stderr()
     }
 }

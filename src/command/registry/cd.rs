@@ -1,9 +1,10 @@
+use crate::command::registry::PrintFact;
 use crate::command::Stdio;
 use std::env::{home_dir, set_current_dir};
 use std::fs::read_dir;
 use std::io::{Error, Write};
 
-pub fn run_command(stdio: &mut Stdio, path: Option<&str>) -> Result<(), Error> {
+pub fn run_command(stdio: &mut Stdio, path: Option<&str>) -> Result<PrintFact, Error> {
     let mut path = path.unwrap_or("~").to_string();
 
     if path == "~" {
@@ -23,12 +24,12 @@ pub fn run_command(stdio: &mut Stdio, path: Option<&str>) -> Result<(), Error> {
         write!(stdio.stderr(), "{}", msg)?;
         stdio.stderr().flush()?;
 
-        return Ok(());
+        return Ok(PrintFact::new(false, true));
     }
 
     set_current_dir(path.as_str())?;
 
-    Ok(())
+    Ok(PrintFact::new(false, false))
 }
 
 // I'm not testing the command cd because

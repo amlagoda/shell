@@ -1,13 +1,14 @@
+use crate::command::registry::PrintFact;
 use crate::command::Stdio;
 use std::io::{Error, Write};
 
-pub fn run_command(stdio: &mut Stdio, args: Option<&Vec<&str>>) -> Result<(), Error> {
+pub fn run_command(stdio: &mut Stdio, args: Option<&Vec<&str>>) -> Result<PrintFact, Error> {
     let join = args.unwrap_or(&vec![" "]).to_vec().join(" ").to_string();
 
     write!(stdio.stdout(), "{}", join)?;
     stdio.stdout().flush()?;
 
-    Ok(())
+    Ok(PrintFact::new(true, false))
 }
 
 // #[cfg(test)]
