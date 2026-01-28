@@ -14,20 +14,20 @@ pub fn to_builtin(command: &str) -> Option<Builtin> {
     Builtin::to_builtin(command)
 }
 
-// exit - nominal command without realization processed from the outside
 pub fn run_command(
     stdio: &mut Stdio,
     command: &Builtin,
     args: Option<&Vec<&str>>,
     bin_paths: Option<&Vec<&str>>,
-) -> Result<(), Error> {
+) -> Result<PrintFact, Error> {
     match command {
         Builtin::Cd => {
             let default: Vec<&str> = vec![];
             run_command_cd(stdio, args.unwrap_or(&default).first().copied())
         }
         Builtin::Echo => run_command_echo(stdio, args),
-        Builtin::Exit => Ok(()),
+        // exit - nominal command without realization processed from the outside
+        Builtin::Exit => Ok(PrintFact::new(false, false)),
         Builtin::Pwd => run_command_pwd(stdio),
         // Builtin::Tee => run_command_tee(),
         Builtin::Type => {
@@ -69,5 +69,28 @@ impl Stdio {
 
     pub fn stderr(&mut self) -> &mut File {
         &mut self.stderr
+    }
+}
+
+pub struct PrintFact {
+    stdout: bool,
+    stderr: bool,
+}
+
+impl PrintFact {
+    pub fn new(stdout: bool, stderr: bool) -> PrintFact {
+        PrintFact { stdout, stderr }
+    }
+
+    pub fn is_stdout(&self) -> bool {
+        self.stdout
+    }
+
+    pub fn is_stderr(&self) -> bool {
+        self.stderr
+    }
+
+    pub fn is_any(&self) -> bool {
+        self.is_stdout() || self.is_stderr()
     }
 }
