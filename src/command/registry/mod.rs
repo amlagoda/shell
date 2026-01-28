@@ -72,26 +72,3 @@ impl ToString for Builtin {
         }
     }
 }
-
-pub struct PrintFact {
-    stdout: bool,
-    stderr: bool,
-}
-
-impl PrintFact {
-    pub fn new(stdout: bool, stderr: bool) -> PrintFact {
-        PrintFact { stdout, stderr }
-    }
-
-    pub fn is_stdout(&self) -> bool {
-        self.stdout
-    }
-
-    pub fn is_stderr(&self) -> bool {
-        self.stderr
-    }
-
-    pub fn is_any(&self) -> bool {
-        self.is_stdout() || self.is_stderr()
-    }
-}

@@ -1,5 +1,4 @@
-use crate::command::registry::PrintFact;
-use crate::command::Stdio;
+use crate::command::{PrintFact, Stdio};
 use std::io::{Error, Write};
 
 pub fn run_command(stdio: &mut Stdio, args: Option<&Vec<&str>>) -> Result<PrintFact, Error> {

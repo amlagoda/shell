@@ -1,5 +1,4 @@
-use crate::command::registry::PrintFact;
-use crate::command::Stdio;
+use crate::command::{PrintFact, Stdio};
 use std::env::{home_dir, set_current_dir};
 use std::fs::read_dir;
 use std::io::{Error, Write};

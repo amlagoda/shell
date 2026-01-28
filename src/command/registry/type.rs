@@ -1,6 +1,5 @@
 use crate::command::registry::Builtin;
-use crate::command::registry::PrintFact;
-use crate::command::Stdio;
+use crate::command::{PrintFact, Stdio};
 use crate::fs::search_executable_file_in_paths;
 use std::io::{Error, Write};
 
