@@ -78,7 +78,7 @@ pub struct PrintFact {
 }
 
 impl PrintFact {
-    pub fn new(stdout: bool, stderr: bool) -> PrintFact {
+    fn new(stdout: bool, stderr: bool) -> PrintFact {
         PrintFact { stdout, stderr }
     }
 
@@ -91,6 +91,6 @@ impl PrintFact {
     }
 
     pub fn is_any(&self) -> bool {
-        self.is_stdout() || self.is_stderr()
+        self.stdout || self.stderr
     }
 }
