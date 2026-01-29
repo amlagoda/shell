@@ -11,3 +11,6 @@ target/
 
 # MacOS system folder
 .DS_Store
+
+# Notes
+.notes
