@@ -26,7 +26,6 @@ pub fn run_command(
             run_command_cd(stdio, args.unwrap_or(&default).first().copied())
         }
         Builtin::Echo => run_command_echo(stdio, args),
-        // exit - nominal command without realization processed from the outside
         Builtin::Exit => Ok(PrintFact::new(false, false)),
         Builtin::Pwd => run_command_pwd(stdio),
         // Builtin::Tee => run_command_tee(),
