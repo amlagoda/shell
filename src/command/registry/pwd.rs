@@ -1,5 +1,5 @@
 use crate::command::PrintFact;
-use crate::Stdio;
+use crate::io::Stdio;
 use std::env::current_dir;
 use std::io::{Error, Write};
 

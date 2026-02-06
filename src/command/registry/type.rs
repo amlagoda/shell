@@ -1,7 +1,7 @@
 use crate::command::registry::Builtin;
 use crate::command::PrintFact;
 use crate::fs::search_executable_file_in_paths;
-use crate::Stdio;
+use crate::io::Stdio;
 use std::io::{Error, Write};
 
 pub fn run_command(
