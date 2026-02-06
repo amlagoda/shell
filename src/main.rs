@@ -1,6 +1,7 @@
-use crate::command::{get_command_list, Stdio};
+use crate::command::get_command_list;
 use crate::core::run;
 use crate::env::split_env_path;
+use crate::io::Stdio;
 use crate::keyboard::handle_key;
 use crate::parser::parse;
 use crossterm::cursor::MoveLeft;
@@ -8,13 +9,16 @@ use crossterm::event::{read, KeyEvent};
 use crossterm::execute;
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode, Clear, ClearType};
 use libc::{signal, SIGCHLD, SIG_IGN};
+use std::fs::File;
 use std::io::{stderr, stdin, stdout, Error, Write};
+use std::os::fd::{AsRawFd, FromRawFd};
 use std::process::exit;
 
 mod command;
 mod core;
 mod env;
 mod fs;
+mod io;
 mod keyboard;
 mod parser;
 mod process;
@@ -25,7 +29,13 @@ fn main() -> Result<(), Error> {
     //     signal(SIGCHLD, SIG_IGN);
     // }
 
-    let mut stdout1 = stdout();
+    let mut stdio = unsafe {
+        Stdio::new(
+            File::from_raw_fd(stdin().as_raw_fd()),
+            File::from_raw_fd(stdout().as_raw_fd()),
+            File::from_raw_fd(stderr().as_raw_fd()),
+        )
+    };
     let mut input = String::new();
     let mut previous_key: Option<KeyEvent> = None;
 
@@ -39,8 +49,8 @@ fn main() -> Result<(), Error> {
     let bin_paths = r.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
 
     enable_raw_mode()?;
-    write!(stdout1, "$ ")?;
-    stdout1.flush()?;
+    write!(stdio.stdout(), "$ ")?;
+    stdio.stdout().flush()?;
 
     loop {
         let r = read()?;
@@ -59,20 +69,17 @@ fn main() -> Result<(), Error> {
         input = i;
 
         if is_backspace {
-            execute!(stdout(), MoveLeft(1), Clear(ClearType::UntilNewLine))?;
-            // execute!(stdout1, MoveLeft(1), Clear(ClearType::UntilNewLine))?;
+            execute!(stdio.stdout(), MoveLeft(1), Clear(ClearType::UntilNewLine))?;
         }
 
         if let Some(r) = to_print {
-            let mut stdout1 = stdout();
-            write!(stdout1, "{}", r)?;
-            stdout1.flush()?;
+            write!(stdio.stdout(), "{}", r)?;
+            stdio.stdout().flush()?;
         }
 
         if let Some(r) = hint {
-            let mut stdout1 = stdout();
-            write!(stdout1, "\r\n{}\r\n$ {}", r, input)?;
-            stdout1.flush()?;
+            write!(stdio.stdout(), "\r\n{}\r\n$ {}", r, input)?;
+            stdio.stdout().flush()?;
         }
 
         if is_enter {
@@ -80,9 +87,6 @@ fn main() -> Result<(), Error> {
             // let mut error = Some(String::from(": not found"));
 
             if let Some(parseds) = parse(input.as_str())? {
-                let stdout1 = stdout();
-                let mut stdio = Stdio::new(stdin(), stdout1, stderr());
-                let _ = stdio.stdin();
                 disable_raw_mode()?;
                 let exit = run(&mut stdio, parseds, &bin_paths)?;
                 enable_raw_mode()?;
@@ -133,9 +137,8 @@ fn main() -> Result<(), Error> {
             // }
 
             if !is_exit {
-                let mut stdout1 = stdout();
-                write!(stdout1, "\n\r$ ")?;
-                stdout1.flush()?;
+                write!(stdio.stdout(), "\n\r$ ")?;
+                stdio.stdout().flush()?;
             }
         }
 
