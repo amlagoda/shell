@@ -7,7 +7,10 @@ pub fn run_command(stdio: &mut Stdio, args: Option<&Vec<&str>>) -> Result<PrintF
     write!(stdio.stdout(), "{}", join)?;
     stdio.stdout().flush()?;
 
-    Ok(PrintFact::new(true, false))
+    Ok(PrintFact::new(
+        true,  /* stdout */
+        false, /* stderr */
+    ))
 }
 
 // #[cfg(test)]

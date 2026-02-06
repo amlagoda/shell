@@ -39,5 +39,8 @@ pub fn run_command(
         }
     }
 
-    Ok(PrintFact::new(true, false))
+    Ok(PrintFact::new(
+        true,  /* stdout */
+        false, /* stderr */
+    ))
 }

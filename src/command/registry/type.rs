@@ -22,11 +22,19 @@ pub fn run_command(
     if to_stderr {
         write!(stdio.stderr(), "{}", msg)?;
         stdio.stderr().flush()?;
-        Ok(PrintFact::new(false, true))
+
+        let stdout = false;
+        let stderr = true;
+
+        Ok(PrintFact::new(stdout, stderr))
     } else {
         write!(stdio.stdout(), "{}", msg)?;
         stdio.stdout().flush()?;
-        Ok(PrintFact::new(true, false))
+
+        Ok(PrintFact::new(
+            true,  /* stdout */
+            false, /* stderr */
+        ))
     }
 }
 

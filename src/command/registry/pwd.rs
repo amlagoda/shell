@@ -13,7 +13,10 @@ pub fn run_command(stdio: &mut Stdio) -> Result<PrintFact, Error> {
     write!(stdio.stdout(), "{}", path)?;
     stdio.stdout().flush()?;
 
-    Ok(PrintFact::new(true, false))
+    Ok(PrintFact::new(
+        true,  /* stdout */
+        false, /* stderr */
+    ))
 }
 
 // #[cfg(test)]

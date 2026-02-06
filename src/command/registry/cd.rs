@@ -23,12 +23,18 @@ pub fn run_command(stdio: &mut Stdio, path: Option<&str>) -> Result<PrintFact, E
         write!(stdio.stderr(), "{}", msg)?;
         stdio.stderr().flush()?;
 
-        return Ok(PrintFact::new(false, true));
+        return Ok(PrintFact::new(
+            false, /* stdout */
+            true,  /* stderr */
+        ));
     }
 
     set_current_dir(path.as_str())?;
 
-    Ok(PrintFact::new(false, false))
+    Ok(PrintFact::new(
+        false, /* stdout */
+        false, /* stderr */
+    ))
 }
 
 // I'm not testing the command cd because
