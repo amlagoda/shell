@@ -39,14 +39,8 @@ fn main() -> Result<(), Error> {
     let mut input = String::new();
     let mut previous_key: Option<KeyEvent> = None;
 
-    let r = split_env_path();
-
-    if let Err(e) = r {
-        return Err(Error::other(e.to_string()));
-    }
-
-    let r = r.unwrap();
-    let bin_paths = r.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
+    let path = split_env_path()?;
+    let bin_paths = path.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
 
     enable_raw_mode()?;
     write!(stdio.stdout(), "$ ")?;

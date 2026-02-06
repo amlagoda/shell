@@ -1,8 +1,9 @@
-use std::env::{current_exe, var, VarError};
+use std::env::{current_exe, var};
 use std::io::Error;
 
-pub fn split_env_path() -> Result<Vec<String>, VarError> {
-    Ok(var("PATH")?
+pub fn split_env_path() -> Result<Vec<String>, Error> {
+    Ok(var("PATH")
+        .map_err(|e| Error::other(e.to_string()))?
         .split(':')
         .map(|r| r.to_string())
         .collect::<Vec<String>>())
