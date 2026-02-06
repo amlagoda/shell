@@ -1,5 +1,6 @@
-use crate::command::{PrintFact, Stdio};
+use crate::command::PrintFact;
 use crate::fs::open_file;
+use crate::Stdio;
 use std::io::{Error, ErrorKind, Read, Write};
 use std::thread::sleep;
 use std::time::Duration;
