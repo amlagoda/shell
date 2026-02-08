@@ -1,48 +1,75 @@
 mod pipeline;
 mod process;
 
-use crate::command::{run_command as run_builtin, to_builtin, Stdio};
+use crate::command::{run_command as run_builtin, to_command as to_builtin, PrintFact};
 use crate::core::pipeline::Pipeline;
 use crate::core::process::Process;
 use crate::env::get_current_exe;
-use crate::fs::{search_executable_file_in_paths as find_bin, write_to_file};
+use crate::fs::{open_file, search_executable_file_in_paths as find_bin};
+use crate::io::Stdio;
 use crate::parser::Parsed;
-use crate::process::{spawn_pipe_process, spawn_process};
 use crate::Exit;
 use libc::{fcntl as c_fcntl, waitpid as c_waitpid, F_SETFL, O_NONBLOCK};
 use std::fs::File;
 use std::io::{pipe, Error, PipeReader, PipeWriter};
 use std::io::{ErrorKind, Stdout};
 use std::io::{Read, Write};
-use std::os::fd::FromRawFd;
+use std::os::fd::{AsRawFd, FromRawFd};
 use std::process::{exit, Child, Output};
 use std::ptr;
 use std::thread::sleep;
 use std::time::Duration;
 
-pub fn run(stdio: &mut Stdio, parseds: Vec<Parsed>, bin_paths: &Vec<&str>) -> Result<Exit, Error> {
+pub fn run(
+    parseds: &Vec<Parsed>,
+    stdio: &mut Stdio,
+    bin_paths: &Vec<&str>,
+) -> Result<PrintFact, Error> {
     let len = parseds.len();
 
-    if len == 0 {
-        return Err(Error::other("empty parseds"));
+    if len == 1 {
+        let parsed = parseds.first().unwrap();
+
+        if let Some(builtin) = to_builtin(parsed.command()) {
+            if !builtin.is_blocking() {
+                let args = parsed.args();
+
+                if let Some(redirect) = parsed.redirect() {
+                    let file = open_file(redirect.path(), redirect.is_append())?;
+
+                    let stdin = stdio.stdin().as_raw_fd();
+                    let mut stdout = stdio.stdout().as_raw_fd();
+                    let mut stderr = stdio.stderr().as_raw_fd();
+
+                    if redirect.is_stderr() {
+                        stderr = file.as_raw_fd();
+                    } else {
+                        stdout = file.as_raw_fd();
+                    }
+
+                    let mut stdio = unsafe {
+                        Stdio::new(
+                            File::from_raw_fd(stdin),
+                            File::from_raw_fd(stdout),
+                            File::from_raw_fd(stderr),
+                        )
+                    };
+
+                    return run_builtin(&builtin, &mut stdio, args.as_ref(), Some(&bin_paths));
+                }
+
+                return run_builtin(&builtin, stdio, args.as_ref(), Some(&bin_paths));
+            }
+            // fork
+        }
+    } else if len > 1 {
+        // fork
     }
 
-    run_chain(parseds, stdio, bin_paths)
-
-    // if len > 1 {
-    //     Ok(run_chain(parseds, stdout)?)
-    // } else if len == 1 {
-    //     Ok(run_single(
-    //         parseds.into_iter().next().unwrap(),
-    //         bin_paths,
-    //         stdout,
-    //     )?)
-    // } else {
-    //     Err(Error::other("empty parseds"))
-    // }
+    return Err(Error::other("empty parseds"));
 }
 
-fn run_chain(
+/*fn run_chain(
     parseds: Vec<Parsed>,
     stdio: &mut Stdio,
     bin_paths: &Vec<&str>,
@@ -150,7 +177,7 @@ fn run_chain(
     // kill all processes
 
     Ok(Exit::No)
-}
+}*/
 
 fn read_file_to_stdout(mut file: File, stdout: &mut Stdout) -> Result<(), Error> {
     let mut buffer = [0; 4096];

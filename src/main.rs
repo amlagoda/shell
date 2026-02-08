@@ -80,9 +80,22 @@ fn main() -> Result<(), Error> {
             // let mut error = Some(String::from(": not found"));
 
             if let Some(parseds) = parse(input.as_str())? {
+                write!(stdio.stdout(), "\n\r")?;
+                stdio.stdout().flush()?;
+
                 disable_raw_mode()?;
-                let exit = run(&mut stdio, parseds, &bin_paths)?;
+                // parseds технически могут быть пустыми?
+                let print_fact = run(&parseds, &mut stdio, &bin_paths)?;
                 enable_raw_mode()?;
+
+                if print_fact.is_any() {
+                    write!(stdio.stdout(), "\n\r$ ")?;
+                    stdio.stdout().flush()?;
+                } else {
+                    write!(stdio.stdout(), "$ ")?;
+                    stdio.stdout().flush()?;
+                }
+
                 // let result = run(parseds, &bin_paths, stdout);
 
                 // if let Err(_) = result {
@@ -96,9 +109,9 @@ fn main() -> Result<(), Error> {
                 // error = result.error().map(|r| r.to_string());
                 // output = result.output().map(|r| r.to_string());
 
-                if exit.yes() {
-                    is_exit = true;
-                }
+                // if exit.yes() {
+                // is_exit = true;
+                // }
             }
 
             input.clear();
@@ -129,10 +142,10 @@ fn main() -> Result<(), Error> {
             //     stdout.flush()?;
             // }
 
-            if !is_exit {
-                write!(stdio.stdout(), "\n\r$ ")?;
-                stdio.stdout().flush()?;
-            }
+            // if !is_exit {
+            // write!(stdio.stdout(), "\n\r$ ")?;
+            // stdio.stdout().flush()?;
+            // }
         }
 
         if is_exit {
