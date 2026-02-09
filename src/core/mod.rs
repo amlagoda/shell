@@ -27,11 +27,16 @@ pub fn run(
 ) -> Result<PrintFact, Error> {
     let len = parseds.len();
 
+    if len == 0 {
+        return Err(Error::other("empty parseds"));
+    }
+
     if len == 1 {
         let parsed = parseds.first().unwrap();
 
         if let Some(builtin) = to_builtin(parsed.command()) {
             if !builtin.is_blocking() {
+                // native run single, builtin and non-blocking commands
                 let args = parsed.args();
 
                 if let Some(redirect) = parsed.redirect() {
@@ -61,20 +66,17 @@ pub fn run(
 
                 return run_builtin(&builtin, stdio, args.as_ref(), Some(&bin_paths));
             }
-            // fork
         }
-    } else if len > 1 {
-        // fork
     }
-
-    return Err(Error::other("empty parseds"));
+    // other commands run as forks
+    run_forks(parseds, stdio, bin_paths)
 }
 
-/*fn run_chain(
-    parseds: Vec<Parsed>,
+fn run_forks(
+    parseds: &Vec<Parsed>,
     stdio: &mut Stdio,
     bin_paths: &Vec<&str>,
-) -> Result<Exit, Error> {
+) -> Result<PrintFact, Error> {
     let mut pipelines: Vec<Pipeline> = vec![];
 
     for _ in 0..parseds.len() {
@@ -178,7 +180,7 @@ pub fn run(
     // kill all processes
 
     Ok(Exit::No)
-}*/
+}
 
 fn read_file_to_stdout(mut file: File, stdout: &mut Stdout) -> Result<(), Error> {
     let mut buffer = [0; 4096];
