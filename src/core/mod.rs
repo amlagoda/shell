@@ -47,8 +47,16 @@ pub fn run(
                     }
 
                     let mut stdio = Stdio::new(stdin, stdout, stderr);
+                    let print_fact =
+                        run_builtin(&builtin, &mut stdio, args.as_ref(), Some(&bin_paths))?;
 
-                    return run_builtin(&builtin, &mut stdio, args.as_ref(), Some(&bin_paths));
+                    let print_fact = if redirect.is_stderr() {
+                        PrintFact::new(print_fact.is_stdout(), false)
+                    } else {
+                        PrintFact::new(false, print_fact.is_stderr())
+                    };
+
+                    return Ok(print_fact);
                 }
 
                 return run_builtin(&builtin, stdio, args.as_ref(), Some(&bin_paths));
