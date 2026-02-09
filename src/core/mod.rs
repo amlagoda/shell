@@ -36,24 +36,17 @@ pub fn run(
 
                 if let Some(redirect) = parsed.redirect() {
                     let file = open_file(redirect.path(), redirect.is_append())?;
-
-                    let stdin = stdio.stdin().as_raw_fd();
-                    let mut stdout = stdio.stdout().as_raw_fd();
-                    let mut stderr = stdio.stderr().as_raw_fd();
+                    let stdin = (*stdio.stdin()).try_clone()?;
+                    let mut stdout = (*stdio.stdout()).try_clone()?;
+                    let mut stderr = (*stdio.stderr()).try_clone()?;
 
                     if redirect.is_stderr() {
-                        stderr = file.as_raw_fd();
+                        stderr = file;
                     } else {
-                        stdout = file.as_raw_fd();
+                        stdout = file;
                     }
 
-                    let mut stdio = unsafe {
-                        Stdio::new(
-                            File::from_raw_fd(stdin),
-                            File::from_raw_fd(stdout),
-                            File::from_raw_fd(stderr),
-                        )
-                    };
+                    let mut stdio = Stdio::new(stdin, stdout, stderr);
 
                     return run_builtin(&builtin, &mut stdio, args.as_ref(), Some(&bin_paths));
                 }
