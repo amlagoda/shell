@@ -1,4 +1,4 @@
-use crate::command::PrintFact;
+use crate::command::{NewLine, PrintFact};
 use crate::io::Stdio;
 use std::env::{home_dir, set_current_dir};
 use std::fs::read_dir;
@@ -7,7 +7,7 @@ use std::io::{Error, Write};
 pub fn run_command(
     stdio: &mut Stdio,
     path: Option<&str>,
-    start_newline: bool,
+    new_line: &NewLine,
 ) -> Result<PrintFact, Error> {
     let mut path = path.unwrap_or("~").to_string();
 
@@ -23,7 +23,7 @@ pub fn run_command(
     }
 
     if read_dir(path.as_str()).is_err() {
-        let prefix = if start_newline { "\r\n" } else { "" };
+        let prefix = if new_line.is_stderr() { "\r\n" } else { "" };
         let msg = format!("{}cd: {}: No such file or directory", prefix, path);
 
         write!(stdio.stderr(), "{}", msg)?;

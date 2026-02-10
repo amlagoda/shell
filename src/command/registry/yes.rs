@@ -1,19 +1,19 @@
-use crate::command::PrintFact;
+use crate::command::{NewLine, PrintFact};
 use crate::io::Stdio;
 use std::io::{Error, Write};
 
-pub fn run_command(stdio: &mut Stdio, start_newline: bool) -> Result<PrintFact, Error> {
-    let prefix = if start_newline { "\r\n" } else { "" };
+pub fn run_command(stdio: &mut Stdio, new_line: &NewLine) -> Result<PrintFact, Error> {
+    let prefix = if new_line.is_stdout() { "\r\n" } else { "" };
     let stdout = stdio.stdout();
-    let mut is_start = true;
+    let mut is_first = true;
 
     loop {
-        if is_start {
+        if is_first {
             write!(stdout, "{}{}\r\n", prefix, "y")?; // infinite output, so at the end \r\n
-            is_start = false;
+            is_first = false;
+        } else {
+            write!(stdout, "{}\r\n", "y")?; // infinite output, so at the end \r\n
+            stdout.flush()?;
         }
-
-        write!(stdout, "{}\r\n", "y")?; // infinite output, so at the end \r\n
-        stdout.flush()?;
     }
 }

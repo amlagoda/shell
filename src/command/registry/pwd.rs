@@ -1,9 +1,9 @@
-use crate::command::PrintFact;
+use crate::command::{NewLine, PrintFact};
 use crate::io::Stdio;
 use std::env::current_dir;
 use std::io::{Error, Write};
 
-pub fn run_command(stdio: &mut Stdio, start_newline: bool) -> Result<PrintFact, Error> {
+pub fn run_command(stdio: &mut Stdio, new_line: &NewLine) -> Result<PrintFact, Error> {
     let err = Error::other("path is invalid");
 
     let path = current_dir()?
@@ -11,7 +11,7 @@ pub fn run_command(stdio: &mut Stdio, start_newline: bool) -> Result<PrintFact, 
         .into_string()
         .map_err(|_| err)?;
 
-    let prefix = if start_newline { "\r\n" } else { "" };
+    let prefix = if new_line.is_stdout() { "\r\n" } else { "" };
     write!(stdio.stdout(), "{}{}", prefix, path)?;
     stdio.stdout().flush()?;
 

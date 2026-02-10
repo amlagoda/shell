@@ -19,31 +19,27 @@ pub fn run_command(
     stdio: &mut Stdio,
     args: Option<&Vec<&str>>,
     bin_paths: Option<&Vec<&str>>,
-    start_newline: bool,
+    new_line: &NewLine,
 ) -> Result<PrintFact, Error> {
     match command {
         Builtin::Cd => {
             let default: Vec<&str> = vec![];
-            run_command_cd(
-                stdio,
-                args.unwrap_or(&default).first().copied(),
-                start_newline,
-            )
+            run_command_cd(stdio, args.unwrap_or(&default).first().copied(), new_line)
         }
-        Builtin::Echo => run_command_echo(stdio, args, start_newline),
+        Builtin::Echo => run_command_echo(stdio, args, new_line),
         Builtin::Exit => Ok(PrintFact::new(
             false, /* stdout */
             false, /* stderr */
         )),
-        Builtin::Pwd => run_command_pwd(stdio, start_newline),
+        Builtin::Pwd => run_command_pwd(stdio, new_line),
         // Builtin::Tee => run_command_tee(),
         Builtin::Type => {
             let default = vec![""];
             let command = args.unwrap_or(&default).first().unwrap();
             let default: Vec<&str> = vec![];
-            run_command_type(stdio, command, bin_paths.unwrap_or(&default), start_newline)
+            run_command_type(stdio, command, bin_paths.unwrap_or(&default), new_line)
         }
-        Builtin::Yes => run_command_yes(stdio, start_newline),
+        Builtin::Yes => run_command_yes(stdio, new_line),
     }
 }
 
@@ -71,5 +67,24 @@ impl PrintFact {
 
     pub fn is_any(&self) -> bool {
         self.stdout || self.stderr
+    }
+}
+
+pub struct NewLine {
+    stdout: bool,
+    stderr: bool,
+}
+
+impl NewLine {
+    pub fn new(stdout: bool, stderr: bool) -> NewLine {
+        NewLine { stdout, stderr }
+    }
+
+    pub fn is_stdout(&self) -> bool {
+        self.stdout
+    }
+
+    pub fn is_stderr(&self) -> bool {
+        self.stderr
     }
 }

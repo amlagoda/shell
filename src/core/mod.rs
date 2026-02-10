@@ -1,7 +1,7 @@
 mod pipeline;
 mod process;
 
-use crate::command::{run_command as run_builtin, to_command as to_builtin, PrintFact};
+use crate::command::{run_command as run_builtin, to_command as to_builtin, NewLine, PrintFact};
 use crate::core::pipeline::Pipeline;
 use crate::core::process::Process;
 use crate::env::get_current_exe;
@@ -44,16 +44,25 @@ pub fn run(
                     let stdin = (*stdio.stdin()).try_clone()?;
                     let mut stdout = (*stdio.stdout()).try_clone()?;
                     let mut stderr = (*stdio.stderr()).try_clone()?;
+                    let mut new_line =
+                        NewLine::new(false /* stdout */, true /* stderr */);
 
                     if redirect.is_stderr() {
                         stderr = file;
+                        new_line = NewLine::new(true /* stdout */, false /* stderr */);
                     } else {
                         stdout = file;
                     }
 
                     let mut stdio = Stdio::new(stdin, stdout, stderr);
-                    let print_fact =
-                        run_builtin(&builtin, &mut stdio, args.as_ref(), Some(&bin_paths))?;
+
+                    let print_fact = run_builtin(
+                        &builtin,
+                        &mut stdio,
+                        args.as_ref(),
+                        Some(&bin_paths),
+                        &new_line,
+                    )?;
 
                     let print_fact = if redirect.is_stderr() {
                         PrintFact::new(print_fact.is_stdout(), false)
@@ -64,7 +73,9 @@ pub fn run(
                     return Ok(print_fact);
                 }
 
-                return run_builtin(&builtin, stdio, args.as_ref(), Some(&bin_paths));
+                let new_line = NewLine::new(true /* stdout */, true /* stderr */);
+
+                return run_builtin(&builtin, stdio, args.as_ref(), Some(&bin_paths), &new_line);
             }
         }
     }
