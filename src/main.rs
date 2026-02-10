@@ -76,76 +76,16 @@ fn main() -> Result<(), Error> {
         }
 
         if is_enter {
-            // let mut output: Option<String> = None;
-            // let mut error = Some(String::from(": not found"));
-
             if let Some(parseds) = parse(input.as_str())? {
-                write!(stdio.stdout(), "\n\r")?;
-                stdio.stdout().flush()?;
-
                 disable_raw_mode()?;
                 // parseds технически могут быть пустыми?
-                let print_fact = run(&parseds, &mut stdio, &bin_paths)?;
+                run(&parseds, &mut stdio, &bin_paths)?; // печатет если команда не найдена
                 enable_raw_mode()?;
-
-                if print_fact.is_any() {
-                    write!(stdio.stdout(), "\n\r$ ")?;
-                    stdio.stdout().flush()?;
-                } else {
-                    write!(stdio.stdout(), "$ ")?;
-                    stdio.stdout().flush()?;
-                }
-
-                // let result = run(parseds, &bin_paths, stdout);
-
-                // if let Err(_) = result {
-                // exit(1);
-                // }
-
-                // stdout = result.unwrap();
-
-                // stdout = run(parseds, &bin_paths, stdout)?;
-
-                // error = result.error().map(|r| r.to_string());
-                // output = result.output().map(|r| r.to_string());
-
-                // if exit.yes() {
-                // is_exit = true;
-                // }
             }
 
+            write!(stdio.stdout(), "\n\r$ ")?;
+            stdio.stdout().flush()?;
             input.clear();
-
-            // let mut to_print = error
-            //     .unwrap_or("".to_string())
-            //     .split("\n")
-            //     .filter(|r| !r.is_empty())
-            //     .map(|r| r.to_string())
-            //     .collect::<Vec<String>>();
-
-            // to_print.append(
-            //     &mut output
-            //         .unwrap_or("".to_string())
-            //         .split("\n")
-            //         .filter(|r| !r.is_empty())
-            //         .map(|r| r.to_string())
-            //         .collect::<Vec<String>>(),
-            // );
-
-            // for r in to_print.iter() {
-            //     write!(stdout, "\r\n{}", r)?;
-            //     stdout.flush()?;
-            // }
-
-            // if !is_exit {
-            //     write!(stdout, "\r\n$ ")?;
-            //     stdout.flush()?;
-            // }
-
-            // if !is_exit {
-            // write!(stdio.stdout(), "\n\r$ ")?;
-            // stdio.stdout().flush()?;
-            // }
         }
 
         if is_exit {

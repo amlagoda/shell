@@ -1,7 +1,7 @@
 mod pipeline;
 mod process;
 
-use crate::command::{run_command as run_builtin, to_command as to_builtin, NewLine, PrintFact};
+use crate::command::{run_command as run_builtin, to_command as to_builtin, NewLine};
 use crate::core::pipeline::Pipeline;
 use crate::core::process::Process;
 use crate::env::get_current_exe;
@@ -20,11 +20,7 @@ use std::ptr;
 use std::thread::sleep;
 use std::time::Duration;
 
-pub fn run(
-    parseds: &Vec<Parsed>,
-    stdio: &mut Stdio,
-    bin_paths: &Vec<&str>,
-) -> Result<PrintFact, Error> {
+pub fn run(parseds: &Vec<Parsed>, stdio: &mut Stdio, bin_paths: &Vec<&str>) -> Result<(), Error> {
     let len = parseds.len();
 
     if len == 0 {
@@ -64,13 +60,7 @@ pub fn run(
                         &new_line,
                     )?;
 
-                    let print_fact = if redirect.is_stderr() {
-                        PrintFact::new(print_fact.is_stdout(), false)
-                    } else {
-                        PrintFact::new(false, print_fact.is_stderr())
-                    };
-
-                    return Ok(print_fact);
+                    return Ok(());
                 }
 
                 let new_line = NewLine::new(true /* stdout */, true /* stderr */);
@@ -83,11 +73,7 @@ pub fn run(
     run_forks(parseds, stdio, bin_paths)
 }
 
-fn run_forks(
-    parseds: &Vec<Parsed>,
-    stdio: &mut Stdio,
-    bin_paths: &Vec<&str>,
-) -> Result<PrintFact, Error> {
+fn run_forks(parseds: &Vec<Parsed>, stdio: &mut Stdio, bin_paths: &Vec<&str>) -> Result<(), Error> {
     let mut pipelines: Vec<Pipeline> = vec![];
 
     for _ in 0..parseds.len() {
@@ -189,8 +175,7 @@ fn run_forks(
 
     // kill all processes
 
-    // заглушка
-    Ok(PrintFact::new(false, false))
+    Ok(())
 }
 
 fn read_file_to_stdout(mut file: File, stdout: &mut File) -> Result<(), Error> {

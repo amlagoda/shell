@@ -20,17 +20,14 @@ pub fn run_command(
     args: Option<&Vec<&str>>,
     bin_paths: Option<&Vec<&str>>,
     new_line: &NewLine,
-) -> Result<PrintFact, Error> {
+) -> Result<(), Error> {
     match command {
         Builtin::Cd => {
             let default: Vec<&str> = vec![];
             run_command_cd(stdio, args.unwrap_or(&default).first().copied(), new_line)
         }
         Builtin::Echo => run_command_echo(stdio, args, new_line),
-        Builtin::Exit => Ok(PrintFact::new(
-            false, /* stdout */
-            false, /* stderr */
-        )),
+        Builtin::Exit => Ok(()),
         Builtin::Pwd => run_command_pwd(stdio, new_line),
         // Builtin::Tee => run_command_tee(),
         Builtin::Type => {
@@ -45,29 +42,6 @@ pub fn run_command(
 
 pub fn get_command_list() -> Vec<String> {
     Builtin::list_as_strings()
-}
-
-pub struct PrintFact {
-    stdout: bool,
-    stderr: bool,
-}
-
-impl PrintFact {
-    pub fn new(stdout: bool, stderr: bool) -> PrintFact {
-        PrintFact { stdout, stderr }
-    }
-
-    pub fn is_stdout(&self) -> bool {
-        self.stdout
-    }
-
-    pub fn is_stderr(&self) -> bool {
-        self.stderr
-    }
-
-    pub fn is_any(&self) -> bool {
-        self.stdout || self.stderr
-    }
 }
 
 pub struct NewLine {
