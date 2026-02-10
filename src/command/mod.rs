@@ -19,26 +19,31 @@ pub fn run_command(
     stdio: &mut Stdio,
     args: Option<&Vec<&str>>,
     bin_paths: Option<&Vec<&str>>,
+    start_newline: bool,
 ) -> Result<PrintFact, Error> {
     match command {
         Builtin::Cd => {
             let default: Vec<&str> = vec![];
-            run_command_cd(stdio, args.unwrap_or(&default).first().copied())
+            run_command_cd(
+                stdio,
+                args.unwrap_or(&default).first().copied(),
+                start_newline,
+            )
         }
-        Builtin::Echo => run_command_echo(stdio, args),
+        Builtin::Echo => run_command_echo(stdio, args, start_newline),
         Builtin::Exit => Ok(PrintFact::new(
             false, /* stdout */
             false, /* stderr */
         )),
-        Builtin::Pwd => run_command_pwd(stdio),
+        Builtin::Pwd => run_command_pwd(stdio, start_newline),
         // Builtin::Tee => run_command_tee(),
         Builtin::Type => {
             let default = vec![""];
             let command = args.unwrap_or(&default).first().unwrap();
             let default: Vec<&str> = vec![];
-            run_command_type(stdio, command, bin_paths.unwrap_or(&default))
+            run_command_type(stdio, command, bin_paths.unwrap_or(&default), start_newline)
         }
-        Builtin::Yes => run_command_yes(stdio),
+        Builtin::Yes => run_command_yes(stdio, start_newline),
     }
 }
 

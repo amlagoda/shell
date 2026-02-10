@@ -5,7 +5,6 @@ pub mod pwd;
 pub mod r#type;
 pub mod yes;
 
-// the output of the commands must not start or end \r\n
 pub enum Builtin {
     Cd,
     Echo,

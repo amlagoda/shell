@@ -3,7 +3,7 @@ use crate::io::Stdio;
 use std::env::current_dir;
 use std::io::{Error, Write};
 
-pub fn run_command(stdio: &mut Stdio) -> Result<PrintFact, Error> {
+pub fn run_command(stdio: &mut Stdio, start_newline: bool) -> Result<PrintFact, Error> {
     let err = Error::other("path is invalid");
 
     let path = current_dir()?
@@ -11,7 +11,8 @@ pub fn run_command(stdio: &mut Stdio) -> Result<PrintFact, Error> {
         .into_string()
         .map_err(|_| err)?;
 
-    write!(stdio.stdout(), "{}", path)?;
+    let prefix = if start_newline { "\r\n" } else { "" };
+    write!(stdio.stdout(), "{}{}", prefix, path)?;
     stdio.stdout().flush()?;
 
     Ok(PrintFact::new(

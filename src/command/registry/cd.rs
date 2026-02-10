@@ -4,7 +4,11 @@ use std::env::{home_dir, set_current_dir};
 use std::fs::read_dir;
 use std::io::{Error, Write};
 
-pub fn run_command(stdio: &mut Stdio, path: Option<&str>) -> Result<PrintFact, Error> {
+pub fn run_command(
+    stdio: &mut Stdio,
+    path: Option<&str>,
+    start_newline: bool,
+) -> Result<PrintFact, Error> {
     let mut path = path.unwrap_or("~").to_string();
 
     if path == "~" {
@@ -19,7 +23,8 @@ pub fn run_command(stdio: &mut Stdio, path: Option<&str>) -> Result<PrintFact, E
     }
 
     if read_dir(path.as_str()).is_err() {
-        let msg = format!("cd: {}: No such file or directory", path);
+        let prefix = if start_newline { "\r\n" } else { "" };
+        let msg = format!("{}cd: {}: No such file or directory", prefix, path);
 
         write!(stdio.stderr(), "{}", msg)?;
         stdio.stderr().flush()?;

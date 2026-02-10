@@ -8,7 +8,9 @@ pub fn run_command(
     stdio: &mut Stdio,
     command: &str,
     bin_paths: &Vec<&str>,
+    start_newline: bool,
 ) -> Result<PrintFact, Error> {
+    let prefix = if start_newline { "\r\n" } else { "" };
     let mut msg = format!("type: {}: not found", command);
     let mut to_stderr = true;
 
@@ -21,7 +23,7 @@ pub fn run_command(
     }
 
     if to_stderr {
-        write!(stdio.stderr(), "{}", msg)?;
+        write!(stdio.stderr(), "{}{}", prefix, msg)?;
         stdio.stderr().flush()?;
 
         let stdout = false;
@@ -29,7 +31,7 @@ pub fn run_command(
 
         Ok(PrintFact::new(stdout, stderr))
     } else {
-        write!(stdio.stdout(), "{}", msg)?;
+        write!(stdio.stdout(), "{}{}", prefix, msg)?;
         stdio.stdout().flush()?;
 
         Ok(PrintFact::new(
