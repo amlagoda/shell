@@ -94,11 +94,11 @@ fn run_forks(
     let mut processes: Vec<Process> = vec![];
 
     for (number, parsed) in parseds.iter().enumerate() {
-        if parsed.command() == "exit" {
-            close_all(pipelines);
-            // kill all processes
-            return Ok(Exit::Yes);
-        }
+        // if parsed.command() == "exit" {
+        // close_all(pipelines);
+        // kill all processes
+        // return Ok(Exit::Yes);
+        // }
 
         let result = Process::try_new();
 
@@ -134,9 +134,8 @@ fn run_forks(
             close_all(pipelines);
 
             if let Some(command) = to_builtin(parsed.command()) {
-                let _ = run_builtin(stdio, &command, parsed.args().as_ref(), Some(bin_paths));
-
-                return Ok(Exit::Yes);
+                // builtin
+                return Err(Error::other("stub"));
             } else {
                 let err = process.hot_reload_bin(parsed.command(), parsed.args());
 
@@ -163,10 +162,10 @@ fn run_forks(
         return Err(err);
     }
 
-    let mut last_read_end = result.unwrap();
+    let last_read_end = result.unwrap();
     match read_file_to_stdout(last_read_end, stdio.stdout()) {
         // Ok(std) => stdout = std,
-        Ok(std) => {}
+        Ok(_) => {}
         Err(err) => {
             close_all(pipelines);
             // kill app processes
@@ -179,10 +178,11 @@ fn run_forks(
 
     // kill all processes
 
-    Ok(Exit::No)
+    // заглушка
+    Ok(PrintFact::new(false, false))
 }
 
-fn read_file_to_stdout(mut file: File, stdout: &mut Stdout) -> Result<(), Error> {
+fn read_file_to_stdout(mut file: File, stdout: &mut File) -> Result<(), Error> {
     let mut buffer = [0; 4096];
 
     loop {
