@@ -1,10 +1,10 @@
-use crate::command::NewLine;
+use crate::command::fmt::NewLine;
 use crate::io::Stdio;
 use std::env::{home_dir, set_current_dir};
 use std::fs::read_dir;
 use std::io::{Error, Write};
 
-pub fn run_command(stdio: &mut Stdio, path: Option<&str>, new_line: &NewLine) -> Result<(), Error> {
+pub fn run_command(stdio: &mut Stdio, newline: &NewLine, path: Option<&str>) -> Result<(), Error> {
     let mut path = path.unwrap_or("~").to_string();
 
     if path == "~" {
@@ -19,8 +19,12 @@ pub fn run_command(stdio: &mut Stdio, path: Option<&str>, new_line: &NewLine) ->
     }
 
     if read_dir(path.as_str()).is_err() {
-        let prefix = if new_line.is_stderr() { "\r\n" } else { "" };
-        let msg = format!("{}cd: {}: No such file or directory", prefix, path);
+        let msg = format!(
+            "{}cd: {}: No such file or directory{}",
+            newline.stderr_start(),
+            path,
+            newline.stderr_end()
+        );
 
         write!(stdio.stderr(), "{}", msg)?;
         stdio.stderr().flush()?;

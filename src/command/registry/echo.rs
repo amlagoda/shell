@@ -1,16 +1,22 @@
-use crate::command::NewLine;
+use crate::command::fmt::NewLine;
 use crate::io::Stdio;
 use std::io::{Error, Write};
 
 pub fn run_command(
     stdio: &mut Stdio,
+    newline: &NewLine,
     args: Option<&Vec<&str>>,
-    new_line: &NewLine,
 ) -> Result<(), Error> {
     let join = args.unwrap_or(&vec![" "]).to_vec().join(" ").to_string();
-    let prefix = if new_line.is_stdout() { "\r\n" } else { "" };
 
-    write!(stdio.stdout(), "{}{}", prefix, join)?;
+    write!(
+        stdio.stdout(),
+        "{}{}{}",
+        newline.stdout_start(),
+        join,
+        newline.stdout_end()
+    )?;
+
     stdio.stdout().flush()?;
 
     Ok(())
