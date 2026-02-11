@@ -45,8 +45,12 @@ pub fn run(parseds: &Vec<Parsed>, stdio: &mut Stdio, bin_paths: &Vec<&str>) -> R
 
                     if redirect.is_stderr() {
                         stderr = file;
+                        newline.stderr_end = true;
+                        newline.stdout_start = true;
                     } else {
                         stdout = file;
+                        newline.stdout_end = true;
+                        newline.stderr_start = true;
                     }
 
                     let mut stdio = Stdio::new(stdin, stdout, stderr);
@@ -62,11 +66,14 @@ pub fn run(parseds: &Vec<Parsed>, stdio: &mut Stdio, bin_paths: &Vec<&str>) -> R
                     return Ok(());
                 }
 
-                let newline = NewLine::new();
+                let mut newline = NewLine::new();
+                newline.stdout_start = true;
+                newline.stderr_start = true;
 
                 return run_builtin(&builtin, stdio, &newline, args.as_ref(), Some(&bin_paths));
             }
         }
+        // print "not found" if not found in external commands?
     }
     // other commands run as forks
     run_forks(parseds, stdio, bin_paths)
