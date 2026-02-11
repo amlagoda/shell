@@ -34,49 +34,50 @@ pub fn run(parseds: &Vec<Parsed>, stdio: &mut Stdio, bin_paths: &Vec<&str>) -> R
         if let Some(builtin) = to_builtin(parsed.command()) {
             if !builtin.is_blocking() {
                 // native run single, builtin and non-blocking commands
-                let args = parsed.args();
-
-                if let Some(redirect) = parsed.redirect() {
-                    let file = open_file(redirect.path(), redirect.is_append())?;
-                    let stdin = (*stdio.stdin()).try_clone()?;
-                    let mut stdout = (*stdio.stdout()).try_clone()?;
-                    let mut stderr = (*stdio.stderr()).try_clone()?;
-                    let mut newline = NewLine::new();
-
-                    if redirect.is_stderr() {
-                        stderr = file;
-                        newline.stderr_end = true;
-                        newline.stdout_start = true;
-                    } else {
-                        stdout = file;
-                        newline.stdout_end = true;
-                        newline.stderr_start = true;
-                    }
-
-                    let mut stdio = Stdio::new(stdin, stdout, stderr);
-
-                    run_builtin(
-                        &builtin,
-                        &mut stdio,
-                        &newline,
-                        args.as_ref(),
-                        Some(&bin_paths),
-                    )?;
-
-                    return Ok(());
-                }
-
-                let mut newline = NewLine::new();
-                newline.stdout_start = true;
-                newline.stderr_start = true;
-
-                return run_builtin(&builtin, stdio, &newline, args.as_ref(), Some(&bin_paths));
+                return run_native(&parsed, stdio, Some(bin_paths));
             }
         }
         // print "not found" if not found in external commands?
     }
     // other commands run as forks
     run_forks(parseds, stdio, bin_paths)
+}
+
+fn run_native(
+    parsed: &Parsed,
+    stdio: &mut Stdio,
+    bin_paths: Option<&Vec<&str>>,
+) -> Result<(), Error> {
+    let builtin = to_builtin(parsed.command()).ok_or(Error::other("not builtin"))?;
+    let args = parsed.args();
+
+    if let Some(redirect) = parsed.redirect() {
+        let file = open_file(redirect.path(), redirect.is_append())?;
+        let stdin = (*stdio.stdin()).try_clone()?;
+        let mut stdout = (*stdio.stdout()).try_clone()?;
+        let mut stderr = (*stdio.stderr()).try_clone()?;
+        let mut newline = NewLine::new();
+
+        if redirect.is_stderr() {
+            stderr = file;
+            newline.stderr_end = true;
+            newline.stdout_start = true;
+        } else {
+            stdout = file;
+            newline.stdout_end = true;
+            newline.stderr_start = true;
+        }
+
+        let mut stdio = Stdio::new(stdin, stdout, stderr);
+
+        return run_builtin(&builtin, &mut stdio, &newline, args.as_ref(), bin_paths);
+    }
+
+    let mut newline = NewLine::new();
+    newline.stdout_start = true;
+    newline.stderr_start = true;
+
+    run_builtin(&builtin, stdio, &newline, args.as_ref(), bin_paths)
 }
 
 fn run_forks(parseds: &Vec<Parsed>, stdio: &mut Stdio, bin_paths: &Vec<&str>) -> Result<(), Error> {
