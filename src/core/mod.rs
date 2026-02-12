@@ -36,7 +36,7 @@ pub fn run(parseds: &Vec<Parsed>, stdio: &mut Stdio, bin_paths: &Vec<&str>) -> R
             }
 
             if !builtin.is_blocking() {
-                // native run single, builtin and non-blocking commands
+                // native run single, builtin and non-blocking command
                 run_native(&parsed, stdio, Some(bin_paths))?;
             }
         }
@@ -102,12 +102,6 @@ fn run_forks(parseds: &Vec<Parsed>, stdio: &mut Stdio, bin_paths: &Vec<&str>) ->
     let mut processes: Vec<Process> = vec![];
 
     for (number, parsed) in parseds.iter().enumerate() {
-        // if parsed.command() == "exit" {
-        // close_all(pipelines);
-        // kill all processes
-        // return Ok(Exit::Yes);
-        // }
-
         let result = Process::try_new();
 
         if let Err(err) = result {
