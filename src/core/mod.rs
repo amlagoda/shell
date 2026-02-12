@@ -38,10 +38,11 @@ pub fn run(parseds: &Vec<Parsed>, stdio: &mut Stdio, bin_paths: &Vec<&str>) -> R
             if !builtin.is_blocking() {
                 // native run single, builtin and non-blocking command
                 run_native(&parsed, stdio, Some(bin_paths))?;
+                return Ok(false);
             }
         }
-        // print "not found" if not found in external commands?
     }
+
     // other commands run as forks
     run_forks(parseds, stdio, bin_paths)?;
     Ok(false)
@@ -85,7 +86,18 @@ fn run_native(
 }
 
 fn run_forks(parseds: &Vec<Parsed>, stdio: &mut Stdio, bin_paths: &Vec<&str>) -> Result<(), Error> {
-    let mut pipelines: Vec<Pipeline> = vec![];
+    for parsed in parseds {
+        let command = parsed.command();
+
+        if let Some(builtin) = to_builtin(command) {
+        } else if find_bin(command, bin_paths).is_some() {
+        } else {
+            // печать ошибки
+        }
+    }
+
+    Ok(())
+    /*let mut pipelines: Vec<Pipeline> = vec![];
 
     for _ in 0..parseds.len() {
         let result = Pipeline::try_new();
@@ -180,7 +192,7 @@ fn run_forks(parseds: &Vec<Parsed>, stdio: &mut Stdio, bin_paths: &Vec<&str>) ->
 
     // kill all processes
 
-    Ok(())
+    Ok(())*/
 }
 
 fn read_file_to_stdout(mut file: File, stdout: &mut File) -> Result<(), Error> {
