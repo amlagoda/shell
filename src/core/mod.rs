@@ -92,7 +92,9 @@ fn run_forks(parseds: &Vec<Parsed>, stdio: &mut Stdio, bin_paths: &Vec<&str>) ->
         if let Some(builtin) = to_builtin(command) {
         } else if find_bin(command, bin_paths).is_some() {
         } else {
-            // печать ошибки
+            let msg = format!("{}: command not found", command);
+            write!(stdio.stderr(), "\r\n{}", msg)?; // NewLine?
+            stdio.stderr().flush()?;
         }
     }
 
