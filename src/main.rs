@@ -79,13 +79,16 @@ fn main() -> Result<(), Error> {
             if let Some(parseds) = parse(input.as_str())? {
                 disable_raw_mode()?;
                 // parseds технически могут быть пустыми?
-                run(&parseds, &mut stdio, &bin_paths)?; // печатет если команда не найдена
+                is_exit = run(&parseds, &mut stdio, &bin_paths)?; // печатет если команда не найдена
                 enable_raw_mode()?;
             }
 
-            write!(stdio.stdout(), "\n\r$ ")?;
-            stdio.stdout().flush()?;
             input.clear();
+
+            if !is_exit {
+                write!(stdio.stdout(), "\n\r$ ")?;
+                stdio.stdout().flush()?;
+            }
         }
 
         if is_exit {
@@ -97,18 +100,4 @@ fn main() -> Result<(), Error> {
     println!(""); // %
 
     Ok(())
-}
-
-pub enum Exit {
-    Yes,
-    No,
-}
-
-impl Exit {
-    pub fn yes(&self) -> bool {
-        match self {
-            Exit::Yes => true,
-            Exit::No => false,
-        }
-    }
 }

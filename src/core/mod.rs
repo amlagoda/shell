@@ -9,7 +9,6 @@ use crate::env::get_current_exe;
 use crate::fs::{open_file, search_executable_file_in_paths as find_bin};
 use crate::io::Stdio;
 use crate::parser::Parsed;
-use crate::Exit;
 use libc::{fcntl as c_fcntl, waitpid as c_waitpid, F_SETFL, O_NONBLOCK};
 use std::fs::File;
 use std::io::{pipe, Error, PipeReader, PipeWriter};
@@ -21,7 +20,7 @@ use std::ptr;
 use std::thread::sleep;
 use std::time::Duration;
 
-pub fn run(parseds: &Vec<Parsed>, stdio: &mut Stdio, bin_paths: &Vec<&str>) -> Result<(), Error> {
+pub fn run(parseds: &Vec<Parsed>, stdio: &mut Stdio, bin_paths: &Vec<&str>) -> Result<bool, Error> {
     let len = parseds.len();
 
     if len == 0 {
@@ -32,15 +31,20 @@ pub fn run(parseds: &Vec<Parsed>, stdio: &mut Stdio, bin_paths: &Vec<&str>) -> R
         let parsed = parseds.first().unwrap();
 
         if let Some(builtin) = to_builtin(parsed.command()) {
+            if builtin.is_exit() {
+                return Ok(true);
+            }
+
             if !builtin.is_blocking() {
                 // native run single, builtin and non-blocking commands
-                return run_native(&parsed, stdio, Some(bin_paths));
+                run_native(&parsed, stdio, Some(bin_paths))?;
             }
         }
         // print "not found" if not found in external commands?
     }
     // other commands run as forks
-    run_forks(parseds, stdio, bin_paths)
+    run_forks(parseds, stdio, bin_paths)?;
+    Ok(false)
 }
 
 fn run_native(
