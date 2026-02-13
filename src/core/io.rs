@@ -1,7 +1,7 @@
 use libc::{close as c_close, pipe as c_pipe};
 use std::io::Error;
 
-fn mass_create(count: i32) -> Result<Vec<Pipeline>, Error> {
+pub fn mass_create(count: usize) -> Result<Vec<Pipeline>, Error> {
     let mut pipelines: Vec<Pipeline> = vec![];
 
     for _ in 0..count {
@@ -25,7 +25,7 @@ fn mass_close(pipelines: Vec<Pipeline>) {
     }
 }
 
-struct Pipeline {
+pub struct Pipeline {
     read_end: u32,
     write_end: u32,
 }
