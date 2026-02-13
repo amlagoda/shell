@@ -5,7 +5,7 @@ use std::io::Error;
 use std::iter::once;
 use std::ptr::null;
 
-struct Fork {
+pub struct Fork {
     pid: u32,
 }
 
@@ -29,18 +29,18 @@ impl Fork {
     }
 
     fn set_stdin(&self, file_descriptor: u32) -> Result<(), Error> {
-        self.set_io(Stdio::Stdin, file_descriptor)
+        self.set_io(&Stdio::Stdin, file_descriptor)
     }
 
     fn set_stdout(&self, file_descriptor: u32) -> Result<(), Error> {
-        self.set_io(Stdio::Stdout, file_descriptor)
+        self.set_io(&Stdio::Stdout, file_descriptor)
     }
 
     fn set_stderr(&self, file_descriptor: u32) -> Result<(), Error> {
-        self.set_io(Stdio::Stderr, file_descriptor)
+        self.set_io(&Stdio::Stderr, file_descriptor)
     }
 
-    fn set_io(&self, io: Stdio, file_descriptor: u32) -> Result<(), Error> {
+    fn set_io(&self, io: &Stdio, file_descriptor: u32) -> Result<(), Error> {
         let status = unsafe { c_dup2(file_descriptor as i32, io.as_uint() as i32) };
 
         if status == -1 {

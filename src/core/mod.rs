@@ -1,10 +1,10 @@
-mod pipeline;
+mod io;
 mod process;
 
 use crate::command::fmt::NewLine;
 use crate::command::{run_command as run_builtin, to_command as to_builtin};
-use crate::core::pipeline::Pipeline;
-use crate::core::process::Process;
+use crate::core::io::mass_create as mass_create_pipes;
+use crate::core::process::Fork;
 use crate::env::get_current_exe;
 use crate::fs::{open_file, search_executable_file_in_paths as find_bin};
 use crate::io::Stdio;
@@ -86,12 +86,21 @@ fn run_native(
 }
 
 fn run_forks(parseds: &Vec<Parsed>, stdio: &mut Stdio, bin_paths: &Vec<&str>) -> Result<(), Error> {
-    for parsed in parseds {
+    let len = parseds.len();
+    let pipelines = mass_create_pipes(if len > 0 { len - 1 } else { 0 })?;
+
+    for (number, parsed) in parseds.iter().enumerate() {
         let command = parsed.command();
 
         if let Some(builtin) = to_builtin(command) {
+            // fork
+            // выполнение функции нативно
         } else if find_bin(command, bin_paths).is_some() {
+            // fork
+            // подстановка кода
         } else {
+            // текущая команда не существует, ничего не открываем и не создаем, печатаем ошибку в stderr основного процесса
+            // что закрываем/удаляем?
             let msg = format!("{}: command not found", command);
             write!(stdio.stderr(), "\r\n{}", msg)?; // NewLine?
             stdio.stderr().flush()?;
@@ -232,12 +241,6 @@ fn read_file_to_stdout(mut file: File, stdout: &mut File) -> Result<(), Error> {
     }
 
     Ok(())
-}
-
-fn close_all(pipelines: Vec<Pipeline>) {
-    for mut pipeline in pipelines {
-        pipeline.close();
-    }
 }
 
 fn blocking_wait_process(pid: u32) {
