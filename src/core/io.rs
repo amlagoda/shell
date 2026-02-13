@@ -74,3 +74,19 @@ impl Pipeline {
         }
     }
 }
+
+pub enum Stdio {
+    Stdin,
+    Stdout,
+    Stderr,
+}
+
+impl Stdio {
+    pub fn as_uint(&self) -> u32 {
+        match self {
+            Stdio::Stdin => 0,
+            Stdio::Stdout => 1,
+            Stdio::Stderr => 2,
+        }
+    }
+}
