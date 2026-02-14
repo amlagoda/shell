@@ -19,9 +19,15 @@ pub fn mass_create(count: usize) -> Result<Vec<Pipeline>, Error> {
     Ok(pipelines)
 }
 
-fn mass_close(pipelines: Vec<Pipeline>) {
+pub fn mass_close(pipelines: Vec<Pipeline>) {
     for mut pipeline in pipelines {
         pipeline.close();
+    }
+}
+
+pub fn mass_close_write_ends(pipelines: Vec<Pipeline>) {
+    for mut pipeline in pipelines {
+        pipeline.close_write_end();
     }
 }
 
@@ -47,11 +53,11 @@ impl Pipeline {
         }
     }
 
-    fn read_end(&self) -> u32 {
+    pub fn read_end(&self) -> u32 {
         self.read_end
     }
 
-    fn write_end(&self) -> u32 {
+    pub fn write_end(&self) -> u32 {
         self.write_end
     }
 
