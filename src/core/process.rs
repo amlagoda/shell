@@ -1,10 +1,8 @@
 use crate::core::io::Stdio;
 use libc::{c_char, dup2 as c_dup2, execvp as c_execvp, fork as c_fork, waitpid as c_waitpid};
 use std::ffi::CString;
-use std::fs::File;
-use std::io::{stderr, stdin, stdout, Error};
+use std::io::Error;
 use std::iter::once;
-use std::os::fd::{AsRawFd, FromRawFd};
 use std::ptr;
 use std::ptr::null;
 
@@ -25,18 +23,6 @@ impl Fork {
 
     pub fn is_child(&self) -> bool {
         self.pid == 0
-    }
-
-    pub fn stdin(&self) -> File {
-        unsafe { File::from_raw_fd(stdin().as_raw_fd()) }
-    }
-
-    pub fn stdout(&self) -> File {
-        unsafe { File::from_raw_fd(stdout().as_raw_fd()) }
-    }
-
-    pub fn stderr(&self) -> File {
-        unsafe { File::from_raw_fd(stderr().as_raw_fd()) }
     }
 
     pub fn set_stdin(&self, file_descriptor: u32) -> Result<(), Error> {
