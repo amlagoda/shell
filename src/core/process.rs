@@ -1,8 +1,9 @@
 use crate::core::io::Stdio;
-use libc::{c_char, dup2 as c_dup2, execvp as c_execvp, fork as c_fork};
+use libc::{c_char, dup2 as c_dup2, execvp as c_execvp, fork as c_fork, waitpid as c_waitpid};
 use std::ffi::CString;
 use std::io::Error;
 use std::iter::once;
+use std::ptr;
 use std::ptr::null;
 
 pub struct Fork {
@@ -10,7 +11,7 @@ pub struct Fork {
 }
 
 impl Fork {
-    fn try_new() -> Result<Fork, Error> {
+    pub fn try_new() -> Result<Fork, Error> {
         let pid = unsafe { c_fork() };
 
         if pid >= 0 {
@@ -20,23 +21,19 @@ impl Fork {
         }
     }
 
-    fn is_child(&self) -> bool {
+    pub fn is_child(&self) -> bool {
         self.pid == 0
     }
 
-    fn get_pid(&self) -> u32 {
-        self.pid
-    }
-
-    fn set_stdin(&self, file_descriptor: u32) -> Result<(), Error> {
+    pub fn set_stdin(&self, file_descriptor: u32) -> Result<(), Error> {
         self.set_io(&Stdio::Stdin, file_descriptor)
     }
 
-    fn set_stdout(&self, file_descriptor: u32) -> Result<(), Error> {
+    pub fn set_stdout(&self, file_descriptor: u32) -> Result<(), Error> {
         self.set_io(&Stdio::Stdout, file_descriptor)
     }
 
-    fn set_stderr(&self, file_descriptor: u32) -> Result<(), Error> {
+    pub fn set_stderr(&self, file_descriptor: u32) -> Result<(), Error> {
         self.set_io(&Stdio::Stderr, file_descriptor)
     }
 
@@ -52,7 +49,7 @@ impl Fork {
 
     // reload the binary file of the process and transfer control to it
     // any return value means failure
-    fn hot_reload_bin(&self, bin: &str, args: Option<Vec<&str>>) -> Error {
+    pub fn hot_reload_bin(&self, bin: &str, args: Option<Vec<&str>>) -> Error {
         let merged_args: Vec<&str> = vec![bin]
             .into_iter()
             .chain(args.unwrap_or(vec![]).into_iter())
@@ -78,5 +75,9 @@ impl Fork {
         unsafe { c_execvp(bin.as_ptr(), args.as_ptr()) };
 
         Error::other("execvp error")
+    }
+
+    pub fn blocking_waiting(&self) {
+        unsafe { c_waitpid(self.pid as i32, ptr::null_mut(), 0) };
     }
 }
