@@ -114,13 +114,8 @@ fn run_forks(
 
             if fork.is_child() {
                 let is_first_command = number == 0;
-                // let mut stdin = 1;
-                // let mut stdout = 2;
-                // let mut stderr = 3;
-                // let is_last_command = number == (len - 1);
 
                 if !is_first_command {
-                    // stdin = (&pipelines[number - 1]).read_end();
                     if let Err(err) = fork.set_stdin((&pipelines[number - 1]).read_end()) {
                         mass_close_pipes(pipelines);
                         // kill all processes
@@ -128,40 +123,33 @@ fn run_forks(
                     }
                 }
 
-                // if !is_last_command {
                 if let Err(err) = fork.set_stdout((&pipelines[number]).write_end()) {
                     mass_close_pipes(pipelines);
                     // kill all processes
                     return Err(err);
                 }
-                // stdout = (&pipelines[number]).read_end();
 
                 if let Err(err) = fork.set_stderr((&pipelines[number]).write_end()) {
                     mass_close_pipes(pipelines);
                     // kill all processes
                     return Err(err);
                 }
-                // stderr = (&pipelines[number]).read_end();
-                // }
 
                 // mass_close_pipes(pipelines);
 
                 if let Some(builtin) = to_builtin(command) {
-                    /*let mut stdio = unsafe {
+                    let mut stdio = unsafe {
                         Stdio::new(
-                            open_file("/tmp/1", false)?,
-                            open_file("/tmp/2", false)?,
-                            open_file("/tmp/3", false)?,
-                            // File::from_raw_fd(stdin as i32),
-                            // File::from_raw_fd(stdout as i32),
-                            // File::from_raw_fd(stderr as i32),
+                            File::from_raw_fd(1 as i32),
+                            File::from_raw_fd(2 as i32),
+                            File::from_raw_fd(3 as i32),
                         )
-                    };*/
+                    };
+                    // задать правильные дескрипторы
 
                     run_builtin(
                         &builtin,
-                        // &mut stdio,
-                        stdio,
+                        &mut stdio,
                         &NewLine::new(), // all \r\n disabled
                         parsed.args().as_ref(),
                         Some(bin_paths),
