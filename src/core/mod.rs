@@ -40,6 +40,7 @@ pub fn run(parseds: &Vec<Parsed>, stdio: &mut Stdio, bin_paths: &Vec<&str>) -> R
 
             if !builtin.is_blocking() {
                 // native run single, builtin and non-blocking command
+                // does not control the "exit"
                 run_native(&parsed, stdio, Some(bin_paths))?;
                 return Ok(false);
             }
@@ -47,8 +48,8 @@ pub fn run(parseds: &Vec<Parsed>, stdio: &mut Stdio, bin_paths: &Vec<&str>) -> R
     }
 
     // other commands run as forks
-    run_forks(parseds, stdio, bin_paths)?;
-    Ok(false)
+    // control the "exit"
+    run_forks(parseds, stdio, bin_paths)
 }
 
 fn run_native(
@@ -88,7 +89,11 @@ fn run_native(
     run_builtin(&builtin, stdio, &newline, args.as_ref(), bin_paths)
 }
 
-fn run_forks(parseds: &Vec<Parsed>, stdio: &mut Stdio, bin_paths: &Vec<&str>) -> Result<(), Error> {
+fn run_forks(
+    parseds: &Vec<Parsed>,
+    stdio: &mut Stdio,
+    bin_paths: &Vec<&str>,
+) -> Result<bool, Error> {
     let len = parseds.len();
     let mut pipelines = mass_create_pipes(len)?;
     let mut forks: Vec<Fork> = vec![];
@@ -142,9 +147,7 @@ fn run_forks(parseds: &Vec<Parsed>, stdio: &mut Stdio, bin_paths: &Vec<&str>) ->
                 // mass_close_pipes(pipelines);
 
                 if let Some(builtin) = to_builtin(command) {
-                    let args = parsed.args();
-
-                    let mut stdio = unsafe {
+                    /*let mut stdio = unsafe {
                         Stdio::new(
                             open_file("/tmp/1", false)?,
                             open_file("/tmp/2", false)?,
@@ -153,21 +156,21 @@ fn run_forks(parseds: &Vec<Parsed>, stdio: &mut Stdio, bin_paths: &Vec<&str>) ->
                             // File::from_raw_fd(stdout as i32),
                             // File::from_raw_fd(stderr as i32),
                         )
-                    };
+                    };*/
 
-                    let mut newline = NewLine::new();
-                    // newline.stdout_start = true;
-                    // newline.stderr_start = true;
-
-                    // тут нужно передавать сигнал к выходу
-                    return run_builtin(
+                    run_builtin(
                         &builtin,
-                        &mut stdio,
-                        &newline,
-                        args.as_ref(),
+                        // &mut stdio,
+                        stdio,
+                        &NewLine::new(), // all \r\n disabled
+                        parsed.args().as_ref(),
                         Some(bin_paths),
-                    );
+                    )?;
+
+                    //always return exit=true after the fork is completed
+                    return Ok(true);
                 } else {
+                    // any return value is a error, which is equivalent to exit=true
                     return Err(fork.hot_reload_bin(parsed.command(), parsed.args()));
                 }
             }
@@ -211,10 +214,10 @@ fn run_forks(parseds: &Vec<Parsed>, stdio: &mut Stdio, bin_paths: &Vec<&str>) ->
     // }
 
     // mass_close_pipes(pipelines);
-    // forks.last().unwrap().blocking_waiting();
+    forks.last().unwrap().blocking_waiting();
     // kill all processes
 
-    Ok(())
+    Ok(false)
     /*
      *
      *
