@@ -3,7 +3,10 @@ mod process;
 
 use crate::command::fmt::NewLine;
 use crate::command::{run_command as run_builtin, to_command as to_builtin};
-use crate::core::io::mass_create as mass_create_pipes;
+use crate::core::io::{
+    mass_close as mass_close_pipes, mass_close_write_ends as mass_close_pipes_write_ends,
+    mass_create as mass_create_pipes, Stdio as StdioEnum,
+};
 use crate::core::process::Fork;
 use crate::env::get_current_exe;
 use crate::fs::{open_file, search_executable_file_in_paths as find_bin};
@@ -11,7 +14,7 @@ use crate::io::Stdio;
 use crate::parser::Parsed;
 use libc::{fcntl as c_fcntl, waitpid as c_waitpid, F_SETFL, O_NONBLOCK};
 use std::fs::File;
-use std::io::{pipe, Error, PipeReader, PipeWriter};
+use std::io::{pipe, stderr, stdin, stdout, Error, PipeReader, PipeWriter};
 use std::io::{ErrorKind, Stdout};
 use std::io::{Read, Write};
 use std::os::fd::{AsRawFd, FromRawFd};
@@ -87,17 +90,89 @@ fn run_native(
 
 fn run_forks(parseds: &Vec<Parsed>, stdio: &mut Stdio, bin_paths: &Vec<&str>) -> Result<(), Error> {
     let len = parseds.len();
-    let pipelines = mass_create_pipes(if len > 0 { len - 1 } else { 0 })?;
+    let mut pipelines = mass_create_pipes(len)?;
+    let mut forks: Vec<Fork> = vec![];
 
     for (number, parsed) in parseds.iter().enumerate() {
         let command = parsed.command();
 
-        if let Some(builtin) = to_builtin(command) {
-            // fork
-            // выполнение функции нативно
-        } else if find_bin(command, bin_paths).is_some() {
-            // fork
-            // подстановка кода
+        if to_builtin(command).is_some() || find_bin(command, bin_paths).is_some() {
+            let fork = Fork::try_new();
+
+            if let Err(err) = fork {
+                mass_close_pipes(pipelines);
+                // kill all processes
+                return Err(err);
+            }
+
+            let fork = fork.unwrap();
+
+            if fork.is_child() {
+                let is_first_command = number == 0;
+                // let mut stdin = 1;
+                // let mut stdout = 2;
+                // let mut stderr = 3;
+                // let is_last_command = number == (len - 1);
+
+                if !is_first_command {
+                    // stdin = (&pipelines[number - 1]).read_end();
+                    if let Err(err) = fork.set_stdin((&pipelines[number - 1]).read_end()) {
+                        mass_close_pipes(pipelines);
+                        // kill all processes
+                        return Err(err);
+                    }
+                }
+
+                // if !is_last_command {
+                if let Err(err) = fork.set_stdout((&pipelines[number]).write_end()) {
+                    mass_close_pipes(pipelines);
+                    // kill all processes
+                    return Err(err);
+                }
+                // stdout = (&pipelines[number]).read_end();
+
+                if let Err(err) = fork.set_stderr((&pipelines[number]).write_end()) {
+                    mass_close_pipes(pipelines);
+                    // kill all processes
+                    return Err(err);
+                }
+                // stderr = (&pipelines[number]).read_end();
+                // }
+
+                // mass_close_pipes(pipelines);
+
+                if let Some(builtin) = to_builtin(command) {
+                    let args = parsed.args();
+
+                    let mut stdio = unsafe {
+                        Stdio::new(
+                            open_file("/tmp/1", false)?,
+                            open_file("/tmp/2", false)?,
+                            open_file("/tmp/3", false)?,
+                            // File::from_raw_fd(stdin as i32),
+                            // File::from_raw_fd(stdout as i32),
+                            // File::from_raw_fd(stderr as i32),
+                        )
+                    };
+
+                    let mut newline = NewLine::new();
+                    // newline.stdout_start = true;
+                    // newline.stderr_start = true;
+
+                    // тут нужно передавать сигнал к выходу
+                    return run_builtin(
+                        &builtin,
+                        &mut stdio,
+                        &newline,
+                        args.as_ref(),
+                        Some(bin_paths),
+                    );
+                } else {
+                    return Err(fork.hot_reload_bin(parsed.command(), parsed.args()));
+                }
+            }
+
+            forks.push(fork);
         } else {
             // текущая команда не существует, ничего не открываем и не создаем, печатаем ошибку в stderr основного процесса
             // что закрываем/удаляем?
@@ -106,9 +181,47 @@ fn run_forks(parseds: &Vec<Parsed>, stdio: &mut Stdio, bin_paths: &Vec<&str>) ->
             stdio.stderr().flush()?;
         }
     }
+    /////////////
+    //mass_close_pipes_write_ends(pipelines);
+    // let mut last_read_end = 0;
+    // for (number, pipeline) in pipelines.iter_mut().enumerate() {
+    //     if number == parseds.len() - 1 {
+    //         last_read_end = pipeline.read_end();
+    //     }
+    //     pipeline.close_write_end();
+    // }
+
+    // let result = unlock_buf_and_wrap_to_file(last_read_end);
+
+    // if let Err(err) = result {
+    //     mass_close_pipes(pipelines);
+    //     // kill all pocesses
+    //     return Err(err);
+    // }
+
+    // let last_read_end = result.unwrap();
+    // match read_file_to_stdout(last_read_end, stdio.stdout()) {
+    //     // Ok(std) => stdout = std,
+    //     Ok(_) => {}
+    //     Err(err) => {
+    //         mass_close_pipes(pipelines);
+    //         // kill app processes
+    //         return Err(err);
+    //     }
+    // }
+
+    // mass_close_pipes(pipelines);
+    // forks.last().unwrap().blocking_waiting();
+    // kill all processes
 
     Ok(())
-    /*let mut pipelines: Vec<Pipeline> = vec![];
+    /*
+     *
+     *
+     *
+     *
+     *
+     * let mut pipelines: Vec<Pipeline> = vec![];
 
     for _ in 0..parseds.len() {
         let result = Pipeline::try_new();
