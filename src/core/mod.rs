@@ -4,8 +4,7 @@ mod process;
 use crate::command::fmt::NewLine;
 use crate::command::{run_command as run_builtin, to_command as to_builtin};
 use crate::core::io::{
-    mass_close as mass_close_pipes, mass_close_write_ends as mass_close_pipes_write_ends,
-    mass_create as mass_create_pipes, Stdio as StdioEnum,
+    mass_close as mass_close_pipes, mass_create as mass_create_pipes, Stdio as StdioEnum,
 };
 use crate::core::process::Fork;
 use crate::env::get_current_exe;
@@ -115,11 +114,9 @@ fn run_forks(
             if fork.is_child() {
                 let is_first_command = number == 0;
                 let stdout = (&pipelines[number]).write_end();
-                let mut stdin = 1;
 
                 if !is_first_command {
-                    stdin = (&pipelines[number - 1]).read_end();
-                    if let Err(err) = fork.set_stdin(stdin) {
+                    if let Err(err) = fork.set_stdin((&pipelines[number - 1]).read_end()) {
                         mass_close_pipes(pipelines);
                         // kill all processes
                         return Err(err);
@@ -143,9 +140,9 @@ fn run_forks(
                 if let Some(builtin) = to_builtin(command) {
                     let mut stdio = unsafe {
                         Stdio::new(
-                            File::from_raw_fd(stdin as i32),
-                            File::from_raw_fd(stdout as i32),
-                            File::from_raw_fd(stdout as i32),
+                            File::from_raw_fd(1),
+                            File::from_raw_fd(2),
+                            File::from_raw_fd(3),
                         )
                     };
 
@@ -156,6 +153,7 @@ fn run_forks(
                         parsed.args().as_ref(),
                         Some(bin_paths),
                     )?;
+
                     //always return exit=true after the fork is completed
                     return Ok(true);
                 } else {
@@ -174,10 +172,9 @@ fn run_forks(
         }
     }
 
-    // mass_close_pipes_write_ends(pipelines);
     let mut last_read_end = 0;
     for (number, pipeline) in pipelines.iter_mut().enumerate() {
-        if number == parseds.len() - 1 {
+        if number == len - 1 {
             last_read_end = pipeline.read_end();
         }
         pipeline.close_write_end();
