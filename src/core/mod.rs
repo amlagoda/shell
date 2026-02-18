@@ -192,7 +192,7 @@ fn run_forks(
         return Err(err);
     }
 
-    if let Err(err) = read_file_to_stdout(file.unwrap(), stdio.stdout()) {
+    if let Err(err) = transfer_data(file.unwrap(), stdio.stdout()) {
         mass_close_pipes(pipelines);
         // kill app processes
         return Err(err);
@@ -304,11 +304,11 @@ fn run_forks(
     Ok(())
 }*/
 
-fn read_file_to_stdout(mut file: File, stdout: &mut File) -> Result<(), Error> {
+fn transfer_data(mut from: File, to: &mut File) -> Result<(), Error> {
     let mut buffer = [0; 4096];
 
     loop {
-        match file.read(&mut buffer) {
+        match from.read(&mut buffer) {
             Ok(read_bytes) => {
                 if read_bytes == 0 {
                     break;
@@ -321,8 +321,8 @@ fn read_file_to_stdout(mut file: File, stdout: &mut File) -> Result<(), Error> {
 
                 for line in output.split("\n").filter(|r| !["\n", "\0"].contains(r)) {
                     // println!("{:?}", line);
-                    let _ = write!(stdout, "\r\n{}", line);
-                    let _ = stdout.flush();
+                    let _ = write!(to, "\r\n{}", line);
+                    let _ = to.flush();
                 }
 
                 buffer = [0; 4096];
@@ -339,12 +339,6 @@ fn read_file_to_stdout(mut file: File, stdout: &mut File) -> Result<(), Error> {
     }
 
     Ok(())
-}
-
-fn blocking_wait_process(pid: u32) {
-    unsafe {
-        c_waitpid(pid as i32, ptr::null_mut(), 0);
-    };
 }
 
 fn to_nonblock_file(file_descriptor: u32) -> Result<File, Error> {
