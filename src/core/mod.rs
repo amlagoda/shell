@@ -191,6 +191,7 @@ fn run_forks(
         return Err(err);
     }
 
+    pipelines.pop();
     mass_close_pipes(pipelines);
     forks.last().unwrap().blocking_waiting();
     // kill all processes
