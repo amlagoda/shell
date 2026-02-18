@@ -164,12 +164,16 @@ fn run_forks(
 
             forks.push(fork);
         } else {
-            // текущая команда не существует, ничего не открываем и не создаем, печатаем ошибку в stderr основного процесса
             // что закрываем/удаляем?
             let msg = format!("{}: command not found", command);
             write!(stdio.stderr(), "\r\n{}", msg)?; // NewLine?
             stdio.stderr().flush()?;
         }
+    }
+
+    if forks.is_empty() {
+        mass_close_pipes(pipelines);
+        return Ok(false);
     }
 
     let mut last_read_end = 0;
