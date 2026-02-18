@@ -1,7 +1,58 @@
+use libc::{fcntl as c_fcntl, F_SETFL, O_NONBLOCK};
 use std::fs::{read_dir, DirEntry, File, OpenOptions, ReadDir};
-use std::io::Error;
+use std::io::{Error, ErrorKind, Read, Write};
+use std::os::fd::FromRawFd;
 use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
+use std::thread::sleep;
+use std::time::Duration;
+
+pub fn to_nonblock_file(file_descriptor: u32) -> Result<File, Error> {
+    let status = unsafe { c_fcntl(file_descriptor as i32, F_SETFL, O_NONBLOCK) };
+
+    if status == -1 {
+        return Err(Error::other("fcntl error"));
+    }
+
+    let file = unsafe { File::from_raw_fd(file_descriptor as i32) };
+
+    Ok(file)
+}
+
+pub fn transfer_data(from: &mut File, to: &mut File) -> Result<(), Error> {
+    let mut buffer = [0; 4096];
+
+    loop {
+        match from.read(&mut buffer) {
+            Ok(read_bytes) => {
+                if read_bytes == 0 {
+                    break;
+                }
+
+                let readed = String::from_utf8(buffer[..=read_bytes].to_vec())
+                    .map_err(|_| Error::other("from_utf8 error"))?;
+
+                // skip unnecessary newlines
+                for line in readed.split("\n").filter(|r| !["\n", "\0"].contains(r)) {
+                    write!(to, "\r\n{}", line)?;
+                    to.flush()?;
+                }
+
+                buffer = [0; 4096];
+            }
+            Err(err) => {
+                if err.kind() == ErrorKind::WouldBlock {
+                    sleep(Duration::from_millis(10));
+                    continue;
+                }
+
+                return Err(err);
+            }
+        }
+    }
+
+    Ok(())
+}
 
 pub fn open_file(path: &str, append: bool) -> Result<File, Error> {
     let file = OpenOptions::new()
