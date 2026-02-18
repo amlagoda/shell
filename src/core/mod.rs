@@ -133,7 +133,7 @@ fn run_forks(
                         Stdio::new(
                             File::from_raw_fd(1),
                             File::from_raw_fd(2),
-                            File::from_raw_fd(3),
+                            File::from_raw_fd(2),
                         )
                     };
 
