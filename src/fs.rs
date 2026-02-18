@@ -33,7 +33,7 @@ pub fn transfer_data(from: &mut File, to: &mut File) -> Result<(), Error> {
                     .map_err(|_| Error::other("from_utf8 error"))?;
 
                 // skip unnecessary newlines
-                for line in readed.split("\n").filter(|r| !["\n", "\0"].contains(r)) {
+                for line in readed.split("\n").filter(|r| !["\n", "\0", ""].contains(r)) {
                     write!(to, "\r\n{}", line)?;
                     to.flush()?;
                 }
