@@ -184,23 +184,18 @@ fn run_forks(
         pipeline.close_write_end();
     }
 
-    let result = unlock_buf_and_wrap_to_file(last_read_end);
+    let file = to_nonblock_file(last_read_end);
 
-    if let Err(err) = result {
+    if let Err(err) = file {
         mass_close_pipes(pipelines);
         // kill all pocesses
         return Err(err);
     }
 
-    let last_read_end = result.unwrap();
-    match read_file_to_stdout(last_read_end, stdio.stdout()) {
-        // Ok(std) => stdout = std,
-        Ok(_) => {}
-        Err(err) => {
-            mass_close_pipes(pipelines);
-            // kill app processes
-            return Err(err);
-        }
+    if let Err(err) = read_file_to_stdout(file.unwrap(), stdio.stdout()) {
+        mass_close_pipes(pipelines);
+        // kill app processes
+        return Err(err);
     }
 
     mass_close_pipes(pipelines);
@@ -352,7 +347,7 @@ fn blocking_wait_process(pid: u32) {
     };
 }
 
-fn unlock_buf_and_wrap_to_file(file_descriptor: u32) -> Result<File, Error> {
+fn to_nonblock_file(file_descriptor: u32) -> Result<File, Error> {
     if file_descriptor == 0 {
         return Err(Error::other("file descriptor is closed"));
     }
