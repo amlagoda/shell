@@ -6,14 +6,12 @@ use crate::command::{run_command as run_builtin, to_command as to_builtin};
 use crate::core::io::{mass_close as mass_close_pipes, mass_create as mass_create_pipes};
 use crate::core::process::Fork;
 use crate::fs::{open_file, search_executable_file_in_paths as find_bin};
+use crate::fs::{to_nonblock_file, transfer_data};
 use crate::io::Stdio;
 use crate::parser::Parsed;
-use libc::{fcntl as c_fcntl, F_SETFL, O_NONBLOCK};
 use std::fs::File;
-use std::io::{Error, ErrorKind, Read, Write};
+use std::io::{Error, Write};
 use std::os::fd::FromRawFd;
-use std::thread::sleep;
-use std::time::Duration;
 
 pub fn run(parseds: &Vec<Parsed>, stdio: &mut Stdio, bin_paths: &Vec<&str>) -> Result<bool, Error> {
     let len = parseds.len();
@@ -185,7 +183,9 @@ fn run_forks(
         return Err(err);
     }
 
-    if let Err(err) = transfer_data(file.unwrap(), stdio.stdout()) {
+    let mut file = file.unwrap();
+
+    if let Err(err) = transfer_data(&mut file, stdio.stdout()) {
         mass_close_pipes(pipelines);
         // kill app processes
         return Err(err);
@@ -196,57 +196,4 @@ fn run_forks(
     // kill all processes
 
     Ok(false)
-}
-
-fn transfer_data(mut from: File, to: &mut File) -> Result<(), Error> {
-    let mut buffer = [0; 4096];
-
-    loop {
-        match from.read(&mut buffer) {
-            Ok(read_bytes) => {
-                if read_bytes == 0 {
-                    break;
-                }
-
-                let output = match String::from_utf8(buffer[..=read_bytes].to_vec()) {
-                    Ok(readed) => readed,
-                    Err(err) => err.to_string(),
-                };
-
-                for line in output.split("\n").filter(|r| !["\n", "\0"].contains(r)) {
-                    // println!("{:?}", line);
-                    let _ = write!(to, "\r\n{}", line);
-                    let _ = to.flush();
-                }
-
-                buffer = [0; 4096];
-            }
-            Err(err) => {
-                if err.kind() == ErrorKind::WouldBlock {
-                    sleep(Duration::from_millis(10));
-                    continue;
-                }
-
-                return Err(err); // exit
-            }
-        }
-    }
-
-    Ok(())
-}
-
-fn to_nonblock_file(file_descriptor: u32) -> Result<File, Error> {
-    if file_descriptor == 0 {
-        return Err(Error::other("file descriptor is closed"));
-    }
-
-    let status = unsafe { c_fcntl(file_descriptor as i32, F_SETFL, O_NONBLOCK) };
-
-    if status == -1 {
-        return Err(Error::other("fcntl error"));
-    }
-
-    let file = unsafe { File::from_raw_fd(file_descriptor as i32) };
-
-    Ok(file)
 }
