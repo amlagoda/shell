@@ -33,8 +33,6 @@ impl Builtin {
     pub fn is_blocking(&self) -> bool {
         match self {
             Builtin::Yes => true,
-            Builtin::Pwd => true,
-            Builtin::Cd => true,
             // Builtin::Tee => true,
             _ => false,
         }

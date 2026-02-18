@@ -29,7 +29,7 @@ pub fn transfer_data(from: &mut File, to: &mut File) -> Result<(), Error> {
                     break;
                 }
 
-                let readed = String::from_utf8(buffer[..=read_bytes].to_vec())
+                let readed = String::from_utf8(buffer[..read_bytes].to_vec())
                     .map_err(|_| Error::other("from_utf8 error"))?;
 
                 // skip unnecessary newlines
