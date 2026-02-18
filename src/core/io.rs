@@ -25,12 +25,6 @@ pub fn mass_close(pipelines: Vec<Pipeline>) {
     }
 }
 
-pub fn mass_close_write_ends(pipelines: Vec<Pipeline>) {
-    for mut pipeline in pipelines {
-        pipeline.close_write_end();
-    }
-}
-
 pub struct Pipeline {
     read_end: u32,
     write_end: u32,
@@ -73,7 +67,7 @@ impl Pipeline {
         }
     }
 
-    fn close_write_end(&mut self) {
+    pub fn close_write_end(&mut self) {
         if self.write_end > 0 {
             unsafe { c_close(self.write_end as i32) };
             self.write_end = 0;
