@@ -114,38 +114,40 @@ fn run_forks(
 
             if fork.is_child() {
                 let is_first_command = number == 0;
+                let stdout = (&pipelines[number]).write_end();
+                let mut stdin = 1;
 
                 if !is_first_command {
-                    if let Err(err) = fork.set_stdin((&pipelines[number - 1]).read_end()) {
+                    stdin = (&pipelines[number - 1]).read_end();
+                    if let Err(err) = fork.set_stdin(stdin) {
                         mass_close_pipes(pipelines);
                         // kill all processes
                         return Err(err);
                     }
                 }
 
-                if let Err(err) = fork.set_stdout((&pipelines[number]).write_end()) {
+                if let Err(err) = fork.set_stdout(stdout) {
                     mass_close_pipes(pipelines);
                     // kill all processes
                     return Err(err);
                 }
 
-                if let Err(err) = fork.set_stderr((&pipelines[number]).write_end()) {
+                if let Err(err) = fork.set_stderr(stdout) {
                     mass_close_pipes(pipelines);
                     // kill all processes
                     return Err(err);
                 }
 
-                // mass_close_pipes(pipelines);
+                mass_close_pipes(pipelines);
 
                 if let Some(builtin) = to_builtin(command) {
                     let mut stdio = unsafe {
                         Stdio::new(
-                            File::from_raw_fd(1 as i32),
-                            File::from_raw_fd(2 as i32),
-                            File::from_raw_fd(3 as i32),
+                            File::from_raw_fd(stdin as i32),
+                            File::from_raw_fd(stdout as i32),
+                            File::from_raw_fd(stdout as i32),
                         )
                     };
-                    // задать правильные дескрипторы
 
                     run_builtin(
                         &builtin,
@@ -154,7 +156,6 @@ fn run_forks(
                         parsed.args().as_ref(),
                         Some(bin_paths),
                     )?;
-
                     //always return exit=true after the fork is completed
                     return Ok(true);
                 } else {
@@ -172,47 +173,44 @@ fn run_forks(
             stdio.stderr().flush()?;
         }
     }
-    /////////////
-    //mass_close_pipes_write_ends(pipelines);
-    // let mut last_read_end = 0;
-    // for (number, pipeline) in pipelines.iter_mut().enumerate() {
-    //     if number == parseds.len() - 1 {
-    //         last_read_end = pipeline.read_end();
-    //     }
-    //     pipeline.close_write_end();
-    // }
 
-    // let result = unlock_buf_and_wrap_to_file(last_read_end);
+    // mass_close_pipes_write_ends(pipelines);
+    let mut last_read_end = 0;
+    for (number, pipeline) in pipelines.iter_mut().enumerate() {
+        if number == parseds.len() - 1 {
+            last_read_end = pipeline.read_end();
+        }
+        pipeline.close_write_end();
+    }
 
-    // if let Err(err) = result {
-    //     mass_close_pipes(pipelines);
-    //     // kill all pocesses
-    //     return Err(err);
-    // }
+    let result = unlock_buf_and_wrap_to_file(last_read_end);
 
-    // let last_read_end = result.unwrap();
-    // match read_file_to_stdout(last_read_end, stdio.stdout()) {
-    //     // Ok(std) => stdout = std,
-    //     Ok(_) => {}
-    //     Err(err) => {
-    //         mass_close_pipes(pipelines);
-    //         // kill app processes
-    //         return Err(err);
-    //     }
-    // }
+    if let Err(err) = result {
+        mass_close_pipes(pipelines);
+        // kill all pocesses
+        return Err(err);
+    }
 
-    // mass_close_pipes(pipelines);
+    let last_read_end = result.unwrap();
+    match read_file_to_stdout(last_read_end, stdio.stdout()) {
+        // Ok(std) => stdout = std,
+        Ok(_) => {}
+        Err(err) => {
+            mass_close_pipes(pipelines);
+            // kill app processes
+            return Err(err);
+        }
+    }
+
+    mass_close_pipes(pipelines);
     forks.last().unwrap().blocking_waiting();
     // kill all processes
 
     Ok(false)
-    /*
-     *
-     *
-     *
-     *
-     *
-     * let mut pipelines: Vec<Pipeline> = vec![];
+}
+
+/*fn run_fork_old() -> {
+    let mut pipelines: Vec<Pipeline> = vec![];
 
     for _ in 0..parseds.len() {
         let result = Pipeline::try_new();
@@ -307,8 +305,8 @@ fn run_forks(
 
     // kill all processes
 
-    Ok(())*/
-}
+    Ok(())
+}*/
 
 fn read_file_to_stdout(mut file: File, stdout: &mut File) -> Result<(), Error> {
     let mut buffer = [0; 4096];
