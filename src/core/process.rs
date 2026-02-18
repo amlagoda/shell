@@ -1,10 +1,29 @@
 use crate::core::io::Stdio;
 use libc::{c_char, dup2 as c_dup2, execvp as c_execvp, fork as c_fork, waitpid as c_waitpid};
+use libc::{getpid as c_getpid, kill as c_kill, setpgid as c_setpgid, SIGKILL};
 use std::ffi::CString;
 use std::io::Error;
 use std::iter::once;
 use std::ptr;
 use std::ptr::null;
+
+pub fn kill_group(group_pid: u32) {
+    unsafe { c_kill(-(group_pid as i32), SIGKILL) };
+}
+
+pub fn to_group(member_pid: u32, group_pid: u32) {
+    unsafe { c_setpgid(member_pid as i32, group_pid as i32) };
+}
+
+pub fn pid() -> u32 {
+    unsafe { c_getpid() as u32 }
+}
+
+pub fn kill_forks(forks: Vec<Fork>) {
+    for fork in forks {
+        fork.kill();
+    }
+}
 
 pub struct Fork {
     pid: u32,
@@ -79,5 +98,9 @@ impl Fork {
 
     pub fn blocking_waiting(&self) {
         unsafe { c_waitpid(self.pid as i32, ptr::null_mut(), 0) };
+    }
+
+    fn kill(&self) {
+        unsafe { c_kill(-(self.pid as i32), SIGKILL) };
     }
 }

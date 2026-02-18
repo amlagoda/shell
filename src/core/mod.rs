@@ -4,7 +4,7 @@ mod process;
 use crate::command::fmt::NewLine;
 use crate::command::{run_command as run_builtin, to_command as to_builtin};
 use crate::core::io::{mass_close as mass_close_pipes, mass_create as mass_create_pipes};
-use crate::core::process::Fork;
+use crate::core::process::{kill_forks, pid, to_group, Fork};
 use crate::fs::{open_file, search_executable_file_in_paths as find_bin};
 use crate::fs::{to_nonblock_file, transfer_data};
 use crate::io::Stdio;
@@ -87,6 +87,7 @@ fn run_forks(
     let len = parseds.len();
     let mut pipelines = mass_create_pipes(len)?;
     let mut forks: Vec<Fork> = vec![];
+    let group_pid = pid();
 
     for (number, parsed) in parseds.iter().enumerate() {
         let command = parsed.command();
@@ -96,33 +97,33 @@ fn run_forks(
 
             if let Err(err) = fork {
                 mass_close_pipes(pipelines);
-                // kill all processes
+                kill_forks(forks);
                 return Err(err);
             }
 
             let fork = fork.unwrap();
 
             if fork.is_child() {
+                to_group(0, group_pid);
                 let is_first_command = number == 0;
                 let stdout = (&pipelines[number]).write_end();
 
                 if !is_first_command {
                     if let Err(err) = fork.set_stdin((&pipelines[number - 1]).read_end()) {
                         mass_close_pipes(pipelines);
-                        // kill all processes
                         return Err(err);
                     }
                 }
 
                 if let Err(err) = fork.set_stdout(stdout) {
                     mass_close_pipes(pipelines);
-                    // kill all processes
+                    kill_forks(forks);
                     return Err(err);
                 }
 
                 if let Err(err) = fork.set_stderr(stdout) {
                     mass_close_pipes(pipelines);
-                    // kill all processes
+                    kill_forks(forks);
                     return Err(err);
                 }
 
@@ -179,7 +180,7 @@ fn run_forks(
 
     if let Err(err) = file {
         mass_close_pipes(pipelines);
-        // kill all pocesses
+        kill_forks(forks);
         return Err(err);
     }
 
@@ -187,14 +188,14 @@ fn run_forks(
 
     if let Err(err) = transfer_data(&mut file, stdio.stdout()) {
         mass_close_pipes(pipelines);
-        // kill app processes
+        kill_forks(forks);
         return Err(err);
     }
 
     pipelines.pop();
     mass_close_pipes(pipelines);
     forks.last().unwrap().blocking_waiting();
-    // kill all processes
+    kill_forks(forks);
 
     Ok(false)
 }
