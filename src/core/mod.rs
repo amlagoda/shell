@@ -3,22 +3,15 @@ mod process;
 
 use crate::command::fmt::NewLine;
 use crate::command::{run_command as run_builtin, to_command as to_builtin};
-use crate::core::io::{
-    mass_close as mass_close_pipes, mass_create as mass_create_pipes, Stdio as StdioEnum,
-};
+use crate::core::io::{mass_close as mass_close_pipes, mass_create as mass_create_pipes};
 use crate::core::process::Fork;
-use crate::env::get_current_exe;
 use crate::fs::{open_file, search_executable_file_in_paths as find_bin};
 use crate::io::Stdio;
 use crate::parser::Parsed;
-use libc::{fcntl as c_fcntl, waitpid as c_waitpid, F_SETFL, O_NONBLOCK};
+use libc::{fcntl as c_fcntl, F_SETFL, O_NONBLOCK};
 use std::fs::File;
-use std::io::{pipe, stderr, stdin, stdout, Error, PipeReader, PipeWriter};
-use std::io::{ErrorKind, Stdout};
-use std::io::{Read, Write};
-use std::os::fd::{AsRawFd, FromRawFd};
-use std::process::{exit, Child, Output};
-use std::ptr;
+use std::io::{Error, ErrorKind, Read, Write};
+use std::os::fd::FromRawFd;
 use std::thread::sleep;
 use std::time::Duration;
 
@@ -205,105 +198,6 @@ fn run_forks(
     Ok(false)
 }
 
-/*fn run_fork_old() -> {
-    let mut pipelines: Vec<Pipeline> = vec![];
-
-    for _ in 0..parseds.len() {
-        let result = Pipeline::try_new();
-
-        if let Err(err) = result {
-            close_all(pipelines);
-
-            return Err(err);
-        }
-
-        pipelines.push(result.unwrap());
-    }
-
-    let mut processes: Vec<Process> = vec![];
-
-    for (number, parsed) in parseds.iter().enumerate() {
-        let result = Process::try_new();
-
-        if let Err(err) = result {
-            close_all(pipelines);
-            // kill all processes
-            return Err(err);
-        }
-
-        let process: Process = result.unwrap();
-
-        if process.is_child() {
-            let is_first_process = number == 0;
-
-            if !is_first_process {
-                let result = process.set_stdin(pipelines[number - 1].get_read_end());
-
-                if let Err(err) = result {
-                    close_all(pipelines);
-                    // kill this process
-                    return Err(err);
-                }
-            }
-
-            let result = process.set_stdout(pipelines[number].get_write_end());
-
-            if let Err(err) = result {
-                close_all(pipelines);
-                // kill this process
-                return Err(err);
-            }
-
-            close_all(pipelines);
-
-            if let Some(command) = to_builtin(parsed.command()) {
-                // builtin
-                return Err(Error::other("stub"));
-            } else {
-                let err = process.hot_reload_bin(parsed.command(), parsed.args());
-
-                return Err(err);
-            }
-        }
-
-        processes.push(process);
-    }
-
-    let mut last_read_end = 0;
-    for (number, pipeline) in pipelines.iter_mut().enumerate() {
-        if number == parseds.len() - 1 {
-            last_read_end = pipeline.get_read_end();
-        }
-        pipeline.close_write_end();
-    }
-
-    let result = unlock_buf_and_wrap_to_file(last_read_end);
-
-    if let Err(err) = result {
-        close_all(pipelines);
-        // kill all pocesses
-        return Err(err);
-    }
-
-    let last_read_end = result.unwrap();
-    match read_file_to_stdout(last_read_end, stdio.stdout()) {
-        // Ok(std) => stdout = std,
-        Ok(_) => {}
-        Err(err) => {
-            close_all(pipelines);
-            // kill app processes
-            return Err(err);
-        }
-    }
-    close_all(pipelines);
-    let last_process_pid = processes.last().unwrap().get_pid();
-    blocking_wait_process(last_process_pid);
-
-    // kill all processes
-
-    Ok(())
-}*/
-
 fn transfer_data(mut from: File, to: &mut File) -> Result<(), Error> {
     let mut buffer = [0; 4096];
 
@@ -356,101 +250,3 @@ fn to_nonblock_file(file_descriptor: u32) -> Result<File, Error> {
 
     Ok(file)
 }
-
-/*fn run_chain_old(parseds: Vec<Parsed>) -> Result<(), Error> {
-    let current_exe = get_current_exe()?;
-    let mut processes: Vec<Child> = vec![];
-    let mut previous_output: Option<PipeReader> = None;
-
-    for parsed in parseds.into_iter() {
-        let mut stdout: Option<PipeWriter> = None;
-        let mut stderr: Option<PipeWriter> = None;
-        let (current_output, current_output_writer) = pipe()?;
-        let mut bin = parsed.command();
-        let mut args = parsed.args();
-
-        if to_builtin(parsed.command()).is_some() {
-            let def: Vec<&str> = vec![];
-            let mut new_args = args.unwrap_or(def);
-            new_args.insert(0, parsed.command());
-            args = Some(new_args);
-            bin = current_exe.as_str();
-        }
-
-        if let Some(pipeline) = parsed.pipeline() {
-            if !pipeline.is_stdout() {
-                stderr = Some(current_output_writer.try_clone()?);
-            }
-            stdout = Some(current_output_writer);
-        }
-
-        let process = spawn_pipe_process(bin, args.as_ref(), previous_output, stdout, stderr)?;
-        processes.push(process);
-        previous_output = Some(current_output);
-    }
-
-    if let Some(last_process) = processes.pop() {
-        for mut process in processes {
-            process.wait()?;
-        }
-
-        output_to_result(last_process.wait_with_output()?)
-    } else {
-        Err(Error::other("parseds is empty"))
-    }
-}*/
-
-/*fn run_single(
-    stdio: &mut Stdio,
-    parsed: Parsed,
-    bin_paths: &Vec<&str>,
-    mut stdout: Stdout,
-) -> Result<Stdout, Error> {
-    let msg = format!("{}: not found", parsed.command());
-    let mut result = CommandResult::new(Some(msg), None);
-
-    if let Some(builtin) = to_builtin(parsed.command()) {
-        result = run_builtin(stdio, &builtin, parsed.args().as_ref(), Some(bin_paths))?;
-    } else if find_bin(parsed.command(), bin_paths).is_some() {
-        let process = spawn_process(parsed.command(), parsed.args().as_ref())?;
-        result = output_to_result(process.wait_with_output()?)?;
-    }
-
-    if let Some(redirect) = parsed.redirect() {
-        let mut to_write = String::new();
-
-        if !redirect.is_stderr() && result.output().is_some() {
-            to_write.push_str(result.output().unwrap());
-
-            if result.is_exit() {
-                result = CommandResult::new_exit(result.output().map(|r| r.to_string()));
-            } else {
-                result = CommandResult::new(result.error().map(|r| r.to_string()), None);
-            }
-        }
-
-        if redirect.is_stderr() && result.error().is_some() {
-            to_write.push_str(result.error().unwrap());
-            result = CommandResult::new(None, result.output().map(|r| r.to_string()));
-        }
-
-        if !to_write.is_empty() {
-            to_write.push('\n');
-        }
-
-        write_to_file(redirect.path(), to_write.as_str(), redirect.is_append())?;
-    }
-
-    if let Some(error) = result.error() {
-        let _ = write!(stdout, "{}", error);
-        let _ = stdout.flush();
-    }
-
-    if let Some(output) = result.output() {
-        let _ = write!(stdout, "{}", output);
-        let _ = stdout.flush();
-    }
-
-    Ok(stdout)
-    // Ok(result)
-}*/
