@@ -39,14 +39,14 @@ pub struct Pipeline {
 impl Pipeline {
     fn try_new() -> Result<Pipeline, Error> {
         let mut ends: [i32; 2] = [0; 2];
-        let pipeline = Pipeline {
-            read_end: ends[0] as u32,
-            write_end: ends[1] as u32,
-        };
-
         let status = unsafe { c_pipe(ends.as_mut_ptr()) };
 
         if status == 0 {
+            let pipeline = Pipeline {
+                read_end: ends[0] as u32,
+                write_end: ends[1] as u32,
+            };
+
             Ok(pipeline)
         } else {
             Err(Error::other("pipeline creation error"))
