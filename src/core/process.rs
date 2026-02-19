@@ -100,7 +100,7 @@ impl Fork {
         unsafe { c_waitpid(self.pid as i32, ptr::null_mut(), 0) };
     }
 
-    fn kill(&self) {
+    pub fn kill(&self) {
         unsafe { c_kill(-(self.pid as i32), SIGKILL) };
     }
 }
