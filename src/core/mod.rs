@@ -1,14 +1,13 @@
 mod io;
-mod process;
 
 use crate::command::fmt::NewLine;
 use crate::command::{run_command as run_builtin, to_command as to_builtin};
 use crate::core::io::{mass_close as mass_close_pipes, mass_create as mass_create_pipes};
-use crate::core::process::{kill_forks, pid, to_group, Fork};
 use crate::fs::{open_file, search_executable_file_in_paths as find_bin};
 use crate::fs::{to_nonblock_file, transfer_data};
 use crate::io::Stdio;
 use crate::parser::Parsed;
+use crate::process::{kill_forks, pid, to_group, Fork};
 use std::fs::File;
 use std::io::{Error, Write};
 use std::os::fd::FromRawFd;
@@ -132,8 +131,8 @@ fn run_forks(
                 if let Some(builtin) = to_builtin(command) {
                     let mut stdio = unsafe {
                         Stdio::new(
+                            File::from_raw_fd(0),
                             File::from_raw_fd(1),
-                            File::from_raw_fd(2),
                             File::from_raw_fd(2),
                         )
                     };
