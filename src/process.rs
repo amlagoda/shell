@@ -1,4 +1,3 @@
-use crate::core::io::Stdio;
 use libc::{c_char, dup2 as c_dup2, execvp as c_execvp, fork as c_fork, waitpid as c_waitpid};
 use libc::{getpid as c_getpid, kill as c_kill, setpgid as c_setpgid, SIGKILL};
 use std::ffi::CString;
@@ -102,5 +101,21 @@ impl Fork {
 
     pub fn kill(&self) {
         unsafe { c_kill(-(self.pid as i32), SIGKILL) };
+    }
+}
+
+enum Stdio {
+    Stdin,
+    Stdout,
+    Stderr,
+}
+
+impl Stdio {
+    fn as_uint(&self) -> u32 {
+        match self {
+            Stdio::Stdin => 0,
+            Stdio::Stdout => 1,
+            Stdio::Stderr => 2,
+        }
     }
 }
