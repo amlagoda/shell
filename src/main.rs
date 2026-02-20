@@ -4,15 +4,14 @@ use crate::env::split_env_path;
 use crate::io::Stdio;
 use crate::keyboard::handle_key;
 use crate::parser::parse;
+// use crate::process::{kill_group_childs, pid};
 use crossterm::cursor::MoveLeft;
 use crossterm::event::{read, KeyEvent};
 use crossterm::execute;
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode, Clear, ClearType};
-use libc::{signal, SIGCHLD, SIG_IGN};
 use std::fs::File;
 use std::io::{stderr, stdin, stdout, Error, Write};
 use std::os::fd::{AsRawFd, FromRawFd};
-use std::process::exit;
 
 mod command;
 mod core;
@@ -21,11 +20,13 @@ mod fs;
 mod io;
 mod keyboard;
 mod parser;
+mod process;
 
 fn main() -> Result<(), Error> {
     // unsafe {
     //     libc::signal(libc::SIGPIPE, libc::SIG_IGN);
     //     signal(SIGCHLD, SIG_IGN);
+    //     libc::signal(libc::SIGINT, libc::SIG_IGN);
     // }
 
     let mut stdio = unsafe {
@@ -42,7 +43,7 @@ fn main() -> Result<(), Error> {
     let bin_paths = path.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
 
     enable_raw_mode()?;
-    write!(stdio.stdout(), "$ ")?;
+    write!(stdio.stdout(), "\r$ ")?;
     stdio.stdout().flush()?;
 
     loop {
@@ -61,11 +62,18 @@ fn main() -> Result<(), Error> {
         previous_key = Some(key.unwrap());
         input = i;
 
+        // if is_exit {
+        // disable_raw_mode()?;
+        // kill_group_childs(pid())?;
+        // enable_raw_mode()?;
+        // }
+
         if is_backspace {
             execute!(stdio.stdout(), MoveLeft(1), Clear(ClearType::UntilNewLine))?;
         }
 
         if let Some(r) = to_print {
+            stdio.stdout().flush()?;
             write!(stdio.stdout(), "{}", r)?;
             stdio.stdout().flush()?;
         }
@@ -79,7 +87,7 @@ fn main() -> Result<(), Error> {
             if let Some(parseds) = parse(input.as_str())? {
                 disable_raw_mode()?;
                 // parseds технически могут быть пустыми?
-                is_exit = run(&parseds, &mut stdio, &bin_paths)?; // печатет если команда не найдена
+                is_exit = run(&parseds, &mut stdio, &bin_paths)?;
                 enable_raw_mode()?;
             }
 
