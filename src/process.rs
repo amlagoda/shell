@@ -3,12 +3,43 @@ use libc::{getpid as c_getpid, kill as c_kill, setpgid as c_setpgid, SIGKILL};
 use std::ffi::CString;
 use std::io::Error;
 use std::iter::once;
+// use std::process::{Command, Stdio as CommandStdio};
 use std::ptr;
-use std::ptr::null;
+use std::ptr::{null /*null_mut*/};
 
-pub fn kill_group(group_pid: u32) {
-    unsafe { c_kill(-(group_pid as i32), SIGKILL) };
-}
+// pid - the pid of the parent process and the pgid of the group at the same time
+/*pub fn kill_group_childs(pid: u32) -> Result<(), Error> {
+    let process = Command::new("ps")
+        .stdin(CommandStdio::null())
+        .stdout(CommandStdio::piped())
+        .stderr(CommandStdio::null())
+        .args(["-g", pid.to_string().as_str(), "-o", "pid"])
+        .spawn()?;
+
+    let output = process.wait_with_output()?;
+    let stdout = String::from_utf8(output.stdout).map_err(|_| Error::other("from_utf8 error"))?;
+
+    let pids = stdout
+        .trim()
+        .split("\n")
+        .into_iter()
+        .map(|r| r.trim())
+        .enumerate()
+        .filter(|&(i, val)| i != 0 && val.parse::<u32>().unwrap() != pid)
+        .map(|(_, val)| val)
+        .collect::<Vec<&str>>();
+
+    for pid in pids {
+        let pid = pid.parse::<i32>().unwrap();
+
+        unsafe {
+            c_kill(pid, libc::SIGKILL);
+            c_waitpid(pid, null_mut(), 0);
+        };
+    }
+
+    Ok(())
+}*/
 
 pub fn to_group(member_pid: u32, group_pid: u32) {
     unsafe { c_setpgid(member_pid as i32, group_pid as i32) };
@@ -85,7 +116,7 @@ impl Fork {
         let bin = args[0].clone();
 
         let args: Vec<*const c_char> = args
-            .into_iter()
+            .iter()
             .map(|arg| arg.as_ptr())
             .chain(once(null()))
             .collect();
@@ -100,7 +131,7 @@ impl Fork {
     }
 
     pub fn kill(&self) {
-        unsafe { c_kill(-(self.pid as i32), SIGKILL) };
+        unsafe { c_kill(self.pid as i32, SIGKILL) };
     }
 }
 
