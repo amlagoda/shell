@@ -42,6 +42,8 @@ pub fn transfer_data(from: &mut File, to: &mut File) -> Result<(), Error> {
             }
             Err(err) => {
                 if err.kind() == ErrorKind::WouldBlock {
+                    // no data yet
+                    // here can anything done
                     sleep(Duration::from_millis(10));
                     continue;
                 }
