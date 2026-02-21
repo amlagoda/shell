@@ -94,7 +94,7 @@ fn main() -> Result<(), Error> {
             input.clear();
 
             if !is_exit {
-                write!(stdio.stdout(), "\n\r$ ")?;
+                write!(stdio.stdout(), "\r\n$ ")?;
                 stdio.stdout().flush()?;
             }
         }
