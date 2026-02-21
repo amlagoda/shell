@@ -10,7 +10,7 @@ pub fn run_command(
     command: &str,
     bin_paths: &Vec<&str>,
 ) -> Result<(), Error> {
-    let mut msg = format!("type: {}: not found", command);
+    let mut msg = format!("{}: not found", command);
     let mut to_stderr = true;
 
     if Builtin::to_builtin(command).is_some() {
