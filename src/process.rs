@@ -4,8 +4,7 @@ use std::ffi::CString;
 use std::io::Error;
 use std::iter::once;
 // use std::process::{Command, Stdio as CommandStdio};
-use std::ptr;
-use std::ptr::{null /*null_mut*/};
+use std::ptr::{null, null_mut};
 
 // pid - the pid of the parent process and the pgid of the group at the same time
 /*pub fn kill_group_childs(pid: u32) -> Result<(), Error> {
@@ -127,12 +126,19 @@ impl Fork {
     }
 
     pub fn blocking_waiting(&self) {
-        unsafe { c_waitpid(self.pid as i32, ptr::null_mut(), 0) };
+        unsafe { c_waitpid(self.pid as i32, null_mut(), 0) };
     }
 
     pub fn kill(&self) {
         unsafe { c_kill(self.pid as i32, SIGKILL) };
     }
+
+    // pub fn is_dead(&self) -> bool {
+    //     match unsafe { c_kill(self.pid as i32, 0) } {
+    //         -1 => Error::last_os_error().raw_os_error() == Some(libc::ESRCH),
+    //         _ => false,
+    //     }
+    // }
 }
 
 enum Stdio {
