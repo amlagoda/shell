@@ -5,7 +5,17 @@ use std::thread::sleep;
 use std::time::Duration;
 
 pub fn run_command(stdio: &mut Stdio, file_path: &str, file_append: bool) -> Result<(), Error> {
-    let mut file = open_file(file_path, file_append)?;
+    let file = open_file(file_path, file_append);
+
+    if file.is_err() {
+        let msg = format!("tee: {}: No such file or directory", file_path);
+        write!(stdio.stderr(), "{}", msg)?;
+        stdio.stderr().flush()?;
+
+        return Ok(());
+    }
+
+    let mut file = file.unwrap();
     let mut buffer = [0; 4096];
 
     loop {
