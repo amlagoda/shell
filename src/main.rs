@@ -1,6 +1,6 @@
 use crate::command::get_command_list;
 use crate::core::run;
-use crate::env::split_env_path;
+use crate::env::{get_args, split_env_path};
 use crate::io::Stdio;
 use crate::keyboard::handle_key;
 use crate::parser::parse;
@@ -36,11 +36,21 @@ fn main() -> Result<(), Error> {
             File::from_raw_fd(stderr().as_raw_fd()),
         )
     };
-    let mut input = String::new();
-    let mut previous_key: Option<KeyEvent> = None;
 
     let path = split_env_path()?;
     let bin_paths = path.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
+    let args = get_args();
+
+    if args.is_empty() {
+        run_interactive(&mut stdio, &bin_paths)
+    } else {
+        run_command(args.join(" "), &mut stdio, &bin_paths)
+    }
+}
+
+fn run_interactive(stdio: &mut Stdio, bin_paths: &Vec<&str>) -> Result<(), Error> {
+    let mut input = String::new();
+    let mut previous_key: Option<KeyEvent> = None;
 
     enable_raw_mode()?;
     write!(stdio.stdout(), "\r$ ")?;
@@ -87,7 +97,7 @@ fn main() -> Result<(), Error> {
             if let Some(parseds) = parse(input.as_str())? {
                 disable_raw_mode()?;
                 // parseds технически могут быть пустыми?
-                is_exit = run(&parseds, &mut stdio, &bin_paths)?;
+                is_exit = run(&parseds, stdio, &bin_paths)?;
                 enable_raw_mode()?;
             }
 
@@ -106,6 +116,16 @@ fn main() -> Result<(), Error> {
 
     disable_raw_mode()?;
     println!(""); // %
+
+    Ok(())
+}
+
+fn run_command(input: String, stdio: &mut Stdio, bin_paths: &Vec<&str>) -> Result<(), Error> {
+    if let Some(parseds) = parse(input.as_str())? {
+        // parseds технически могут быть пустыми?
+        run(&parseds, stdio, &bin_paths)?;
+        println!(""); // %
+    }
 
     Ok(())
 }

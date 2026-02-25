@@ -1,4 +1,4 @@
-use std::env::{current_exe, var};
+use std::env::{args, current_exe, var};
 use std::io::Error;
 
 pub fn split_env_path() -> Result<Vec<String>, Error> {
@@ -9,6 +9,13 @@ pub fn split_env_path() -> Result<Vec<String>, Error> {
         .collect::<Vec<String>>())
 }
 // tested in command/mod.rs::test_command_from_paths
+
+pub fn get_args() -> Vec<String> {
+    std::env::args()
+        .into_iter()
+        .skip(1)
+        .collect::<Vec<String>>()
+}
 
 pub fn get_current_exe() -> Result<String, Error> {
     let err = Error::other("path is invalid");
