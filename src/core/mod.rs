@@ -72,8 +72,8 @@ fn run_native(
     }
 
     let mut newline = NewLine::new();
-    newline.stdout_start = true;
-    newline.stderr_start = true;
+    newline.stdout_start = true; // ./bin command =false
+    newline.stderr_start = true; // ./bin command =false
 
     run_builtin(&builtin, stdio, &newline, args.as_ref(), bin_paths)
 }

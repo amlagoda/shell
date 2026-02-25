@@ -34,7 +34,7 @@ pub fn transfer_data(from: &mut File, to: &mut File) -> Result<(), Error> {
 
                 // skip unnecessary newlines
                 for line in readed.split("\n").filter(|r| !["\n", "\0", ""].contains(r)) {
-                    write!(to, "\r\n{}", line)?;
+                    write!(to, "\r\n{}", line)?; // ./bin command первая строка без \r\n
                     to.flush()?;
                     // имитируем поведение терминала
                     // unsafe { libc::fsync(to.as_raw_fd()) }; <--- проверить на tail -f file | head -n 5
