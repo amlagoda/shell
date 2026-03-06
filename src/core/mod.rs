@@ -87,12 +87,12 @@ fn run_forks(
     stdio: &mut Stdio,
     bin_paths: &Vec<&str>,
 ) -> Result<bool, Error> {
-    let len = parseds.len();
     let mut pipelines = mass_create_pipes(count_pipes(parseds))?;
     let mut forks: Vec<Fork> = vec![];
     let group_pid = pid();
+    let mut number = 0;
 
-    for (number, parsed) in parseds.iter().enumerate() {
+    for parsed in parseds {
         let command = parsed.command();
 
         if to_builtin(command).is_some() || find_bin(command, bin_paths).is_some() {
@@ -114,6 +114,7 @@ fn run_forks(
                 if !is_first_command {
                     if let Err(err) = fork.set_stdin((&pipelines[number - 1]).read_end()) {
                         mass_close_pipes(pipelines);
+                        kill_forks(forks);
                         return Err(err);
                     }
                 }
@@ -170,12 +171,60 @@ fn run_forks(
             }
 
             forks.push(fork);
+
+            if let Some(redirect) = parsed.redirect() {
+                if !redirect.is_stderr() {
+                    number = number + 1;
+                    let fork = Fork::try_new();
+
+                    if let Err(err) = fork {
+                        mass_close_pipes(pipelines);
+                        kill_forks(forks);
+                        return Err(err);
+                    }
+
+                    let fork = fork.unwrap();
+
+                    if fork.is_child() {
+                        to_group(0, group_pid);
+
+                        if let Err(err) = fork.set_stdin((&pipelines[number - 1]).read_end()) {
+                            mass_close_pipes(pipelines);
+                            kill_forks(forks);
+                            return Err(err);
+                        }
+
+                        if let Err(err) = fork.set_stdout((&pipelines[number]).write_end()) {
+                            mass_close_pipes(pipelines);
+                            kill_forks(forks);
+                            return Err(err);
+                        }
+
+                        mass_close_pipes(pipelines);
+
+                        let mut args = vec![redirect.path()];
+
+                        if redirect.is_append() {
+                            args.push("-a");
+                        }
+
+                        args.reverse(); // required
+
+                        // any return value is a error, which is equivalent to exit=true
+                        return Err(fork.hot_reload_bin("tee", Some(args)));
+                    }
+
+                    forks.push(fork);
+                }
+            }
         } else {
             // что закрываем/удаляем?
             let msg = format!("{}: command not found", command);
             write!(stdio.stderr(), "\r\n{}", msg)?; // NewLine?
             stdio.stderr().flush()?;
         }
+
+        number = number + 1;
     }
 
     if forks.is_empty() {
@@ -183,7 +232,9 @@ fn run_forks(
         return Ok(false);
     }
 
+    let len = pipelines.len();
     let mut last_read_end = 0;
+
     for (number, pipeline) in pipelines.iter_mut().enumerate() {
         if number == len - 1 {
             last_read_end = pipeline.read_end();
