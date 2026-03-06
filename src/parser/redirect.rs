@@ -23,6 +23,10 @@ impl Redirect {
         self.flow.is_stderr()
     }
 
+    pub fn is_stdout(&self) -> bool {
+        self.flow.is_stdout()
+    }
+
     pub fn is_append(&self) -> bool {
         self.mode.is_append()
     }
@@ -42,6 +46,13 @@ impl RedirectFlow {
         match self {
             RedirectFlow::Stdout => false,
             RedirectFlow::Stderr => true,
+        }
+    }
+
+    fn is_stdout(&self) -> bool {
+        match self {
+            RedirectFlow::Stdout => true,
+            RedirectFlow::Stderr => false,
         }
     }
 }

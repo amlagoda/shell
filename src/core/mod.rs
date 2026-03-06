@@ -126,7 +126,8 @@ fn run_forks(
                 }
 
                 if let Some(redirect) = parsed.redirect() {
-                    if redirect.is_stderr() {
+                    if redirect.is_stderr() || (redirect.is_stdout() && parsed.pipeline().is_none())
+                    {
                         let file = open_file(redirect.path(), redirect.is_append());
 
                         if let Err(err) = file {
@@ -135,7 +136,16 @@ fn run_forks(
                             return Err(err);
                         }
 
-                        if let Err(err) = fork.set_stderr(file.unwrap().into_raw_fd() as u32) {
+                        let file_descriptor = file.unwrap().into_raw_fd() as u32;
+                        let status;
+
+                        if redirect.is_stdout() {
+                            status = fork.set_stdout(file_descriptor);
+                        } else {
+                            status = fork.set_stderr(file_descriptor);
+                        }
+
+                        if let Err(err) = status {
                             mass_close_pipes(pipelines);
                             kill_forks(forks);
                             return Err(err);
@@ -172,8 +182,10 @@ fn run_forks(
 
             forks.push(fork);
 
-            if let Some(redirect) = parsed.redirect() {
-                if !redirect.is_stderr() {
+            if parsed.pipeline().is_some() && parsed.redirect().is_some() {
+                let redirect = parsed.redirect().unwrap();
+
+                if redirect.is_stdout() {
                     number = number + 1;
                     let fork = Fork::try_new();
 
@@ -270,8 +282,10 @@ fn count_pipes(parseds: &Vec<&Parsed>) -> usize {
     let mut count = parseds.len();
 
     for parsed in parseds {
-        if let Some(redirect) = parsed.redirect() {
-            if !redirect.is_stderr() {
+        if parsed.pipeline().is_some() && parsed.redirect().is_some() {
+            let redirect = parsed.redirect().unwrap();
+
+            if redirect.is_stdout() {
                 count = count + 1;
             }
         }
