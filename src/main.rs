@@ -97,6 +97,7 @@ fn run_interactive(stdio: &mut Stdio, bin_paths: &Vec<&str>) -> Result<(), Error
             if let Some(parseds) = parse(input.as_str())? {
                 disable_raw_mode()?;
                 // parseds технически могут быть пустыми?
+                let parseds = parseds.iter().map(|parsed| parsed).collect();
                 is_exit = run(&parseds, stdio, &bin_paths)?;
                 enable_raw_mode()?;
             }
@@ -123,6 +124,7 @@ fn run_interactive(stdio: &mut Stdio, bin_paths: &Vec<&str>) -> Result<(), Error
 fn run_command(input: String, stdio: &mut Stdio, bin_paths: &Vec<&str>) -> Result<(), Error> {
     if let Some(parseds) = parse(input.as_str())? {
         // parseds технически могут быть пустыми?
+        let parseds = parseds.iter().map(|parsed| parsed).collect();
         run(&parseds, stdio, &bin_paths)?;
         println!(""); // %
     }

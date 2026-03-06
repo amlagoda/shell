@@ -10,9 +10,13 @@ use crate::parser::Parsed;
 use crate::process::{kill_forks, pid, to_group, Fork};
 use std::fs::File;
 use std::io::{Error, Write};
-use std::os::fd::FromRawFd;
+use std::os::fd::{FromRawFd, IntoRawFd};
 
-pub fn run(parseds: &Vec<Parsed>, stdio: &mut Stdio, bin_paths: &Vec<&str>) -> Result<bool, Error> {
+pub fn run(
+    parseds: &Vec<&Parsed>,
+    stdio: &mut Stdio,
+    bin_paths: &Vec<&str>,
+) -> Result<bool, Error> {
     let len = parseds.len();
 
     if len == 0 {
@@ -79,12 +83,12 @@ fn run_native(
 }
 
 fn run_forks(
-    parseds: &Vec<Parsed>,
+    parseds: &Vec<&Parsed>,
     stdio: &mut Stdio,
     bin_paths: &Vec<&str>,
 ) -> Result<bool, Error> {
     let len = parseds.len();
-    let mut pipelines = mass_create_pipes(len)?;
+    let mut pipelines = mass_create_pipes(count_pipes(parseds))?;
     let mut forks: Vec<Fork> = vec![];
     let group_pid = pid();
 
@@ -120,11 +124,23 @@ fn run_forks(
                     return Err(err);
                 }
 
-                // if let Err(err) = fork.set_stderr(stdout) {
-                //     mass_close_pipes(pipelines);
-                //     kill_forks(forks);
-                //     return Err(err);
-                // }
+                if let Some(redirect) = parsed.redirect() {
+                    if redirect.is_stderr() {
+                        let file = open_file(redirect.path(), redirect.is_append());
+
+                        if let Err(err) = file {
+                            mass_close_pipes(pipelines);
+                            kill_forks(forks);
+                            return Err(err);
+                        }
+
+                        if let Err(err) = fork.set_stderr(file.unwrap().into_raw_fd() as u32) {
+                            mass_close_pipes(pipelines);
+                            kill_forks(forks);
+                            return Err(err);
+                        }
+                    }
+                }
 
                 mass_close_pipes(pipelines);
 
@@ -197,4 +213,18 @@ fn run_forks(
     kill_forks(forks);
 
     Ok(false)
+}
+
+fn count_pipes(parseds: &Vec<&Parsed>) -> usize {
+    let mut count = parseds.len();
+
+    for parsed in parseds {
+        if let Some(redirect) = parsed.redirect() {
+            if !redirect.is_stderr() {
+                count = count + 1;
+            }
+        }
+    }
+
+    count
 }
