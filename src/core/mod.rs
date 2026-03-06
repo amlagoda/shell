@@ -120,11 +120,11 @@ fn run_forks(
                     return Err(err);
                 }
 
-                if let Err(err) = fork.set_stderr(stdout) {
-                    mass_close_pipes(pipelines);
-                    kill_forks(forks);
-                    return Err(err);
-                }
+                // if let Err(err) = fork.set_stderr(stdout) {
+                //     mass_close_pipes(pipelines);
+                //     kill_forks(forks);
+                //     return Err(err);
+                // }
 
                 mass_close_pipes(pipelines);
 
