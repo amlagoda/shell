@@ -118,7 +118,6 @@ fn run_forks(
                     if let Err(err) = fork.set_stdin((&pipelines_stdout[number - 1]).read_end()) {
                         mass_close_pipes(pipelines_stdout);
                         pipeline_stderr.close();
-                        kill_forks(forks);
                         return Err(err);
                     }
                 }
@@ -126,14 +125,12 @@ fn run_forks(
                 if let Err(err) = fork.set_stdout(stdout) {
                     mass_close_pipes(pipelines_stdout);
                     pipeline_stderr.close();
-                    kill_forks(forks);
                     return Err(err);
                 }
 
                 if let Err(err) = fork.set_stderr(pipeline_stderr.write_end()) {
                     mass_close_pipes(pipelines_stdout);
                     pipeline_stderr.close();
-                    kill_forks(forks);
                     return Err(err);
                 }
 
@@ -145,7 +142,6 @@ fn run_forks(
                         if let Err(err) = file {
                             mass_close_pipes(pipelines_stdout);
                             pipeline_stderr.close();
-                            kill_forks(forks);
                             return Err(err);
                         }
 
@@ -161,7 +157,6 @@ fn run_forks(
                         if let Err(err) = status {
                             mass_close_pipes(pipelines_stdout);
                             pipeline_stderr.close();
-                            kill_forks(forks);
                             return Err(err);
                         }
                     }
@@ -220,21 +215,18 @@ fn run_forks(
                         {
                             mass_close_pipes(pipelines_stdout);
                             pipeline_stderr.close();
-                            kill_forks(forks);
                             return Err(err);
                         }
 
                         if let Err(err) = fork.set_stdout((&pipelines_stdout[number]).write_end()) {
                             mass_close_pipes(pipelines_stdout);
                             pipeline_stderr.close();
-                            kill_forks(forks);
                             return Err(err);
                         }
 
                         if let Err(err) = fork.set_stderr(pipeline_stderr.write_end()) {
                             mass_close_pipes(pipelines_stdout);
                             pipeline_stderr.close();
-                            kill_forks(forks);
                             return Err(err);
                         }
 
