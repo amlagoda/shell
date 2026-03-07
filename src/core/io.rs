@@ -29,6 +29,10 @@ pub fn mass_create(count: usize) -> Result<Vec<Pipeline>, Error> {
     Ok(pipelines)
 }
 
+pub fn create_pipe() -> Result<Pipeline, Error> {
+    Pipeline::try_new(PipelineEndsType::Pipe)
+}
+
 pub fn mass_close(pipelines: Vec<Pipeline>) {
     for mut pipeline in pipelines {
         pipeline.close();
@@ -108,7 +112,7 @@ impl Pipeline {
         self.write_end
     }
 
-    fn close(&mut self) {
+    pub fn close(&mut self) {
         if self.read_end > 0 {
             unsafe { c_close(self.read_end as i32) };
             self.read_end = 0;
