@@ -2,6 +2,7 @@ mod io;
 
 use crate::command::fmt::NewLine;
 use crate::command::{run_command as run_builtin, to_command as to_builtin};
+use crate::core::io::create_pipe;
 use crate::core::io::{mass_close as mass_close_pipes, mass_create as mass_create_pipes};
 use crate::fs::{open_file, search_executable_file_in_paths as find_bin};
 use crate::fs::{to_nonblock_file, transfer_data};
@@ -87,7 +88,8 @@ fn run_forks(
     stdio: &mut Stdio,
     bin_paths: &Vec<&str>,
 ) -> Result<bool, Error> {
-    let mut pipelines = mass_create_pipes(count_pipes(parseds))?;
+    let mut pipeline_stderr = create_pipe()?;
+    let mut pipelines_stdout = mass_create_pipes(count_pipes(parseds))?;
     let mut forks: Vec<Fork> = vec![];
     let group_pid = pid();
     let mut number = 0;
@@ -99,7 +101,8 @@ fn run_forks(
             let fork = Fork::try_new();
 
             if let Err(err) = fork {
-                mass_close_pipes(pipelines);
+                mass_close_pipes(pipelines_stdout);
+                pipeline_stderr.close();
                 kill_forks(forks);
                 return Err(err);
             }
@@ -109,18 +112,27 @@ fn run_forks(
             if fork.is_child() {
                 to_group(0, group_pid);
                 let is_first_command = number == 0;
-                let stdout = (&pipelines[number]).write_end();
+                let stdout = (&pipelines_stdout[number]).write_end();
 
                 if !is_first_command {
-                    if let Err(err) = fork.set_stdin((&pipelines[number - 1]).read_end()) {
-                        mass_close_pipes(pipelines);
+                    if let Err(err) = fork.set_stdin((&pipelines_stdout[number - 1]).read_end()) {
+                        mass_close_pipes(pipelines_stdout);
+                        pipeline_stderr.close();
                         kill_forks(forks);
                         return Err(err);
                     }
                 }
 
                 if let Err(err) = fork.set_stdout(stdout) {
-                    mass_close_pipes(pipelines);
+                    mass_close_pipes(pipelines_stdout);
+                    pipeline_stderr.close();
+                    kill_forks(forks);
+                    return Err(err);
+                }
+
+                if let Err(err) = fork.set_stderr(pipeline_stderr.write_end()) {
+                    mass_close_pipes(pipelines_stdout);
+                    pipeline_stderr.close();
                     kill_forks(forks);
                     return Err(err);
                 }
@@ -131,7 +143,8 @@ fn run_forks(
                         let file = open_file(redirect.path(), redirect.is_append());
 
                         if let Err(err) = file {
-                            mass_close_pipes(pipelines);
+                            mass_close_pipes(pipelines_stdout);
+                            pipeline_stderr.close();
                             kill_forks(forks);
                             return Err(err);
                         }
@@ -146,14 +159,16 @@ fn run_forks(
                         }
 
                         if let Err(err) = status {
-                            mass_close_pipes(pipelines);
+                            mass_close_pipes(pipelines_stdout);
+                            pipeline_stderr.close();
                             kill_forks(forks);
                             return Err(err);
                         }
                     }
                 }
 
-                mass_close_pipes(pipelines);
+                mass_close_pipes(pipelines_stdout);
+                pipeline_stderr.close();
 
                 if let Some(builtin) = to_builtin(command) {
                     let mut stdio = unsafe {
@@ -190,7 +205,8 @@ fn run_forks(
                     let fork = Fork::try_new();
 
                     if let Err(err) = fork {
-                        mass_close_pipes(pipelines);
+                        mass_close_pipes(pipelines_stdout);
+                        pipeline_stderr.close();
                         kill_forks(forks);
                         return Err(err);
                     }
@@ -200,19 +216,30 @@ fn run_forks(
                     if fork.is_child() {
                         to_group(0, group_pid);
 
-                        if let Err(err) = fork.set_stdin((&pipelines[number - 1]).read_end()) {
-                            mass_close_pipes(pipelines);
+                        if let Err(err) = fork.set_stdin((&pipelines_stdout[number - 1]).read_end())
+                        {
+                            mass_close_pipes(pipelines_stdout);
+                            pipeline_stderr.close();
                             kill_forks(forks);
                             return Err(err);
                         }
 
-                        if let Err(err) = fork.set_stdout((&pipelines[number]).write_end()) {
-                            mass_close_pipes(pipelines);
+                        if let Err(err) = fork.set_stdout((&pipelines_stdout[number]).write_end()) {
+                            mass_close_pipes(pipelines_stdout);
+                            pipeline_stderr.close();
                             kill_forks(forks);
                             return Err(err);
                         }
 
-                        mass_close_pipes(pipelines);
+                        if let Err(err) = fork.set_stderr(pipeline_stderr.write_end()) {
+                            mass_close_pipes(pipelines_stdout);
+                            pipeline_stderr.close();
+                            kill_forks(forks);
+                            return Err(err);
+                        }
+
+                        mass_close_pipes(pipelines_stdout);
+                        pipeline_stderr.close();
 
                         let mut args = vec![redirect.path()];
 
@@ -240,38 +267,53 @@ fn run_forks(
     }
 
     if forks.is_empty() {
-        mass_close_pipes(pipelines);
+        mass_close_pipes(pipelines_stdout);
+        pipeline_stderr.close();
         return Ok(false);
     }
 
-    let len = pipelines.len();
-    let mut last_read_end = 0;
+    let len = pipelines_stdout.len();
+    let mut stdout = 0;
+    let stderr = pipeline_stderr.read_end();
 
-    for (number, pipeline) in pipelines.iter_mut().enumerate() {
+    for (number, pipeline) in pipelines_stdout.iter_mut().enumerate() {
         if number == len - 1 {
-            last_read_end = pipeline.read_end();
+            stdout = pipeline.read_end();
         }
         pipeline.close_write_end();
     }
 
-    let file = to_nonblock_file(last_read_end);
+    pipeline_stderr.close_write_end();
 
-    if let Err(err) = file {
-        mass_close_pipes(pipelines);
-        kill_forks(forks);
-        return Err(err);
+    for (number, read_end) in vec![stderr, stdout].into_iter().enumerate() {
+        let file = to_nonblock_file(read_end);
+
+        if let Err(err) = file {
+            mass_close_pipes(pipelines_stdout);
+            pipeline_stderr.close();
+            kill_forks(forks);
+            return Err(err);
+        }
+
+        let mut file = file.unwrap();
+
+        let output = if number == 1 {
+            stdio.stderr()
+        } else {
+            stdio.stdout()
+        };
+
+        if let Err(err) = transfer_data(&mut file, output) {
+            mass_close_pipes(pipelines_stdout);
+            pipeline_stderr.close();
+            kill_forks(forks);
+            return Err(err);
+        }
     }
 
-    let mut file = file.unwrap();
-
-    if let Err(err) = transfer_data(&mut file, stdio.stdout()) {
-        mass_close_pipes(pipelines);
-        kill_forks(forks);
-        return Err(err);
-    }
-
-    pipelines.pop();
-    mass_close_pipes(pipelines);
+    pipelines_stdout.pop();
+    mass_close_pipes(pipelines_stdout);
+    pipeline_stderr.close();
     forks.last().unwrap().blocking_waiting();
     kill_forks(forks);
 
