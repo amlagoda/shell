@@ -29,10 +29,6 @@ pub fn transfer_data(mut from: File, mut to: File, proceed: Arc<AtomicBool>) -> 
     let mut buffer = [0; 4096];
 
     loop {
-        if !proceed.load(Relaxed) {
-            break;
-        }
-
         match from.read(&mut buffer) {
             Ok(read_bytes) => {
                 if read_bytes == 0 {
@@ -52,8 +48,11 @@ pub fn transfer_data(mut from: File, mut to: File, proceed: Arc<AtomicBool>) -> 
             }
             Err(err) => {
                 if err.kind() == ErrorKind::WouldBlock {
-                    // no data yet
-                    // here can anything done
+                    if !proceed.load(Relaxed) {
+                        transfer_remains(&mut from, &mut to)?;
+                        break;
+                    }
+
                     sleep(Duration::from_millis(10));
                     continue;
                 }
@@ -62,6 +61,34 @@ pub fn transfer_data(mut from: File, mut to: File, proceed: Arc<AtomicBool>) -> 
                 // not reproducible locally
                 return Ok(());
             }
+        }
+    }
+
+    Ok(())
+}
+
+fn transfer_remains(from: &mut File, to: &mut File) -> Result<(), Error> {
+    let mut buffer = [0; 4096];
+
+    loop {
+        match from.read(&mut buffer) {
+            Ok(read_bytes) => {
+                if read_bytes == 0 {
+                    break;
+                }
+
+                let readed = String::from_utf8(buffer[..read_bytes].to_vec())
+                    .map_err(|_| Error::other("from_utf8 error"))?;
+
+                // skip unnecessary newlines
+                for line in readed.split("\n").filter(|r| !["\n", "\0", ""].contains(r)) {
+                    write!(to, "\r\n{}", line)?; // ./bin command первая строка без \r\n
+                    to.flush()?;
+                }
+
+                buffer = [0; 4096];
+            }
+            Err(_) => break,
         }
     }
 
