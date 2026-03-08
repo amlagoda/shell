@@ -268,8 +268,8 @@ fn run_forks(
     }
 
     pipeline_stderr.close_write_end();
-    for pipeline in pipelines_stdout.iter_mut() {
-        pipeline.close_write_end();
+    for pipeline_stdout in pipelines_stdout.iter_mut() {
+        pipeline_stdout.close_write_end();
     }
 
     let proceed = Arc::new(AtomicBool::new(true));
