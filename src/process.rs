@@ -1,10 +1,12 @@
 use libc::{c_char, dup2 as c_dup2, execvp as c_execvp, fork as c_fork, waitpid as c_waitpid};
-use libc::{getpid as c_getpid, kill as c_kill, setpgid as c_setpgid, SIGKILL};
+use libc::{getpid as c_getpid, kill as c_kill, setpgid as c_setpgid, SIGKILL, WNOHANG};
 use std::ffi::CString;
 use std::io::Error;
 use std::iter::once;
 // use std::process::{Command, Stdio as CommandStdio};
 use std::ptr::{null, null_mut};
+use std::thread::sleep;
+use std::time::{Duration, Instant};
 
 // pid - the pid of the parent process and the pgid of the group at the same time
 /*pub fn kill_group_childs(pid: u32) -> Result<(), Error> {
@@ -130,7 +132,23 @@ impl Fork {
     }
 
     pub fn kill(&self) {
-        unsafe { c_kill(self.pid as i32, SIGKILL) };
+        unsafe {
+            c_kill(self.pid as i32, SIGKILL);
+
+            let start = Instant::now();
+            let timeout = Duration::from_secs(1);
+
+            loop {
+                let status = c_waitpid(self.pid as i32, null_mut(), WNOHANG);
+
+                // success wait or D-state process
+                if status == self.pid as i32 || start.elapsed() > timeout {
+                    break;
+                }
+
+                sleep(Duration::from_millis(10));
+            }
+        };
     }
 
     // pub fn is_dead(&self) -> bool {
