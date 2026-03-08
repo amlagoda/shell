@@ -299,8 +299,8 @@ fn run_forks(
 
     for handler in handlers {
         match handler.join() {
-            Ok(Err(e)) => eprintln!("Thread error: {:?}", e),
-            Err(e) => eprintln!("Thread panic: {:?}", e),
+            Ok(Err(err)) => eprintln!("thread error: {}", err),
+            Err(err) => eprintln!("thread panic: {:?}", err),
             _ => {}
         }
     }
