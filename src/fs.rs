@@ -1,10 +1,11 @@
-use libc::{fcntl as c_fcntl, F_SETFL, O_NONBLOCK};
+use libc::{dup as c_dup, fcntl as c_fcntl, F_SETFL, O_NONBLOCK};
 use std::fs::{read_dir, DirEntry, File, OpenOptions, ReadDir};
 use std::io::{Error, ErrorKind, Read, Write};
 use std::os::fd::FromRawFd;
 use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering::Relaxed};
+use std::sync::Arc;
 use std::thread::sleep;
 use std::time::Duration;
 
@@ -20,7 +21,11 @@ pub fn to_nonblock_file(file_descriptor: u32) -> Result<File, Error> {
     Ok(file)
 }
 
-pub fn transfer_data(from: &mut File, to: &mut File, proceed: &AtomicBool) -> Result<(), Error> {
+pub fn to_independent_file(file_descriptor: u32) -> File {
+    unsafe { File::from_raw_fd(c_dup(file_descriptor as i32)) }
+}
+
+pub fn transfer_data(mut from: File, mut to: File, proceed: Arc<AtomicBool>) -> Result<(), Error> {
     let mut buffer = [0; 4096];
 
     loop {
