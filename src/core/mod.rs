@@ -5,13 +5,16 @@ use crate::command::{run_command as run_builtin, to_command as to_builtin};
 use crate::core::io::create_pipe;
 use crate::core::io::{mass_close as mass_close_pipes, mass_create as mass_create_pipes};
 use crate::fs::{open_file, search_executable_file_in_paths as find_bin};
-use crate::fs::{to_nonblock_file, transfer_data};
+use crate::fs::{to_independent_file, to_nonblock_file, transfer_data};
 use crate::io::Stdio;
 use crate::parser::Parsed;
 use crate::process::{kill_forks, pid, to_group, Fork};
 use std::fs::File;
-use std::io::{Error, Write};
-use std::os::fd::{FromRawFd, IntoRawFd};
+use std::io::{Error, Read, Write};
+use std::os::fd::{AsRawFd, FromRawFd, IntoRawFd};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::Arc;
+use std::thread::{spawn, JoinHandle};
 
 pub fn run(
     parseds: &Vec<&Parsed>,
@@ -264,52 +267,69 @@ fn run_forks(
         return Ok(false);
     }
 
-    let len = pipelines_stdout.len();
-    let mut stdout = 0;
-    let stderr = pipeline_stderr.read_end();
-
-    for (number, pipeline) in pipelines_stdout.iter_mut().enumerate() {
-        if number == len - 1 {
-            stdout = pipeline.read_end();
-        }
+    pipeline_stderr.close_write_end();
+    for pipeline in pipelines_stdout.iter_mut() {
         pipeline.close_write_end();
     }
 
-    pipeline_stderr.close_write_end();
+    let proceed = Arc::new(AtomicBool::new(true));
+    let datasets = transfer_datasets(
+        pipelines_stdout.last().unwrap().read_end(),
+        pipeline_stderr.read_end(),
+        stdio,
+        &proceed,
+    );
 
-    for (number, read_end) in vec![stdout, stderr].into_iter().enumerate() {
-        let file = to_nonblock_file(read_end);
+    if let Err(err) = datasets {
+        kill_forks(forks);
+        mass_close_pipes(pipelines_stdout);
+        pipeline_stderr.close();
+        return Err(err);
+    }
 
-        if let Err(err) = file {
-            mass_close_pipes(pipelines_stdout);
-            pipeline_stderr.close();
-            kill_forks(forks);
-            return Err(err);
-        }
+    let mut handlers: Vec<JoinHandle<Result<(), Error>>> = vec![];
+    for (from, to, proceed) in datasets.unwrap() {
+        // required transfer ownership
+        handlers.push(spawn(move || transfer_data(from, to, proceed)));
+    }
 
-        let mut file = file.unwrap();
+    forks.pop().unwrap().blocking_waiting();
+    kill_forks(forks);
+    proceed.store(false, Ordering::Relaxed); // передавать ключ для клонов?
 
-        let output = if number == 1 {
-            stdio.stderr()
-        } else {
-            stdio.stdout()
-        };
-
-        if let Err(err) = transfer_data(&mut file, output) {
-            mass_close_pipes(pipelines_stdout);
-            pipeline_stderr.close();
-            kill_forks(forks);
-            return Err(err);
+    for handler in handlers {
+        match handler.join() {
+            Ok(Err(e)) => eprintln!("Thread error: {:?}", e),
+            Err(e) => eprintln!("Thread panic: {:?}", e),
+            _ => {}
         }
     }
 
-    forks.last().unwrap().blocking_waiting();
-    kill_forks(forks);
     pipelines_stdout.pop();
     mass_close_pipes(pipelines_stdout);
     pipeline_stderr.close();
 
     Ok(false)
+}
+
+fn transfer_datasets(
+    stdout: u32,
+    stderr: u32,
+    stdio: &mut Stdio,
+    proceed: &Arc<AtomicBool>,
+) -> Result<[(File, File, Arc<AtomicBool>); 2], Error> {
+    let stdout_from = to_nonblock_file(stdout)?;
+    let stderr_from = to_nonblock_file(stderr)?;
+
+    let stdout_to = to_independent_file(stdio.stdout().as_raw_fd() as u32);
+    let stderr_to = to_independent_file(stdio.stderr().as_raw_fd() as u32);
+
+    let (stdout_proceed, stderr_proceed) = (Arc::clone(proceed), Arc::clone(proceed));
+
+    Ok([
+        (stdout_from, stdout_to, stdout_proceed),
+        (stderr_from, stderr_to, stderr_proceed),
+    ])
 }
 
 fn count_pipes(parseds: &Vec<&Parsed>) -> usize {
