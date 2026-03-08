@@ -4,6 +4,7 @@ use std::io::{Error, ErrorKind, Read, Write};
 use std::os::fd::FromRawFd;
 use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
+use std::sync::atomic::{AtomicBool, Ordering::Relaxed};
 use std::thread::sleep;
 use std::time::Duration;
 
@@ -19,10 +20,14 @@ pub fn to_nonblock_file(file_descriptor: u32) -> Result<File, Error> {
     Ok(file)
 }
 
-pub fn transfer_data(from: &mut File, to: &mut File) -> Result<(), Error> {
+pub fn transfer_data(from: &mut File, to: &mut File, proceed: &AtomicBool) -> Result<(), Error> {
     let mut buffer = [0; 4096];
 
     loop {
+        if !proceed.load(Relaxed) {
+            break;
+        }
+
         match from.read(&mut buffer) {
             Ok(read_bytes) => {
                 if read_bytes == 0 {
