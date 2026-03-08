@@ -277,7 +277,7 @@ fn run_forks(
 
     pipeline_stderr.close_write_end();
 
-    for (number, read_end) in vec![stderr, stdout].into_iter().enumerate() {
+    for (number, read_end) in vec![stdout, stderr].into_iter().enumerate() {
         let file = to_nonblock_file(read_end);
 
         if let Err(err) = file {
@@ -303,11 +303,11 @@ fn run_forks(
         }
     }
 
+    forks.last().unwrap().blocking_waiting();
+    kill_forks(forks);
     pipelines_stdout.pop();
     mass_close_pipes(pipelines_stdout);
     pipeline_stderr.close();
-    forks.last().unwrap().blocking_waiting();
-    kill_forks(forks);
 
     Ok(false)
 }
