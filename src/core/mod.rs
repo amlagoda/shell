@@ -10,7 +10,7 @@ use crate::io::Stdio;
 use crate::parser::Parsed;
 use crate::process::{kill_forks, pid, to_group, Fork};
 use std::fs::File;
-use std::io::{Error, Read, Write};
+use std::io::{Error, Write};
 use std::os::fd::{AsRawFd, FromRawFd, IntoRawFd};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -20,6 +20,7 @@ pub fn run(
     parseds: &Vec<&Parsed>,
     stdio: &mut Stdio,
     bin_paths: &Vec<&str>,
+    output_starts_newline: bool,
 ) -> Result<bool, Error> {
     let len = parseds.len();
 
@@ -38,7 +39,7 @@ pub fn run(
             if !builtin.is_blocking() {
                 // native run single, builtin and non-blocking command
                 // does not control the "exit"
-                run_native(&parsed, stdio, Some(bin_paths))?;
+                run_native(&parsed, stdio, Some(bin_paths), output_starts_newline)?;
                 return Ok(false);
             }
         }
@@ -46,13 +47,14 @@ pub fn run(
 
     // other commands run as forks
     // control the "exit"
-    run_forks(parseds, stdio, bin_paths)
+    run_forks(parseds, stdio, bin_paths, output_starts_newline)
 }
 
 fn run_native(
     parsed: &Parsed,
     stdio: &mut Stdio,
     bin_paths: Option<&Vec<&str>>,
+    output_starts_newline: bool,
 ) -> Result<(), Error> {
     let builtin = to_builtin(parsed.command()).ok_or(Error::other("not builtin"))?;
     let args = parsed.args();
@@ -80,8 +82,8 @@ fn run_native(
     }
 
     let mut newline = NewLine::new();
-    newline.stdout_start = true;
-    newline.stderr_start = true;
+    newline.stdout_start = output_starts_newline;
+    newline.stderr_start = output_starts_newline;
 
     run_builtin(&builtin, stdio, &newline, args.as_ref(), bin_paths)
 }
@@ -90,6 +92,7 @@ fn run_forks(
     parseds: &Vec<&Parsed>,
     stdio: &mut Stdio,
     bin_paths: &Vec<&str>,
+    output_starts_newline: bool,
 ) -> Result<bool, Error> {
     let mut pipeline_stderr = create_pipe()?;
     let mut pipelines_stdout = mass_create_pipes(count_pipes(parseds))?;
@@ -258,7 +261,12 @@ fn run_forks(
         } else {
             // что закрываем/удаляем?
             let msg = format!("{}: command not found", command);
-            write!(stdio.stderr(), "\r\n{}", msg)?; // NewLine?
+            if output_starts_newline {
+                write!(stdio.stderr(), "\r\n{}", msg)?; // NewLine?
+            } else {
+                write!(stdio.stderr(), "{}", msg)?; // NewLine?
+            }
+
             stdio.stderr().flush()?;
         }
 
@@ -294,7 +302,9 @@ fn run_forks(
     let mut handlers: Vec<JoinHandle<Result<(), Error>>> = vec![];
     for (from, to, proceed) in datasets.unwrap() {
         // required transfer ownership
-        handlers.push(spawn(move || transfer_data(from, to, proceed)));
+        handlers.push(spawn(move || {
+            transfer_data(from, to, proceed, !output_starts_newline)
+        }));
     }
 
     forks.pop().unwrap().blocking_waiting();

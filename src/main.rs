@@ -98,7 +98,8 @@ fn run_interactive(stdio: &mut Stdio, bin_paths: &Vec<&str>) -> Result<(), Error
                 disable_raw_mode()?;
                 // parseds технически могут быть пустыми?
                 let parseds = parseds.iter().map(|parsed| parsed).collect();
-                is_exit = run(&parseds, stdio, &bin_paths)?;
+                let output_starts_newline = true;
+                is_exit = run(&parseds, stdio, &bin_paths, output_starts_newline)?;
                 enable_raw_mode()?;
             }
 
@@ -125,7 +126,8 @@ fn run_command(input: String, stdio: &mut Stdio, bin_paths: &Vec<&str>) -> Resul
     if let Some(parseds) = parse(input.as_str())? {
         // parseds технически могут быть пустыми?
         let parseds = parseds.iter().map(|parsed| parsed).collect();
-        run(&parseds, stdio, &bin_paths)?;
+        let output_starts_newline = false;
+        run(&parseds, stdio, &bin_paths, output_starts_newline)?;
         println!(""); // %
     }
 
