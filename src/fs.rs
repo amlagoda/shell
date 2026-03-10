@@ -25,7 +25,12 @@ pub fn to_independent_file(file_descriptor: u32) -> File {
     unsafe { File::from_raw_fd(c_dup(file_descriptor as i32)) }
 }
 
-pub fn transfer_data(mut from: File, mut to: File, proceed: Arc<AtomicBool>) -> Result<(), Error> {
+pub fn transfer_data(
+    mut from: File,
+    mut to: File,
+    proceed: Arc<AtomicBool>,
+    mut skip_first_newline: bool,
+) -> Result<(), Error> {
     let mut buffer = [0; 4096];
 
     loop {
@@ -40,7 +45,13 @@ pub fn transfer_data(mut from: File, mut to: File, proceed: Arc<AtomicBool>) -> 
 
                 // skip unnecessary newlines
                 for line in readed.split("\n").filter(|r| !["\n", "\0", ""].contains(r)) {
-                    write!(to, "\r\n{}", line)?; // ./bin command первая строка без \r\n
+                    if skip_first_newline {
+                        skip_first_newline = false;
+                        write!(to, "{}", line)?;
+                    } else {
+                        write!(to, "\r\n{}", line)?;
+                    }
+
                     to.flush()?;
                 }
 
@@ -49,7 +60,7 @@ pub fn transfer_data(mut from: File, mut to: File, proceed: Arc<AtomicBool>) -> 
             Err(err) => {
                 if err.kind() == ErrorKind::WouldBlock {
                     if !proceed.load(Relaxed) {
-                        transfer_remains(&mut from, &mut to)?;
+                        transfer_remains(&mut from, &mut to, skip_first_newline)?;
                         break;
                     }
 
@@ -67,7 +78,11 @@ pub fn transfer_data(mut from: File, mut to: File, proceed: Arc<AtomicBool>) -> 
     Ok(())
 }
 
-fn transfer_remains(from: &mut File, to: &mut File) -> Result<(), Error> {
+fn transfer_remains(
+    from: &mut File,
+    to: &mut File,
+    mut skip_first_newline: bool,
+) -> Result<(), Error> {
     let mut buffer = [0; 4096];
 
     loop {
@@ -82,7 +97,13 @@ fn transfer_remains(from: &mut File, to: &mut File) -> Result<(), Error> {
 
                 // skip unnecessary newlines
                 for line in readed.split("\n").filter(|r| !["\n", "\0", ""].contains(r)) {
-                    write!(to, "\r\n{}", line)?; // ./bin command первая строка без \r\n
+                    if skip_first_newline {
+                        skip_first_newline = false;
+                        write!(to, "{}", line)?;
+                    } else {
+                        write!(to, "\r\n{}", line)?;
+                    }
+
                     to.flush()?;
                 }
 
