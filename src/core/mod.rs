@@ -177,10 +177,14 @@ fn run_forks(
                         )
                     };
 
+                    let mut newline = NewLine::new();
+                    newline.stdout_end = true;
+                    newline.stderr_end = true;
+
                     run_builtin(
                         &builtin,
                         &mut stdio,
-                        &NewLine::new(), // all \r\n disabled
+                        &newline,
                         parsed.args().as_ref(),
                         Some(bin_paths),
                     )?;

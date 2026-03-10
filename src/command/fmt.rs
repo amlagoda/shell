@@ -34,7 +34,7 @@ impl NewLine {
 
 fn to_string(val: bool) -> String {
     if val {
-        "\r\n".to_string()
+        "\n".to_string() // not \r\n
     } else {
         "".to_string()
     }
