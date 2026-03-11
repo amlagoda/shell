@@ -259,12 +259,11 @@ fn run_forks(
                 }
             }
         } else {
-            // что закрываем/удаляем?
             let msg = format!("{}: command not found", command);
             if output_starts_newline {
-                write!(stdio.stderr(), "\r\n{}", msg)?; // NewLine?
+                write!(stdio.stderr(), "\r\n{}", msg)?;
             } else {
-                write!(stdio.stderr(), "{}", msg)?; // NewLine?
+                write!(stdio.stderr(), "{}", msg)?;
             }
 
             stdio.stderr().flush()?;
@@ -309,7 +308,7 @@ fn run_forks(
 
     forks.pop().unwrap().blocking_waiting();
     kill_forks(forks);
-    proceed.store(false, Ordering::Relaxed); // передавать ключ для клонов?
+    proceed.store(false, Ordering::Relaxed);
 
     for handler in handlers {
         match handler.join() {

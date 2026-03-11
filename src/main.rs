@@ -4,7 +4,6 @@ use crate::env::{get_args, split_env_path};
 use crate::io::Stdio;
 use crate::keyboard::handle_key;
 use crate::parser::parse;
-// use crate::process::{kill_group_childs, pid};
 use crossterm::cursor::MoveLeft;
 use crossterm::event::{read, KeyEvent};
 use crossterm::execute;
@@ -23,12 +22,6 @@ mod parser;
 mod process;
 
 fn main() -> Result<(), Error> {
-    // unsafe {
-    //     libc::signal(libc::SIGPIPE, libc::SIG_IGN);
-    //     signal(SIGCHLD, SIG_IGN);
-    //     libc::signal(libc::SIGINT, libc::SIG_IGN);
-    // }
-
     let mut stdio = unsafe {
         Stdio::new(
             File::from_raw_fd(stdin().as_raw_fd()),
@@ -72,12 +65,6 @@ fn run_interactive(stdio: &mut Stdio, bin_paths: &Vec<&str>) -> Result<(), Error
         previous_key = Some(key.unwrap());
         input = i;
 
-        // if is_exit {
-        // disable_raw_mode()?;
-        // kill_group_childs(pid())?;
-        // enable_raw_mode()?;
-        // }
-
         if is_backspace {
             execute!(stdio.stdout(), MoveLeft(1), Clear(ClearType::UntilNewLine))?;
         }
@@ -96,7 +83,6 @@ fn run_interactive(stdio: &mut Stdio, bin_paths: &Vec<&str>) -> Result<(), Error
         if is_enter {
             if let Some(parseds) = parse(input.as_str())? {
                 disable_raw_mode()?;
-                // parseds технически могут быть пустыми?
                 let parseds = parseds.iter().map(|parsed| parsed).collect();
                 let output_starts_newline = true;
                 is_exit = run(&parseds, stdio, &bin_paths, output_starts_newline)?;
@@ -124,7 +110,6 @@ fn run_interactive(stdio: &mut Stdio, bin_paths: &Vec<&str>) -> Result<(), Error
 
 fn run_command(input: String, stdio: &mut Stdio, bin_paths: &Vec<&str>) -> Result<(), Error> {
     if let Some(parseds) = parse(input.as_str())? {
-        // parseds технически могут быть пустыми?
         let parseds = parseds.iter().map(|parsed| parsed).collect();
         let output_starts_newline = false;
         run(&parseds, stdio, &bin_paths, output_starts_newline)?;

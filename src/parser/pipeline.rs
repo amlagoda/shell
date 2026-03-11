@@ -16,6 +16,7 @@ pub enum Pipeline {
 }
 
 impl Pipeline {
+    #[cfg(test)]
     pub fn is_stdout(&self) -> bool {
         match self {
             Pipeline::Stdout => true,
