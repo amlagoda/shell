@@ -29,17 +29,11 @@ impl Builtin {
 
     // is_blocking - commands that block the program (like "yes")
     pub fn is_blocking(&self) -> bool {
-        match self {
-            Builtin::Yes => true,
-            _ => false,
-        }
+        matches!(self, Builtin::Yes)
     }
 
     pub fn is_exit(&self) -> bool {
-        match self {
-            Builtin::Exit => true,
-            _ => false,
-        }
+        matches!(self, Builtin::Exit)
     }
 
     fn list() -> Vec<Builtin> {

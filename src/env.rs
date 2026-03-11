@@ -11,7 +11,7 @@ pub fn split_env_path() -> Result<Vec<String>, Error> {
 // tested in command/mod.rs::test_command_from_paths
 
 pub fn get_args() -> Vec<String> {
-    args().into_iter().skip(1).collect::<Vec<String>>()
+    args().skip(1).collect::<Vec<String>>()
 }
 
 // pub fn get_current_exe() -> Result<String, Error> {

@@ -61,7 +61,7 @@ fn run_interactive(stdio: &mut Stdio, bin_paths: &Vec<&str>) -> Result<(), Error
         let commands = r.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
 
         let (i, to_print, hint, is_enter, mut is_exit, is_backspace) =
-            handle_key(input, &key.unwrap(), &previous_key, &commands, &bin_paths);
+            handle_key(input, &key.unwrap(), &previous_key, &commands, bin_paths);
         previous_key = Some(key.unwrap());
         input = i;
 
@@ -83,9 +83,9 @@ fn run_interactive(stdio: &mut Stdio, bin_paths: &Vec<&str>) -> Result<(), Error
         if is_enter {
             if let Some(parseds) = parse(input.as_str())? {
                 disable_raw_mode()?;
-                let parseds = parseds.iter().map(|parsed| parsed).collect();
+                let parseds = parseds.iter().collect();
                 let output_starts_newline = true;
-                is_exit = run(&parseds, stdio, &bin_paths, output_starts_newline)?;
+                is_exit = run(&parseds, stdio, bin_paths, output_starts_newline)?;
                 enable_raw_mode()?;
             }
 
@@ -110,9 +110,9 @@ fn run_interactive(stdio: &mut Stdio, bin_paths: &Vec<&str>) -> Result<(), Error
 
 fn run_command(input: String, stdio: &mut Stdio, bin_paths: &Vec<&str>) -> Result<(), Error> {
     if let Some(parseds) = parse(input.as_str())? {
-        let parseds = parseds.iter().map(|parsed| parsed).collect();
+        let parseds = parseds.iter().collect();
         let output_starts_newline = false;
-        run(&parseds, stdio, &bin_paths, output_starts_newline)?;
+        run(&parseds, stdio, bin_paths, output_starts_newline)?;
         println!(""); // %
     }
 

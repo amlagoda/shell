@@ -85,32 +85,27 @@ fn transfer_remains(
 ) -> Result<(), Error> {
     let mut buffer = [0; 4096];
 
-    loop {
-        match from.read(&mut buffer) {
-            Ok(read_bytes) => {
-                if read_bytes == 0 {
-                    break;
-                }
-
-                let readed = String::from_utf8(buffer[..read_bytes].to_vec())
-                    .map_err(|_| Error::other("from_utf8 error"))?;
-
-                // skip unnecessary newlines
-                for line in readed.split("\n").filter(|r| !["\n", "\0", ""].contains(r)) {
-                    if skip_first_newline {
-                        skip_first_newline = false;
-                        write!(to, "{}", line)?;
-                    } else {
-                        write!(to, "\r\n{}", line)?;
-                    }
-
-                    to.flush()?;
-                }
-
-                buffer = [0; 4096];
-            }
-            Err(_) => break,
+    while let Ok(read_bytes) = from.read(&mut buffer) {
+        if read_bytes == 0 {
+            break;
         }
+
+        let readed = String::from_utf8(buffer[..read_bytes].to_vec())
+            .map_err(|_| Error::other("from_utf8 error"))?;
+
+        // skip unnecessary newlines
+        for line in readed.split("\n").filter(|r| !["\n", "\0", ""].contains(r)) {
+            if skip_first_newline {
+                skip_first_newline = false;
+                write!(to, "{}", line)?;
+            } else {
+                write!(to, "\r\n{}", line)?;
+            }
+
+            to.flush()?;
+        }
+
+        buffer = [0; 4096];
     }
 
     Ok(())

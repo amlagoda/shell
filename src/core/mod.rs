@@ -39,7 +39,7 @@ pub fn run(
             if !builtin.is_blocking() {
                 // native run single, builtin and non-blocking command
                 // does not control the "exit"
-                run_native(&parsed, stdio, Some(bin_paths), output_starts_newline)?;
+                run_native(parsed, stdio, Some(bin_paths), output_starts_newline)?;
                 return Ok(false);
             }
         }
@@ -118,10 +118,10 @@ fn run_forks(
             if fork.is_child() {
                 to_group(0, group_pid);
                 let is_first_command = number == 0;
-                let stdout = (&pipelines_stdout[number]).write_end();
+                let stdout = pipelines_stdout[number].write_end();
 
                 if !is_first_command {
-                    if let Err(err) = fork.set_stdin((&pipelines_stdout[number - 1]).read_end()) {
+                    if let Err(err) = fork.set_stdin(pipelines_stdout[number - 1].read_end()) {
                         mass_close_pipes(pipelines_stdout);
                         pipeline_stderr.close();
                         return Err(err);
@@ -152,13 +152,12 @@ fn run_forks(
                         }
 
                         let file_descriptor = file.unwrap().into_raw_fd() as u32;
-                        let status;
 
-                        if redirect.is_stdout() {
-                            status = fork.set_stdout(file_descriptor);
+                        let status = if redirect.is_stdout() {
+                            fork.set_stdout(file_descriptor)
                         } else {
-                            status = fork.set_stderr(file_descriptor);
-                        }
+                            fork.set_stderr(file_descriptor)
+                        };
 
                         if let Err(err) = status {
                             mass_close_pipes(pipelines_stdout);
@@ -206,7 +205,7 @@ fn run_forks(
                 let redirect = parsed.redirect().unwrap();
 
                 if redirect.is_stdout() {
-                    number = number + 1;
+                    number += 1;
                     let fork = Fork::try_new();
 
                     if let Err(err) = fork {
@@ -221,14 +220,13 @@ fn run_forks(
                     if fork.is_child() {
                         to_group(0, group_pid);
 
-                        if let Err(err) = fork.set_stdin((&pipelines_stdout[number - 1]).read_end())
-                        {
+                        if let Err(err) = fork.set_stdin(pipelines_stdout[number - 1].read_end()) {
                             mass_close_pipes(pipelines_stdout);
                             pipeline_stderr.close();
                             return Err(err);
                         }
 
-                        if let Err(err) = fork.set_stdout((&pipelines_stdout[number]).write_end()) {
+                        if let Err(err) = fork.set_stdout(pipelines_stdout[number].write_end()) {
                             mass_close_pipes(pipelines_stdout);
                             pipeline_stderr.close();
                             return Err(err);
@@ -269,7 +267,7 @@ fn run_forks(
             stdio.stderr().flush()?;
         }
 
-        number = number + 1;
+        number += 1;
     }
 
     if forks.is_empty() {
@@ -353,7 +351,7 @@ fn count_pipes(parseds: &Vec<&Parsed>) -> usize {
             let redirect = parsed.redirect().unwrap();
 
             if redirect.is_stdout() {
-                count = count + 1;
+                count += 1;
             }
         }
     }

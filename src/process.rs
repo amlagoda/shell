@@ -67,7 +67,7 @@ impl Fork {
     pub fn hot_reload_bin(&self, bin: &str, args: Option<Vec<&str>>) -> Error {
         let merged_args: Vec<&str> = vec![bin]
             .into_iter()
-            .chain(args.unwrap_or(vec![]).into_iter())
+            .chain(args.unwrap_or(vec![]))
             .collect();
 
         let mut args: Vec<CString> = vec![];
