@@ -40,27 +40,21 @@ pub fn transfer_data(
                     break;
                 }
 
-                let readed = String::from_utf8(buffer[..read_bytes].to_vec())
-                    .map_err(|_| Error::other("from_utf8 error"))?;
-
-                // skip unnecessary newlines
-                for line in readed.split("\n").filter(|r| !["\n", "\0", ""].contains(r)) {
-                    if skip_first_newline {
-                        skip_first_newline = false;
-                        write!(to, "{}", line)?;
-                    } else {
-                        write!(to, "\r\n{}", line)?;
-                    }
-
-                    to.flush()?;
-                }
-
+                skip_first_newline = write_lines(&mut to, &buffer, read_bytes, skip_first_newline)?;
                 buffer = [0; 4096];
             }
             Err(err) => {
                 if err.kind() == ErrorKind::WouldBlock {
                     if !proceed.load(Relaxed) {
-                        transfer_remains(&mut from, &mut to, skip_first_newline)?;
+                        while let Ok(read_bytes) = from.read(&mut buffer) {
+                            if read_bytes == 0 {
+                                break;
+                            }
+
+                            skip_first_newline =
+                                write_lines(&mut to, &buffer, read_bytes, skip_first_newline)?;
+                            buffer = [0; 4096];
+                        }
                         break;
                     }
 
@@ -78,37 +72,28 @@ pub fn transfer_data(
     Ok(())
 }
 
-fn transfer_remains(
-    from: &mut File,
-    to: &mut File,
+fn write_lines(
+    target: &mut File,
+    buffer: &[u8; 4096],
+    read_bytes: usize,
     mut skip_first_newline: bool,
-) -> Result<(), Error> {
-    let mut buffer = [0; 4096];
+) -> Result<bool, Error> {
+    let readed = String::from_utf8(buffer[..read_bytes].to_vec())
+        .map_err(|_| Error::other("from_utf8 error"))?;
 
-    while let Ok(read_bytes) = from.read(&mut buffer) {
-        if read_bytes == 0 {
-            break;
+    // skip unnecessary newlines
+    for line in readed.split("\n").filter(|r| !["\n", "\0", ""].contains(r)) {
+        if skip_first_newline {
+            skip_first_newline = false;
+            write!(target, "{}", line)?;
+        } else {
+            write!(target, "\r\n{}", line)?;
         }
 
-        let readed = String::from_utf8(buffer[..read_bytes].to_vec())
-            .map_err(|_| Error::other("from_utf8 error"))?;
-
-        // skip unnecessary newlines
-        for line in readed.split("\n").filter(|r| !["\n", "\0", ""].contains(r)) {
-            if skip_first_newline {
-                skip_first_newline = false;
-                write!(to, "{}", line)?;
-            } else {
-                write!(to, "\r\n{}", line)?;
-            }
-
-            to.flush()?;
-        }
-
-        buffer = [0; 4096];
+        target.flush()?;
     }
 
-    Ok(())
+    Ok(skip_first_newline)
 }
 
 pub fn open_file(path: &str, append: bool) -> Result<File, Error> {
