@@ -1,5 +1,6 @@
 pub mod cd;
 pub mod echo;
+pub mod history;
 pub mod pwd;
 pub mod r#type;
 pub mod yes;
@@ -7,6 +8,7 @@ pub mod yes;
 pub enum Builtin {
     Cd,
     Echo,
+    History,
     Exit,
     Pwd,
     Type,
@@ -40,6 +42,7 @@ impl Builtin {
         vec![
             Builtin::Cd,
             Builtin::Echo,
+            Builtin::History,
             Builtin::Exit,
             Builtin::Pwd,
             Builtin::Type,
@@ -53,6 +56,7 @@ impl ToString for Builtin {
         match self {
             Builtin::Cd => String::from("cd"),
             Builtin::Echo => String::from("echo"),
+            Builtin::History => String::from("history"),
             Builtin::Exit => String::from("exit"),
             Builtin::Pwd => String::from("pwd"),
             Builtin::Type => String::from("type"),
