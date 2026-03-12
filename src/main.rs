@@ -4,6 +4,7 @@ use crate::env::{get_args, split_env_path};
 use crate::io::Stdio;
 use crate::keyboard::handle_key;
 use crate::parser::parse;
+use crate::state::Storage;
 use crossterm::cursor::MoveLeft;
 use crossterm::event::{read, KeyEvent};
 use crossterm::execute;
@@ -20,6 +21,7 @@ mod io;
 mod keyboard;
 mod parser;
 mod process;
+mod state;
 
 fn main() -> Result<(), Error> {
     let mut stdio = unsafe {
@@ -30,18 +32,23 @@ fn main() -> Result<(), Error> {
         )
     };
 
+    let mut storage = Storage::new();
     let path = split_env_path()?;
     let bin_paths = path.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
     let args = get_args();
 
     if args.is_empty() {
-        run_interactive(&mut stdio, &bin_paths)
+        run_interactive(&mut stdio, &mut storage, &bin_paths)
     } else {
-        run_command(args.join(" "), &mut stdio, &bin_paths)
+        run_command(args.join(" "), &mut stdio, &mut storage, &bin_paths)
     }
 }
 
-fn run_interactive(stdio: &mut Stdio, bin_paths: &Vec<&str>) -> Result<(), Error> {
+fn run_interactive(
+    stdio: &mut Stdio,
+    storage: &mut Storage,
+    bin_paths: &Vec<&str>,
+) -> Result<(), Error> {
     let mut input = String::new();
     let mut previous_key: Option<KeyEvent> = None;
 
@@ -85,7 +92,7 @@ fn run_interactive(stdio: &mut Stdio, bin_paths: &Vec<&str>) -> Result<(), Error
                 disable_raw_mode()?;
                 let parseds = parseds.iter().collect();
                 let output_starts_newline = true;
-                is_exit = run(&parseds, stdio, bin_paths, output_starts_newline)?;
+                is_exit = run(&parseds, stdio, storage, bin_paths, output_starts_newline)?;
                 enable_raw_mode()?;
             }
 
@@ -108,11 +115,16 @@ fn run_interactive(stdio: &mut Stdio, bin_paths: &Vec<&str>) -> Result<(), Error
     Ok(())
 }
 
-fn run_command(input: String, stdio: &mut Stdio, bin_paths: &Vec<&str>) -> Result<(), Error> {
+fn run_command(
+    input: String,
+    stdio: &mut Stdio,
+    storage: &mut Storage,
+    bin_paths: &Vec<&str>,
+) -> Result<(), Error> {
     if let Some(parseds) = parse(input.as_str())? {
         let parseds = parseds.iter().collect();
         let output_starts_newline = false;
-        run(&parseds, stdio, bin_paths, output_starts_newline)?;
+        run(&parseds, stdio, storage, bin_paths, output_starts_newline)?;
         println!(""); // %
     }
 

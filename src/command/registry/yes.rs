@@ -10,10 +10,10 @@ pub fn run_command(stdio: &mut Stdio, newline: &NewLine) -> Result<(), Error> {
         if is_first {
             is_first = false;
 
-            write!(stdout, "{}y\r\n", newline.stdout_start())?; // infinite output, so at the end \r\n
+            writeln!(stdout, "{}y", newline.stdout_start())?; // infinite output, so at the end \n
             stdout.flush()?;
         } else {
-            write!(stdout, "y\r\n")?; // infinite output, so at the end \r\n
+            writeln!(stdout, "y")?; // infinite output, so at the end \n
             stdout.flush()?;
         }
     }

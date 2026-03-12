@@ -9,6 +9,7 @@ use crate::fs::{to_independent_file, to_nonblock_file, transfer_data};
 use crate::io::Stdio;
 use crate::parser::Parsed;
 use crate::process::{kill_forks, pid, to_group, Fork};
+use crate::state::Storage;
 use std::fs::File;
 use std::io::{Error, Write};
 use std::os::fd::{AsRawFd, FromRawFd, IntoRawFd};
@@ -19,6 +20,7 @@ use std::thread::{spawn, JoinHandle};
 pub fn run(
     parseds: &Vec<&Parsed>,
     stdio: &mut Stdio,
+    storage: &mut Storage,
     bin_paths: &Vec<&str>,
     output_starts_newline: bool,
 ) -> Result<bool, Error> {
@@ -27,6 +29,8 @@ pub fn run(
     if len == 0 {
         return Err(Error::other("empty parseds"));
     }
+
+    to_storage(parseds, storage);
 
     if len == 1 {
         let parsed = parseds.first().unwrap();
@@ -39,7 +43,13 @@ pub fn run(
             if !builtin.is_blocking() {
                 // native run single, builtin and non-blocking command
                 // does not control the "exit"
-                run_native(parsed, stdio, Some(bin_paths), output_starts_newline)?;
+                run_native(
+                    parsed,
+                    stdio,
+                    storage,
+                    Some(bin_paths),
+                    output_starts_newline,
+                )?;
                 return Ok(false);
             }
         }
@@ -47,12 +57,25 @@ pub fn run(
 
     // other commands run as forks
     // control the "exit"
-    run_forks(parseds, stdio, bin_paths, output_starts_newline)
+    run_forks(parseds, stdio, storage, bin_paths, output_starts_newline)
+}
+
+fn to_storage(parseds: &Vec<&Parsed>, storage: &mut Storage) {
+    for parsed in parseds.iter() {
+        let mut to_storage = parsed.command().to_string();
+
+        if let Some(args) = parsed.args() {
+            to_storage = format!("{} {}", to_storage, args.join(" "));
+        }
+
+        storage.add(to_storage);
+    }
 }
 
 fn run_native(
     parsed: &Parsed,
     stdio: &mut Stdio,
+    storage: &Storage,
     bin_paths: Option<&Vec<&str>>,
     output_starts_newline: bool,
 ) -> Result<(), Error> {
@@ -78,19 +101,27 @@ fn run_native(
 
         let mut stdio = Stdio::new(stdin, stdout, stderr);
 
-        return run_builtin(&builtin, &mut stdio, &newline, args.as_ref(), bin_paths);
+        return run_builtin(
+            &builtin,
+            &mut stdio,
+            storage,
+            &newline,
+            args.as_ref(),
+            bin_paths,
+        );
     }
 
     let mut newline = NewLine::new();
     newline.stdout_start = output_starts_newline;
     newline.stderr_start = output_starts_newline;
 
-    run_builtin(&builtin, stdio, &newline, args.as_ref(), bin_paths)
+    run_builtin(&builtin, stdio, storage, &newline, args.as_ref(), bin_paths)
 }
 
 fn run_forks(
     parseds: &Vec<&Parsed>,
     stdio: &mut Stdio,
+    storage: &Storage,
     bin_paths: &Vec<&str>,
     output_starts_newline: bool,
 ) -> Result<bool, Error> {
@@ -186,6 +217,7 @@ fn run_forks(
                     run_builtin(
                         &builtin,
                         &mut stdio,
+                        storage,
                         &newline,
                         parsed.args().as_ref(),
                         Some(bin_paths),
