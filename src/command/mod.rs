@@ -19,10 +19,10 @@ pub fn to_command(name: &str) -> Option<Builtin> {
 
 pub fn run_command(
     command: &Builtin,
+    args: Option<&Vec<&str>>,
     stdio: &mut Stdio,
     storage: &Storage,
     newline: &NewLine,
-    args: Option<&Vec<&str>>,
     bin_paths: Option<&Vec<&str>>,
 ) -> Result<(), Error> {
     match command {
@@ -31,7 +31,19 @@ pub fn run_command(
             run_command_cd(stdio, newline, args.unwrap_or(&default).first().copied())
         }
         Builtin::Echo => run_command_echo(stdio, newline, args),
-        Builtin::History => run_command_history(stdio, storage, newline),
+        Builtin::History => {
+            let mut limit: Option<usize> = None;
+
+            if let Some(args) = args {
+                let candidate = args.first().unwrap();
+
+                if let Ok(parsed) = candidate.parse::<usize>() {
+                    limit = Some(parsed);
+                }
+            }
+
+            run_command_history(stdio, storage, newline, limit)
+        }
         Builtin::Exit => Ok(()),
         Builtin::Pwd => run_command_pwd(stdio, newline),
         Builtin::Type => {

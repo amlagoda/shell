@@ -103,10 +103,10 @@ fn run_native(
 
         return run_builtin(
             &builtin,
+            args.as_ref(),
             &mut stdio,
             storage,
             &newline,
-            args.as_ref(),
             bin_paths,
         );
     }
@@ -115,7 +115,7 @@ fn run_native(
     newline.stdout_start = output_starts_newline;
     newline.stderr_start = output_starts_newline;
 
-    run_builtin(&builtin, stdio, storage, &newline, args.as_ref(), bin_paths)
+    run_builtin(&builtin, args.as_ref(), stdio, storage, &newline, bin_paths)
 }
 
 fn run_forks(
@@ -216,10 +216,10 @@ fn run_forks(
 
                     run_builtin(
                         &builtin,
+                        parsed.args().as_ref(),
                         &mut stdio,
                         storage,
                         &newline,
-                        parsed.args().as_ref(),
                         Some(bin_paths),
                     )?;
 
