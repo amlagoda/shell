@@ -51,6 +51,7 @@ fn run_interactive(
 ) -> Result<(), Error> {
     let mut input = String::new();
     let mut previous_key: Option<KeyEvent> = None;
+    let mut has_user_typing = false;
 
     enable_raw_mode()?;
     write!(stdio.stdout(), "\r$ ")?;
@@ -67,13 +68,24 @@ fn run_interactive(
         let r = get_command_list();
         let commands = r.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
 
-        let (i, to_print, hint, is_enter, mut is_exit, is_backspace) =
-            handle_key(input, &key.unwrap(), &previous_key, &commands, bin_paths);
+        let (i, to_print, hint, backspace_len, is_enter, mut is_exit, user_typing) = handle_key(
+            input,
+            &key.unwrap(),
+            &previous_key,
+            &commands,
+            bin_paths,
+            has_user_typing,
+        );
         previous_key = Some(key.unwrap());
         input = i;
+        has_user_typing = user_typing;
 
-        if is_backspace {
-            execute!(stdio.stdout(), MoveLeft(1), Clear(ClearType::UntilNewLine))?;
+        if let Some(len) = backspace_len {
+            execute!(
+                stdio.stdout(),
+                MoveLeft(len as u16),
+                Clear(ClearType::UntilNewLine)
+            )?;
         }
 
         if let Some(r) = to_print {

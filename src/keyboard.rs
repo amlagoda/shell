@@ -7,20 +7,36 @@ pub fn handle_key(
     previous_key: &Option<KeyEvent>,
     commands: &Vec<&str>,
     bin_paths: &Vec<&str>,
-) -> (String, Option<String>, Option<String>, bool, bool, bool) {
+    mut has_user_typing: bool,
+) -> (
+    String,
+    Option<String>,
+    Option<String>,
+    Option<usize>,
+    bool,
+    bool,
+    bool,
+) {
     let mut to_print: Option<String> = None;
     let mut hint: Option<String> = None;
+    let mut backspace_len: Option<usize> = None;
     let mut is_enter = false;
     let mut is_exit = false;
-    let mut is_backspace = false;
 
     match key.code {
-        KeyCode::Enter => is_enter = true,
+        KeyCode::Enter => {
+            is_enter = true;
+            has_user_typing = false;
+        }
 
         KeyCode::Backspace => {
             if !input.is_empty() {
                 input.pop();
-                is_backspace = true;
+                backspace_len = Some(1);
+            }
+
+            if input.is_empty() {
+                has_user_typing = false;
             }
         }
 
@@ -52,16 +68,37 @@ pub fn handle_key(
                 is_exit = true;
             } else if r == 'j' && is_ctrl {
                 is_enter = true;
+                has_user_typing = false;
             } else {
                 input.push(r);
                 to_print = Some(r.to_string());
+                has_user_typing = true;
+            }
+        }
+
+        KeyCode::Up => {
+            if !has_user_typing {
+                if !input.is_empty() {
+                    backspace_len = Some(input.len());
+                }
+
+                input = String::from("arrow up");
+                to_print = Some(input.clone());
             }
         }
 
         _ => {}
     }
 
-    (input, to_print, hint, is_enter, is_exit, is_backspace)
+    (
+        input,
+        to_print,
+        hint,
+        backspace_len,
+        is_enter,
+        is_exit,
+        has_user_typing,
+    )
 }
 
 fn complete(
