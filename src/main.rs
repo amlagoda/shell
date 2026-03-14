@@ -74,6 +74,7 @@ fn run_interactive(
             &previous_key,
             &commands,
             bin_paths,
+            storage,
             has_user_typing,
         );
         previous_key = Some(key.unwrap());

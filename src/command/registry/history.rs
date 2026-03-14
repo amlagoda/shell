@@ -9,7 +9,7 @@ pub fn run_command(
     newline: &NewLine,
     limit: Option<usize>,
 ) -> Result<(), Error> {
-    if let Some(mut commands) = storage.get() {
+    if let Some(mut commands) = storage.all() {
         let len_start = commands.len();
         let mut len_limit = len_start;
         let mut num = 1;

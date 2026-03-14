@@ -1,4 +1,5 @@
 use crate::fs::search_executable_files_in_paths;
+use crate::state::Storage;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 pub fn handle_key(
@@ -7,6 +8,7 @@ pub fn handle_key(
     previous_key: &Option<KeyEvent>,
     commands: &Vec<&str>,
     bin_paths: &Vec<&str>,
+    storage: &mut Storage,
     mut has_user_typing: bool,
 ) -> (
     String,
@@ -82,8 +84,10 @@ pub fn handle_key(
                     backspace_len = Some(input.len());
                 }
 
-                input = String::from("arrow up");
-                to_print = Some(input.clone());
+                if let Some(command) = storage.prev() {
+                    input = command;
+                    to_print = Some(input.clone());
+                }
             }
         }
 
