@@ -1,5 +1,5 @@
 use crate::fs::search_executable_files_in_paths;
-use crate::state::Storage;
+use crate::storage::History;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 pub fn handle_key(
@@ -8,7 +8,7 @@ pub fn handle_key(
     previous_key: &Option<KeyEvent>,
     commands: &Vec<&str>,
     bin_paths: &Vec<&str>,
-    storage: &mut Storage,
+    history: &mut History,
     mut has_user_typing: bool,
 ) -> (
     String,
@@ -78,15 +78,23 @@ pub fn handle_key(
             }
         }
 
-        KeyCode::Up => {
+        KeyCode::Up | KeyCode::Down => {
             if !has_user_typing {
                 if !input.is_empty() {
                     backspace_len = Some(input.len());
                 }
 
-                if let Some(command) = storage.prev() {
+                let command = if key.code == KeyCode::Up {
+                    history.prev()
+                } else {
+                    history.next()
+                };
+
+                if let Some(command) = command {
                     input = command;
                     to_print = Some(input.clone());
+                } else {
+                    to_print = Some(format!("{}\x07", input));
                 }
             }
         }

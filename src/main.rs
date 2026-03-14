@@ -4,7 +4,7 @@ use crate::env::{get_args, split_env_path};
 use crate::io::Stdio;
 use crate::keyboard::handle_key;
 use crate::parser::parse;
-use crate::state::Storage;
+use crate::storage::History;
 use crossterm::cursor::MoveLeft;
 use crossterm::event::{read, KeyEvent};
 use crossterm::execute;
@@ -21,7 +21,7 @@ mod io;
 mod keyboard;
 mod parser;
 mod process;
-mod state;
+mod storage;
 
 fn main() -> Result<(), Error> {
     let mut stdio = unsafe {
@@ -32,21 +32,21 @@ fn main() -> Result<(), Error> {
         )
     };
 
-    let mut storage = Storage::new();
+    let mut history = History::new();
     let path = split_env_path()?;
     let bin_paths = path.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
     let args = get_args();
 
     if args.is_empty() {
-        run_interactive(&mut stdio, &mut storage, &bin_paths)
+        run_interactive(&mut stdio, &mut history, &bin_paths)
     } else {
-        run_command(args.join(" "), &mut stdio, &mut storage, &bin_paths)
+        run_command(args.join(" "), &mut stdio, &mut history, &bin_paths)
     }
 }
 
 fn run_interactive(
     stdio: &mut Stdio,
-    storage: &mut Storage,
+    history: &mut History,
     bin_paths: &Vec<&str>,
 ) -> Result<(), Error> {
     let mut input = String::new();
@@ -74,7 +74,7 @@ fn run_interactive(
             &previous_key,
             &commands,
             bin_paths,
-            storage,
+            history,
             has_user_typing,
         );
         previous_key = Some(key.unwrap());
@@ -105,11 +105,12 @@ fn run_interactive(
                 disable_raw_mode()?;
                 let parseds = parseds.iter().collect();
                 let output_starts_newline = true;
-                is_exit = run(&parseds, stdio, storage, bin_paths, output_starts_newline)?;
+                is_exit = run(&parseds, stdio, history, bin_paths, output_starts_newline)?;
                 enable_raw_mode()?;
             }
 
             input.clear();
+            history.reset();
 
             if !is_exit {
                 write!(stdio.stdout(), "\r\n$ ")?;
@@ -131,13 +132,13 @@ fn run_interactive(
 fn run_command(
     input: String,
     stdio: &mut Stdio,
-    storage: &mut Storage,
+    history: &mut History,
     bin_paths: &Vec<&str>,
 ) -> Result<(), Error> {
     if let Some(parseds) = parse(input.as_str())? {
         let parseds = parseds.iter().collect();
         let output_starts_newline = false;
-        run(&parseds, stdio, storage, bin_paths, output_starts_newline)?;
+        run(&parseds, stdio, history, bin_paths, output_starts_newline)?;
         println!(""); // %
     }
 

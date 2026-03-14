@@ -9,7 +9,7 @@ use crate::command::registry::pwd::run_command as run_command_pwd;
 use crate::command::registry::r#type::run_command as run_command_type;
 use crate::command::registry::yes::run_command as run_command_yes;
 use crate::command::registry::Builtin;
-use crate::state::Storage;
+use crate::storage::History;
 use crate::Stdio;
 use std::io::Error;
 
@@ -21,7 +21,7 @@ pub fn run_command(
     command: &Builtin,
     args: Option<&Vec<&str>>,
     stdio: &mut Stdio,
-    storage: &Storage,
+    history: &History,
     newline: &NewLine,
     bin_paths: Option<&Vec<&str>>,
 ) -> Result<(), Error> {
@@ -42,7 +42,7 @@ pub fn run_command(
                 }
             }
 
-            run_command_history(stdio, storage, newline, limit)
+            run_command_history(stdio, history, newline, limit)
         }
         Builtin::Exit => Ok(()),
         Builtin::Pwd => run_command_pwd(stdio, newline),

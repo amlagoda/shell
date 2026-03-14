@@ -1,15 +1,15 @@
 use crate::command::fmt::NewLine;
 use crate::io::Stdio;
-use crate::state::Storage;
+use crate::storage::History;
 use std::io::{Error, Write};
 
 pub fn run_command(
     stdio: &mut Stdio,
-    storage: &Storage,
+    history: &History,
     newline: &NewLine,
     limit: Option<usize>,
 ) -> Result<(), Error> {
-    if let Some(mut commands) = storage.all() {
+    if let Some(mut commands) = history.all() {
         let len_start = commands.len();
         let mut len_limit = len_start;
         let mut num = 1;
