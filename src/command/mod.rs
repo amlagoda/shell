@@ -33,16 +33,24 @@ pub fn run_command(
         Builtin::Echo => run_command_echo(stdio, newline, args),
         Builtin::History => {
             let mut limit: Option<usize> = None;
+            let mut file_path: Option<&str> = None;
 
-            if let Some(args) = args {
-                let candidate = args.first().unwrap();
+            if args.is_none() {
+                return run_command_history(stdio, history, newline, limit, file_path);
+            }
 
-                if let Ok(parsed) = candidate.parse::<usize>() {
+            let mut iter = args.unwrap().into_iter();
+            while let Some(arg) = iter.next() {
+                if let Ok(parsed) = arg.parse::<usize>() {
                     limit = Some(parsed);
+                } else if arg == &"-r" {
+                    if let Some(path) = iter.next() {
+                        file_path = Some(path);
+                    }
                 }
             }
 
-            run_command_history(stdio, history, newline, limit)
+            run_command_history(stdio, history, newline, limit, file_path)
         }
         Builtin::Exit => Ok(()),
         Builtin::Pwd => run_command_pwd(stdio, newline),

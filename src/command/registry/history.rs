@@ -8,6 +8,7 @@ pub fn run_command(
     history: &History,
     newline: &NewLine,
     limit: Option<usize>,
+    file_path: Option<&str>,
 ) -> Result<(), Error> {
     if let Some(mut commands) = history.all() {
         let len_start = commands.len();
@@ -18,8 +19,8 @@ pub fn run_command(
             commands = commands.into_iter().rev().take(limit).rev().collect();
             len_limit = commands.len();
 
-            if limit > 1 && limit < len_start {
-                num = len_start - limit;
+            if limit > 0 && limit < len_start {
+                num = len_start - (limit - 1);
             }
         }
 
