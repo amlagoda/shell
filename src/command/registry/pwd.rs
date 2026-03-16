@@ -4,10 +4,12 @@ use std::env::current_dir;
 use std::io::{Error, Write};
 
 pub fn run_command(stdio: &mut Stdio, newline: &NewLine) -> Result<(), Error> {
+    let err = Error::other("path is invalid");
+
     let path = current_dir()?
         .into_os_string()
         .into_string()
-        .map_err(|err| Error::other(err.to_str().unwrap_or("path is invalid")))?;
+        .map_err(|_| err)?;
 
     write!(
         stdio.stdout(),
