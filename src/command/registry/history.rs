@@ -11,6 +11,8 @@ pub fn run_command(
     file_path: Option<&str>,
 ) -> Result<(), Error> {
     if let Some(mut commands) = history.all() {
+        let buffer_capacity = 10;
+        let mut buffer: Vec<u8> = Vec::with_capacity(buffer_capacity);
         let len_start = commands.len();
         let mut len_limit = len_start;
         let mut num = 1;
@@ -38,9 +40,22 @@ pub fn run_command(
                 to_print = format!("{}\n", to_print);
             }
 
-            write!(stdio.stdout(), "{}", to_print)?;
-            stdio.stdout().flush()?;
+            if (buffer.len() + to_print.as_bytes().len()) <= buffer_capacity {
+                buffer.write_all(to_print.as_bytes())?;
+            } else {
+                stdio.stdout().write_all(&buffer)?;
+                stdio.stdout().flush()?;
+
+                buffer = Vec::with_capacity(buffer_capacity);
+                buffer.write_all(to_print.as_bytes())?;
+            }
+
             num += 1;
+        }
+
+        if !buffer.is_empty() {
+            stdio.stdout().write_all(&buffer)?;
+            stdio.stdout().flush()?;
         }
     }
 
