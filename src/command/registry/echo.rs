@@ -7,7 +7,7 @@ pub fn run_command(
     newline: &NewLine,
     args: Option<&Vec<&str>>,
 ) -> Result<(), Error> {
-    let join = args.unwrap_or(&vec![" "]).to_vec().join(" ").to_string();
+    let join = args.map_or_else(|| " ".to_string(), |args| args.join(" ").to_string());
 
     write!(
         stdio.stdout(),
