@@ -7,14 +7,14 @@ pub fn run_command(stdio: &mut Stdio, newline: &NewLine) -> Result<(), Error> {
     let mut is_first = true;
 
     loop {
-        if is_first {
+        let msg = if is_first {
             is_first = false;
-
-            writeln!(stdout, "{}y", newline.stdout_start())?; // infinite output, so at the end \n
-            stdout.flush()?;
+            format!("{}y\n", newline.stdout_start()) // infinite output, so at the end \n
         } else {
-            writeln!(stdout, "y")?; // infinite output, so at the end \n
-            stdout.flush()?;
-        }
+            "y\n".to_string() // infinite output, so at the end \n
+        };
+
+        stdout.write_all(msg.as_bytes())?;
+        stdout.flush()?;
     }
 }
