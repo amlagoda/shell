@@ -26,40 +26,12 @@ pub fn run_command(
     bin_paths: Option<&Vec<&str>>,
 ) -> Result<(), Error> {
     match command {
-        Builtin::Cd => {
-            let default: Vec<&str> = vec![];
-            run_command_cd(stdio, newline, args.unwrap_or(&default).first().copied())
-        }
+        Builtin::Cd => run_command_cd(stdio, newline, args),
         Builtin::Echo => run_command_echo(stdio, newline, args),
-        Builtin::History => {
-            let mut limit: Option<usize> = None;
-            let mut file_path: Option<&str> = None;
-
-            if args.is_none() {
-                return run_command_history(stdio, history, newline, limit, file_path);
-            }
-
-            let mut iter = args.unwrap().into_iter();
-            while let Some(arg) = iter.next() {
-                if let Ok(parsed) = arg.parse::<usize>() {
-                    limit = Some(parsed);
-                } else if arg == &"-r" {
-                    if let Some(path) = iter.next() {
-                        file_path = Some(path);
-                    }
-                }
-            }
-
-            run_command_history(stdio, history, newline, limit, file_path)
-        }
+        Builtin::History => run_command_history(stdio, newline, history, args),
         Builtin::Exit => Ok(()),
         Builtin::Pwd => run_command_pwd(stdio, newline),
-        Builtin::Type => {
-            let default = vec![""];
-            let command = args.unwrap_or(&default).first().unwrap();
-            let default: Vec<&str> = vec![];
-            run_command_type(stdio, newline, command, bin_paths.unwrap_or(&default))
-        }
+        Builtin::Type => run_command_type(stdio, newline, bin_paths, args),
         Builtin::Yes => run_command_yes(stdio, newline),
     }
 }
