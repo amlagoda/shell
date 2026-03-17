@@ -4,7 +4,7 @@ use crate::command::fmt::NewLine;
 use crate::command::{run_command as run_builtin, to_command as to_builtin};
 use crate::core::io::create_pipe;
 use crate::core::io::{mass_close as mass_close_pipes, mass_create as mass_create_pipes};
-use crate::fs::{open_file, search_executable_file_in_paths as find_bin};
+use crate::fs::{get_write_file, search_executable_file_in_paths as find_bin};
 use crate::fs::{to_independent_file, to_nonblock_file, transfer_data};
 use crate::io::Stdio;
 use crate::parser::Parsed;
@@ -75,7 +75,7 @@ fn to_history(parseds: &Vec<&Parsed>, history: &mut History) {
 fn run_native(
     parsed: &Parsed,
     stdio: &mut Stdio,
-    history: &History,
+    history: &mut History,
     bin_paths: Option<&Vec<&str>>,
     output_starts_newline: bool,
 ) -> Result<(), Error> {
@@ -83,7 +83,7 @@ fn run_native(
     let args = parsed.args();
 
     if let Some(redirect) = parsed.redirect() {
-        let file = open_file(redirect.path(), redirect.is_append())?;
+        let file = get_write_file(redirect.path(), redirect.is_append())?;
         let stdin = (*stdio.stdin()).try_clone()?;
         let mut stdout = (*stdio.stdout()).try_clone()?;
         let mut stderr = (*stdio.stderr()).try_clone()?;
@@ -121,7 +121,7 @@ fn run_native(
 fn run_forks(
     parseds: &Vec<&Parsed>,
     stdio: &mut Stdio,
-    history: &History,
+    history: &mut History,
     bin_paths: &Vec<&str>,
     output_starts_newline: bool,
 ) -> Result<bool, Error> {
@@ -174,7 +174,7 @@ fn run_forks(
                 if let Some(redirect) = parsed.redirect() {
                     if redirect.is_stderr() || (redirect.is_stdout() && parsed.pipeline().is_none())
                     {
-                        let file = open_file(redirect.path(), redirect.is_append());
+                        let file = get_write_file(redirect.path(), redirect.is_append());
 
                         if let Err(err) = file {
                             mass_close_pipes(pipelines_stdout);

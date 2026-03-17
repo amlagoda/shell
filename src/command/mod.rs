@@ -21,7 +21,7 @@ pub fn run_command(
     command: &Builtin,
     args: Option<&Vec<&str>>,
     stdio: &mut Stdio,
-    history: &History,
+    history: &mut History,
     newline: &NewLine,
     bin_paths: Option<&Vec<&str>>,
 ) -> Result<(), Error> {

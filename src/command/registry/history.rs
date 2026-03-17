@@ -1,16 +1,22 @@
 use crate::command::fmt::NewLine;
+use crate::fs::get_read_file;
 use crate::io::Stdio;
 use crate::storage::History;
-use std::io::{BufWriter, Error, Write};
+use std::io::{BufRead, BufReader, BufWriter, Error, Write};
 
 pub fn run_command(
     stdio: &mut Stdio,
     newline: &NewLine,
-    history: &History,
+    history: &mut History,
     args: Option<&Vec<&str>>,
 ) -> Result<(), Error> {
+    let (limit, file_path) = get_args(args);
+
+    if let Some(file_path) = file_path {
+        return load_to_history(stdio, newline, history, file_path.as_str());
+    }
+
     if let Some(mut commands) = history.all() {
-        let (limit, file_path) = get_args(args);
         let mut buffer = BufWriter::with_capacity(4096, stdio.stdout());
         let len_start = commands.len();
         let mut len_limit = len_start;
@@ -44,6 +50,36 @@ pub fn run_command(
         }
 
         buffer.flush()?;
+    }
+
+    Ok(())
+}
+
+fn load_to_history(
+    stdio: &mut Stdio,
+    newline: &NewLine,
+    history: &mut History,
+    file_path: &str,
+) -> Result<(), Error> {
+    let file = get_read_file(file_path);
+
+    if file.is_err() {
+        let msg = format!(
+            "{}history: {}: No such file or directory{}",
+            newline.stderr_start(),
+            file_path,
+            newline.stderr_end()
+        );
+
+        write!(stdio.stderr(), "{}", msg)?;
+        stdio.stderr().flush()?;
+
+        return Ok(());
+    }
+
+    let buffer = BufReader::with_capacity(4096, file.unwrap());
+    for line in buffer.lines() {
+        history.add(line?);
     }
 
     Ok(())

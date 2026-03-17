@@ -96,7 +96,7 @@ fn write_lines(
     Ok(skip_first_newline)
 }
 
-pub fn open_file(path: &str, append: bool) -> Result<File, Error> {
+pub fn get_write_file(path: &str, append: bool) -> Result<File, Error> {
     let file = OpenOptions::new()
         .create(true)
         .read(true)
@@ -104,6 +104,12 @@ pub fn open_file(path: &str, append: bool) -> Result<File, Error> {
         .truncate(!append)
         .append(append)
         .open(Path::new(path))?;
+
+    Ok(file)
+}
+
+pub fn get_read_file(path: &str) -> Result<File, Error> {
+    let file = OpenOptions::new().read(true).open(Path::new(path))?;
 
     Ok(file)
 }
