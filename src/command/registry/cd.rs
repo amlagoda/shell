@@ -4,8 +4,12 @@ use std::env::{home_dir, set_current_dir};
 use std::fs::read_dir;
 use std::io::{Error, Write};
 
-pub fn run_command(stdio: &mut Stdio, newline: &NewLine, path: Option<&str>) -> Result<(), Error> {
-    let mut path = path.unwrap_or("~").to_string();
+pub fn run_command(
+    stdio: &mut Stdio,
+    newline: &NewLine,
+    args: Option<&Vec<&str>>,
+) -> Result<(), Error> {
+    let mut path = get_path(args);
 
     if path == "~" {
         let err1 = Error::other("HOME is not set");
@@ -35,6 +39,14 @@ pub fn run_command(stdio: &mut Stdio, newline: &NewLine, path: Option<&str>) -> 
     set_current_dir(path.as_str())?;
 
     Ok(())
+}
+
+fn get_path(args: Option<&Vec<&str>>) -> String {
+    if let Some(args) = args {
+        args.first().unwrap().to_string()
+    } else {
+        "~".to_string()
+    }
 }
 
 // I'm not testing the command cd because

@@ -5,12 +5,12 @@ use std::io::{BufWriter, Error, Write};
 
 pub fn run_command(
     stdio: &mut Stdio,
-    history: &History,
     newline: &NewLine,
-    limit: Option<usize>,
-    file_path: Option<&str>,
+    history: &History,
+    args: Option<&Vec<&str>>,
 ) -> Result<(), Error> {
     if let Some(mut commands) = history.all() {
+        let (limit, file_path) = get_args(args);
         let mut buffer = BufWriter::with_capacity(4096, stdio.stdout());
         let len_start = commands.len();
         let mut len_limit = len_start;
@@ -47,4 +47,25 @@ pub fn run_command(
     }
 
     Ok(())
+}
+
+fn get_args(args: Option<&Vec<&str>>) -> (Option<usize>, Option<String>) {
+    let mut limit = None;
+    let mut file_path = None;
+
+    if let Some(args) = args {
+        let mut iter = args.into_iter();
+
+        while let Some(arg) = iter.next() {
+            if let Ok(parsed) = arg.parse::<usize>() {
+                limit = Some(parsed);
+            } else if arg == &"-r" {
+                if let Some(path) = iter.next() {
+                    file_path = Some(path.to_string());
+                }
+            }
+        }
+    }
+
+    (limit, file_path)
 }

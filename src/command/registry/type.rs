@@ -7,18 +7,21 @@ use std::io::{Error, Write};
 pub fn run_command(
     stdio: &mut Stdio,
     newline: &NewLine,
-    command: &str,
-    bin_paths: &Vec<&str>,
+    bin_paths: Option<&Vec<&str>>,
+    args: Option<&Vec<&str>>,
 ) -> Result<(), Error> {
+    let command = get_command(args);
     let mut msg = format!("{}: not found", command);
     let mut to_stderr = true;
 
-    if Builtin::to_builtin(command).is_some() {
+    if Builtin::to_builtin(command.as_str()).is_some() {
         msg = format!("{} is a shell builtin", command);
         to_stderr = false;
-    } else if let Some(path) = search_executable_file_in_paths(command, bin_paths) {
-        msg = format!("{} is {}", command, path);
-        to_stderr = false;
+    } else if let Some(bin_paths) = bin_paths {
+        if let Some(path) = search_executable_file_in_paths(command.as_str(), bin_paths) {
+            msg = format!("{} is {}", command, path);
+            to_stderr = false;
+        }
     }
 
     if to_stderr {
@@ -44,6 +47,14 @@ pub fn run_command(
     }
 
     Ok(())
+}
+
+fn get_command(args: Option<&Vec<&str>>) -> String {
+    if let Some(args) = args {
+        args.first().unwrap().to_string()
+    } else {
+        "".to_string()
+    }
 }
 
 // #[cfg(test)]
