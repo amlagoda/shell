@@ -85,9 +85,9 @@ pub fn handle_key(
                 }
 
                 let command = if key.code == KeyCode::Up {
-                    history.prev()
-                } else {
                     history.next()
+                } else {
+                    history.prev()
                 };
 
                 if let Some(command) = command {

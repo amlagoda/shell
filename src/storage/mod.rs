@@ -1,31 +1,23 @@
 mod r#struct;
 
-use crate::storage::r#struct::KeyValue;
+use crate::storage::r#struct::RevIter;
 
 pub struct History {
     data: Vec<String>,
-    current: usize,
-    first_prev: bool,
-    prev_done: bool,
-    next_done: bool,
-    file_index: KeyValue,
+    navigator: RevIter,
 }
 
 impl History {
     pub fn new() -> History {
         History {
-            data: vec![],
-            current: 0,
-            first_prev: false,
-            prev_done: false,
-            next_done: true,
-            file_index: KeyValue::new(),
+            data: Vec::with_capacity(10),
+            navigator: RevIter::new(0),
         }
     }
 
     pub fn add(&mut self, value: String) {
         self.data.push(value);
-        self.current = self.data.len() - 1;
+        self.navigator = RevIter::new(self.data.len() - 1);
     }
 
     pub fn all(&self) -> Option<Vec<String>> {
@@ -36,58 +28,47 @@ impl History {
         }
     }
 
-    pub fn prev(&mut self) -> Option<String> {
-        if self.data.is_empty() || self.prev_done {
-            return None;
+    // move to start
+    pub fn next(&mut self) -> Option<String> {
+        if let Some(index) = self.move_index(Direction::Next) {
+            Some(self.data[index].clone())
+        } else {
+            None
         }
-
-        if !self.first_prev {
-            self.first_prev = true;
-
-            if self.current == 0 {
-                self.prev_done = true;
-            }
-
-            return Some(self.data[self.current].clone());
-        }
-
-        self.current -= 1;
-
-        if self.current == 0 {
-            self.prev_done = true;
-        }
-
-        if self.data.len() > 1 {
-            self.next_done = false;
-        }
-
-        Some(self.data[self.current].clone())
     }
 
-    pub fn next(&mut self) -> Option<String> {
-        if self.data.is_empty() || self.next_done {
+    // move to end
+    pub fn prev(&mut self) -> Option<String> {
+        if let Some(index) = self.move_index(Direction::Prev) {
+            Some(self.data[index].clone())
+        } else {
+            None
+        }
+    }
+
+    fn move_index(&mut self, direction: Direction) -> Option<usize> {
+        if self.data.is_empty() {
             return None;
         }
 
-        self.prev_done = false;
-        self.current += 1;
-
-        if self.current == self.data.len() - 1 {
-            self.next_done = true;
+        match direction {
+            Direction::Next => self.navigator.next(),
+            Direction::Prev => self.navigator.prev(),
         }
-
-        Some(self.data[self.current].clone())
     }
 
     pub fn reset(&mut self) {
-        self.prev_done = false;
-        self.next_done = true;
-        self.first_prev = false;
+        let mut last_index = 0;
 
-        self.current = if self.data.is_empty() {
-            0
-        } else {
-            self.data.len() - 1
-        };
+        if !self.data.is_empty() {
+            last_index = self.data.len() - 1;
+        }
+
+        self.navigator = RevIter::new(last_index);
     }
+}
+
+enum Direction {
+    Next,
+    Prev,
 }

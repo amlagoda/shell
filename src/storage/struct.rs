@@ -41,6 +41,7 @@ pub struct KeyValue {
     data: Vec<(String, usize)>,
 }
 
+// for small collection
 impl KeyValue {
     pub fn new() -> KeyValue {
         KeyValue { data: vec![] }
