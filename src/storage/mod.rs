@@ -10,7 +10,7 @@ pub struct History {
 impl History {
     pub fn new() -> History {
         History {
-            data: Vec::with_capacity(10),
+            data: Vec::with_capacity(30),
             navigator: RevIter::new(0),
         }
     }
