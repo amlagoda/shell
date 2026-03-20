@@ -26,12 +26,12 @@ pub fn run_command(
         return Ok(());
     }
 
-    let (limit, loaders) = validated.unwrap();
+    let (count, loaders) = validated.unwrap();
 
     if let Some(loaders) = loaders {
         load_mode(stdio, newline, history, loaders)
     } else {
-        print_mode(stdio, newline, history, limit)
+        print_mode(stdio, newline, history, count)
     }
 }
 
@@ -39,45 +39,29 @@ fn print_mode(
     stdio: &mut Stdio,
     newline: &NewLine,
     history: &mut History,
-    limit: Option<usize>,
+    count: Option<usize>,
 ) -> Result<(), Error> {
-    let history = history.all();
-
-    if history.is_none() {
-        return Ok(());
-    }
-
-    let mut records = history.unwrap();
+    let (records, len) = history.lasts(count);
+    let mut num = history.len() - len;
     let mut buffer = BufWriter::with_capacity(4096, stdio.stdout());
-    let len_start = records.len();
-    let mut len_limit = len_start;
-    let mut num = 1;
 
-    if let Some(limit) = limit {
-        records = records.into_iter().rev().take(limit).rev().collect();
-        len_limit = records.len();
-
-        if limit > 0 && limit < len_start {
-            num = len_start - (limit - 1);
-        }
-    }
-
-    for (mut iter, command) in records.iter().enumerate() {
+    for (mut iter, command) in records.enumerate() {
         iter += 1;
+        num += 1;
+
         let mut to_print = format!("    {}  {}", num, command);
 
         if iter == 1 {
             to_print = format!("{}{}", newline.stdout_start(), to_print);
         }
 
-        if iter == len_limit {
+        if iter == len {
             to_print = format!("{}{}", to_print, newline.stdout_end());
         } else {
             to_print = format!("{}\n", to_print);
         }
 
         buffer.write_all(to_print.as_bytes())?;
-        num += 1;
     }
 
     buffer.flush()?;
@@ -137,15 +121,9 @@ fn download(
 }
 
 fn upload(history: &mut History, file_path: &str, append: bool) -> Result<(), Error> {
-    let history = history.all();
-
-    if history.is_none() {
-        return Ok(());
-    }
-
-    let records = history.unwrap();
     let mut file = get_write_file(file_path, append)?;
     let mut buffer = BufWriter::with_capacity(4096, &mut file);
+    let (records, _) = history.lasts(None);
 
     for record in records {
         buffer.write_all(format!("{}\n", record).as_bytes())?;
@@ -165,10 +143,10 @@ fn validate(args: Option<&Vec<&str>>) -> Result<(Option<usize>, Option<Vec<Loade
 
     let err = Error::other("incorrect arguments");
     let mut loaders: Option<Vec<Loader>> = None;
-    let mut limit: Option<usize> = None;
+    let mut count: Option<usize> = None;
 
     if args.is_none() {
-        return Ok((limit, loaders));
+        return Ok((count, loaders));
     }
 
     let mut iter = args.unwrap().into_iter();
@@ -181,7 +159,7 @@ fn validate(args: Option<&Vec<&str>>) -> Result<(Option<usize>, Option<Vec<Loade
             }
 
             mode = MODE_PRINT;
-            limit = Some(parsed);
+            count = Some(parsed);
         } else if LOAD_FLAGS.contains(&arg) {
             if ![MODE_NOT_DEFINED, MODE_LOAD].contains(&mode) {
                 return Err(err);
@@ -208,7 +186,7 @@ fn validate(args: Option<&Vec<&str>>) -> Result<(Option<usize>, Option<Vec<Loade
         }
     }
 
-    Ok((limit, loaders))
+    Ok((count, loaders))
 }
 
 struct Loader {

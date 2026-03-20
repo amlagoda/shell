@@ -20,12 +20,18 @@ impl History {
         self.navigator = RevIter::new(self.data.len() - 1);
     }
 
-    pub fn all(&self) -> Option<Vec<String>> {
-        if self.data.is_empty() {
-            None
-        } else {
-            Some(self.data.clone())
+    pub fn lasts(&self, count: Option<usize>) -> (impl Iterator<Item = &str>, usize) {
+        let mut start = 0;
+        let mut len = self.data.len();
+
+        if let Some(count) = count {
+            if len > 0 && count < len {
+                start = len - count;
+                len = len - start;
+            }
         }
+
+        (self.data[start..].iter().map(|r| r.as_str()), len)
     }
 
     // move to start
@@ -66,9 +72,92 @@ impl History {
 
         self.navigator = RevIter::new(last_index);
     }
+
+    pub fn len(&self) -> usize {
+        self.data.len()
+    }
 }
 
 enum Direction {
     Next,
     Prev,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_lasts() {
+        let mut history = History::new();
+
+        let (mut iter, len) = history.lasts(None);
+        assert_eq!(None, iter.next());
+        assert_eq!(0, len);
+        drop(iter);
+
+        let (mut iter, len) = history.lasts(Some(1));
+        assert_eq!(None, iter.next());
+        assert_eq!(0, len);
+        drop(iter);
+
+        history.add("1".to_string());
+
+        let (mut iter, len) = history.lasts(None);
+        assert_eq!(Some("1"), iter.next());
+        assert_eq!(None, iter.next());
+        assert_eq!(1, len);
+        drop(iter);
+
+        let (mut iter, len) = history.lasts(Some(0));
+        assert_eq!(None, iter.next());
+        assert_eq!(0, len);
+        drop(iter);
+
+        let (mut iter, len) = history.lasts(Some(1));
+        assert_eq!(Some("1"), iter.next());
+        assert_eq!(None, iter.next());
+        assert_eq!(1, len);
+        drop(iter);
+
+        let (mut iter, len) = history.lasts(Some(2));
+        assert_eq!(Some("1"), iter.next());
+        assert_eq!(None, iter.next());
+        assert_eq!(1, len);
+        drop(iter);
+
+        history.add("2".to_string());
+
+        let (mut iter, len) = history.lasts(None);
+        assert_eq!(Some("1"), iter.next());
+        assert_eq!(Some("2"), iter.next());
+        assert_eq!(None, iter.next());
+        assert_eq!(2, len);
+        drop(iter);
+
+        let (mut iter, len) = history.lasts(Some(0));
+        assert_eq!(None, iter.next());
+        assert_eq!(0, len);
+        drop(iter);
+
+        let (mut iter, len) = history.lasts(Some(1));
+        assert_eq!(Some("2"), iter.next());
+        assert_eq!(None, iter.next());
+        assert_eq!(1, len);
+        drop(iter);
+
+        let (mut iter, len) = history.lasts(Some(2));
+        assert_eq!(Some("1"), iter.next());
+        assert_eq!(Some("2"), iter.next());
+        assert_eq!(None, iter.next());
+        assert_eq!(2, len);
+        drop(iter);
+
+        let (mut iter, len) = history.lasts(Some(3));
+        assert_eq!(Some("1"), iter.next());
+        assert_eq!(Some("2"), iter.next());
+        assert_eq!(None, iter.next());
+        assert_eq!(2, len);
+        drop(iter);
+    }
 }
