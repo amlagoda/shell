@@ -14,6 +14,10 @@ pub fn get_args() -> Vec<String> {
     args().skip(1).collect::<Vec<String>>()
 }
 
+pub fn history_file() -> Option<String> {
+    var("HISTFILE").ok()
+}
+
 // pub fn get_current_exe() -> Result<String, Error> {
 //     let err = Error::other("path is invalid");
 

@@ -1,7 +1,7 @@
 use crate::command::get_command_list;
 use crate::core::run;
-use crate::env::{get_args, split_env_path};
-use crate::history::Log as History;
+use crate::env::{get_args, history_file, split_env_path};
+use crate::history::{download as history_download, Log as History};
 use crate::io::Stdio;
 use crate::keyboard::handle_key;
 use crate::parser::parse;
@@ -38,7 +38,9 @@ fn main() -> Result<(), Error> {
     let bin_paths = path.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
     let args = get_args();
 
-    // HISTFILE
+    if let Some(file_path) = history_file() {
+        history_download(&mut history, file_path.as_str())?;
+    }
 
     if args.is_empty() {
         run_interactive(&mut stdio, &mut history, &bin_paths)
