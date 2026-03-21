@@ -1,7 +1,7 @@
 use crate::command::get_command_list;
 use crate::core::run;
 use crate::env::{get_args, history_file, split_env_path};
-use crate::history::{download as history_download, Log as History};
+use crate::history::{download as history_download, upload as history_upload, Log as History};
 use crate::io::Stdio;
 use crate::keyboard::handle_key;
 use crate::parser::parse;
@@ -124,6 +124,9 @@ fn run_interactive(
         }
 
         if is_exit {
+            if let Some(file_path) = history_file() {
+                history_upload(history, file_path.as_str(), false)?;
+            }
             break;
         }
     }
