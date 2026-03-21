@@ -1,10 +1,12 @@
 mod r#struct;
 
+use crate::storage::r#struct::KeyValue;
 use crate::storage::r#struct::RevIter;
 
 pub struct History {
     data: Vec<String>,
     navigator: RevIter,
+    uploads: KeyValue,
 }
 
 impl History {
@@ -12,6 +14,7 @@ impl History {
         History {
             data: Vec::with_capacity(30),
             navigator: RevIter::new(0),
+            uploads: KeyValue::new(),
         }
     }
 
@@ -75,6 +78,14 @@ impl History {
 
     pub fn len(&self) -> usize {
         self.data.len()
+    }
+
+    pub fn get_upload_index(&self, file_path: &str) -> Option<usize> {
+        self.uploads.get(file_path)
+    }
+
+    pub fn set_upload_index(&mut self, file_path: &str, index: usize) {
+        self.uploads.set(file_path, index)
     }
 }
 

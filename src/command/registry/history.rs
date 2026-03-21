@@ -121,17 +121,50 @@ fn download(
 }
 
 fn upload(history: &mut History, file_path: &str, append: bool) -> Result<(), Error> {
+    let previous_index = if append {
+        history.get_upload_index(file_path)
+    } else {
+        None
+    };
+
+    let (count, new_index) = upload_numbers(previous_index, history.len());
+
+    if new_index.is_none() {
+        return Ok(());
+    }
+
+    let (records, _) = history.lasts(count);
     let mut file = get_write_file(file_path, append)?;
     let mut buffer = BufWriter::with_capacity(4096, &mut file);
-    let (records, _) = history.lasts(None);
 
     for record in records {
         buffer.write_all(format!("{}\n", record).as_bytes())?;
     }
 
     buffer.flush()?;
+    history.set_upload_index(file_path, new_index.unwrap());
 
     Ok(())
+}
+
+fn upload_numbers(
+    previous_index: Option<usize>,
+    current_len: usize,
+) -> (Option<usize>, Option<usize>) {
+    let mut count = None;
+    let mut new_index = None;
+
+    if let Some(previous_index) = previous_index {
+        if current_len > (previous_index + 1) {
+            count = Some(current_len - (previous_index + 1));
+        }
+    }
+
+    if current_len > 0 {
+        new_index = Some(current_len - 1)
+    }
+
+    (count, new_index)
 }
 
 fn validate(args: Option<&Vec<&str>>) -> Result<(Option<usize>, Option<Vec<Loader>>), Error> {
@@ -222,4 +255,39 @@ impl Operation {
 enum UploadMode {
     Rewrite,
     Append,
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_upload_numbers() {
+        let (previous_index, current_len) = (None, 0);
+        assert_eq!((None, None), upload_numbers(previous_index, current_len));
+
+        let (previous_index, current_len) = (None, 1);
+        assert_eq!((None, Some(0)), upload_numbers(previous_index, current_len));
+
+        let (previous_index, current_len) = (None, 2);
+        assert_eq!((None, Some(1)), upload_numbers(previous_index, current_len));
+
+        let (previous_index, current_len) = (Some(0), 0);
+        assert_eq!((None, None), upload_numbers(previous_index, current_len));
+
+        let (previous_index, current_len) = (Some(0), 1);
+        assert_eq!((None, Some(0)), upload_numbers(previous_index, current_len));
+
+        let (previous_index, current_len) = (Some(0), 2);
+        assert_eq!(
+            (Some(1), Some(1)),
+            upload_numbers(previous_index, current_len)
+        );
+
+        let (previous_index, current_len) = (Some(1), 4);
+        assert_eq!(
+            (Some(2), Some(3)),
+            upload_numbers(previous_index, current_len)
+        );
+    }
 }
