@@ -1,17 +1,15 @@
-mod r#struct;
+use crate::structure::KeyValue;
+use crate::structure::RevIter;
 
-use crate::storage::r#struct::KeyValue;
-use crate::storage::r#struct::RevIter;
-
-pub struct History {
+pub struct Log {
     data: Vec<String>,
     navigator: RevIter,
     uploads: KeyValue,
 }
 
-impl History {
-    pub fn new() -> History {
-        History {
+impl Log {
+    pub fn new() -> Log {
+        Log {
             data: Vec::with_capacity(30),
             navigator: RevIter::new(0),
             uploads: KeyValue::new(),
@@ -100,7 +98,7 @@ mod tests {
 
     #[test]
     fn test_lasts() {
-        let mut history = History::new();
+        let mut history = Log::new();
 
         let (mut iter, len) = history.lasts(None);
         assert_eq!(None, iter.next());

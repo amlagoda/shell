@@ -1,5 +1,5 @@
 use crate::fs::search_executable_files_in_paths;
-use crate::storage::History;
+use crate::history::Log as History;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 pub fn handle_key(

@@ -1,10 +1,10 @@
 use crate::command::get_command_list;
 use crate::core::run;
 use crate::env::{get_args, split_env_path};
+use crate::history::Log as History;
 use crate::io::Stdio;
 use crate::keyboard::handle_key;
 use crate::parser::parse;
-use crate::storage::History;
 use crossterm::cursor::MoveLeft;
 use crossterm::event::{read, KeyEvent};
 use crossterm::execute;
@@ -17,11 +17,12 @@ mod command;
 mod core;
 mod env;
 mod fs;
+mod history;
 mod io;
 mod keyboard;
 mod parser;
 mod process;
-mod storage;
+mod structure;
 
 fn main() -> Result<(), Error> {
     let mut stdio = unsafe {
@@ -36,6 +37,8 @@ fn main() -> Result<(), Error> {
     let path = split_env_path()?;
     let bin_paths = path.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
     let args = get_args();
+
+    // HISTFILE
 
     if args.is_empty() {
         run_interactive(&mut stdio, &mut history, &bin_paths)

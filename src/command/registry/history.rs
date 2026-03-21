@@ -1,7 +1,7 @@
 use crate::command::fmt::NewLine;
 use crate::fs::{get_read_file, get_write_file};
+use crate::history::Log as History;
 use crate::io::Stdio;
-use crate::storage::History;
 use std::io::{BufRead, BufReader, BufWriter, Error, Write};
 
 pub fn run_command(

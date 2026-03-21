@@ -9,7 +9,7 @@ use crate::command::registry::pwd::run_command as run_command_pwd;
 use crate::command::registry::r#type::run_command as run_command_type;
 use crate::command::registry::yes::run_command as run_command_yes;
 use crate::command::registry::Builtin;
-use crate::storage::History;
+use crate::history::Log as History;
 use crate::Stdio;
 use std::io::Error;
 
