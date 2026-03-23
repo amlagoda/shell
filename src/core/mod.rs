@@ -30,7 +30,7 @@ pub fn run(
         return Err(Error::other("empty parseds"));
     }
 
-    to_history(parseds, log);
+    to_log(parseds, log);
 
     if len == 1 {
         let parsed = parseds.first().unwrap();
@@ -54,7 +54,7 @@ pub fn run(
     run_forks(parseds, stdio, log, bin_paths, output_starts_newline)
 }
 
-fn to_history(parseds: &Vec<&Parsed>, log: &mut Log) {
+fn to_log(parseds: &Vec<&Parsed>, log: &mut Log) {
     for parsed in parseds.iter() {
         let mut to_log = parsed.command().to_string();
 
