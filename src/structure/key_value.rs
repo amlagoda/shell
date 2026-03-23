@@ -1,11 +1,13 @@
-// for small collection
+// for small, rarely used collection
 pub struct KeyValue {
     data: Vec<(String, usize)>,
 }
 
 impl KeyValue {
     pub fn new() -> KeyValue {
-        KeyValue { data: vec![] }
+        KeyValue {
+            data: Vec::with_capacity(50),
+        }
     }
 
     pub fn get(&self, key: &str) -> Option<usize> {
