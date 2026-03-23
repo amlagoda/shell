@@ -99,9 +99,12 @@ pub fn download(log: &mut Log, file_path: &str) -> Result<(), Error> {
         loaded.push(line?);
 
         if loaded.len() == 50 {
-            log.add(loaded);
-            loaded = Vec::with_capacity(50);
+            log.add(loaded.drain(..).collect());
         }
+    }
+
+    if !loaded.is_empty() {
+        log.add(loaded);
     }
 
     Ok(())
