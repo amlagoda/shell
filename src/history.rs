@@ -18,8 +18,8 @@ impl Log {
         }
     }
 
-    pub fn add(&mut self, value: String) {
-        self.data.push(value);
+    pub fn add(&mut self, mut values: Vec<String>) {
+        self.data.append(&mut values);
         self.navigator = RevIter::new(self.data.len() - 1);
     }
 
@@ -93,9 +93,15 @@ pub fn download(log: &mut Log, file_path: &str) -> Result<(), Error> {
     let err = Error::new(ErrorKind::NotFound, "No such file or directory");
     let file = get_read_file(file_path).map_err(|_| err)?;
     let buffer = BufReader::with_capacity(4096, file);
+    let mut loaded = Vec::with_capacity(50);
 
     for line in buffer.lines() {
-        log.add(line?);
+        loaded.push(line?);
+
+        if loaded.len() == 50 {
+            log.add(loaded);
+            loaded = Vec::with_capacity(100);
+        }
     }
 
     Ok(())
@@ -171,7 +177,7 @@ mod tests {
         assert_eq!(0, len);
         drop(iter);
 
-        log.add("1".to_string());
+        log.add(vec!["1".to_string()]);
 
         let (mut iter, len) = log.lasts(None);
         assert_eq!(Some("1"), iter.next());
@@ -196,7 +202,7 @@ mod tests {
         assert_eq!(1, len);
         drop(iter);
 
-        log.add("2".to_string());
+        log.add(vec!["2".to_string()]);
 
         let (mut iter, len) = log.lasts(None);
         assert_eq!(Some("1"), iter.next());

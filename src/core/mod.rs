@@ -55,15 +55,20 @@ pub fn run(
 }
 
 fn to_log(parseds: &Vec<&Parsed>, log: &mut Log) {
-    for parsed in parseds.iter() {
-        let mut to_log = parsed.command().to_string();
+    let to_log = parseds
+        .iter()
+        .map(|parsed| {
+            let mut to_log = parsed.command().to_string();
 
-        if let Some(args) = parsed.args() {
-            to_log = format!("{} {}", to_log, args.join(" "));
-        }
+            if let Some(args) = parsed.args() {
+                to_log = format!("{} {}", to_log, args.join(" "));
+            }
 
-        log.add(to_log);
-    }
+            to_log
+        })
+        .collect();
+
+    log.add(to_log);
 }
 
 fn run_native(
