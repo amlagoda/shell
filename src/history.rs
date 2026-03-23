@@ -12,7 +12,7 @@ pub struct Log {
 impl Log {
     pub fn new() -> Log {
         Log {
-            data: Vec::with_capacity(30),
+            data: Vec::with_capacity(50),
             navigator: RevIter::new(0),
             uploads: KeyValue::new(),
         }
@@ -89,11 +89,6 @@ impl Log {
     }
 }
 
-enum Direction {
-    Next,
-    Prev,
-}
-
 pub fn download(log: &mut Log, file_path: &str) -> Result<(), Error> {
     let err = Error::new(ErrorKind::NotFound, "No such file or directory");
     let file = get_read_file(file_path).map_err(|_| err)?;
@@ -151,6 +146,11 @@ fn upload_numbers(
     }
 
     (count, new_index)
+}
+
+enum Direction {
+    Next,
+    Prev,
 }
 
 #[cfg(test)]
