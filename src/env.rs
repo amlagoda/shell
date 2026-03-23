@@ -14,7 +14,7 @@ pub fn get_args() -> Vec<String> {
     args().skip(1).collect::<Vec<String>>()
 }
 
-pub fn history_file() -> Option<String> {
+pub fn get_history_log_path() -> Option<String> {
     var("HISTFILE").ok()
 }
 

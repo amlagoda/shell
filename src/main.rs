@@ -1,6 +1,6 @@
 use crate::command::get_command_list;
 use crate::core::run;
-use crate::env::{get_args, history_file, split_env_path};
+use crate::env::{get_args, get_history_log_path, split_env_path};
 use crate::history::{download as download_log, upload as upload_log, Log};
 use crate::io::Stdio;
 use crate::keyboard::handle_key;
@@ -38,7 +38,7 @@ fn main() -> Result<(), Error> {
     let bin_paths = path.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
     let args = get_args();
 
-    if let Some(file_path) = history_file() {
+    if let Some(file_path) = get_history_log_path() {
         download_log(&mut log, file_path.as_str())?;
     }
 
@@ -120,7 +120,7 @@ fn run_interactive(stdio: &mut Stdio, log: &mut Log, bin_paths: &Vec<&str>) -> R
         }
 
         if is_exit {
-            if let Some(file_path) = history_file() {
+            if let Some(file_path) = get_history_log_path() {
                 upload_log(log, file_path.as_str(), false)?;
             }
             break;
