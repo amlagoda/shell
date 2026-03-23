@@ -1,5 +1,5 @@
 use crate::fs::search_executable_files_in_paths;
-use crate::history::Log as History;
+use crate::history::Log;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 pub fn handle_key(
@@ -8,7 +8,7 @@ pub fn handle_key(
     previous_key: &Option<KeyEvent>,
     commands: &Vec<&str>,
     bin_paths: &Vec<&str>,
-    history: &mut History,
+    log: &mut Log,
     mut has_user_typing: bool,
 ) -> (
     String,
@@ -85,9 +85,9 @@ pub fn handle_key(
                 }
 
                 let command = if key.code == KeyCode::Up {
-                    history.next()
+                    log.next()
                 } else {
-                    history.prev()
+                    log.prev()
                 };
 
                 if let Some(command) = command {

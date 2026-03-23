@@ -1,12 +1,12 @@
 use crate::command::fmt::NewLine;
-use crate::history::{download as history_download, upload as history_upload, Log as History};
+use crate::history::{download as history_download, upload as history_upload, Log};
 use crate::io::Stdio;
 use std::io::{BufWriter, Error, ErrorKind, Write};
 
 pub fn run_command(
     stdio: &mut Stdio,
     newline: &NewLine,
-    history: &mut History,
+    log: &mut Log,
     args: Option<&Vec<&str>>,
 ) -> Result<(), Error> {
     let validated = validate(args);
@@ -28,20 +28,20 @@ pub fn run_command(
     let (count, loaders) = validated.unwrap();
 
     if let Some(loaders) = loaders {
-        load_mode(stdio, newline, history, loaders)
+        load_mode(stdio, newline, log, loaders)
     } else {
-        print_mode(stdio, newline, history, count)
+        print_mode(stdio, newline, log, count)
     }
 }
 
 fn print_mode(
     stdio: &mut Stdio,
     newline: &NewLine,
-    history: &mut History,
+    log: &mut Log,
     count: Option<usize>,
 ) -> Result<(), Error> {
-    let (records, len) = history.lasts(count);
-    let mut num = history.len() - len;
+    let (records, len) = log.lasts(count);
+    let mut num = log.len() - len;
     let mut buffer = BufWriter::with_capacity(4096, stdio.stdout());
 
     for (mut iter, command) in records.enumerate() {
@@ -71,17 +71,17 @@ fn print_mode(
 fn load_mode(
     stdio: &mut Stdio,
     newline: &NewLine,
-    history: &mut History,
+    log: &mut Log,
     loaders: Vec<Loader>,
 ) -> Result<(), Error> {
     for loader in loaders {
         match loader.operation {
-            Operation::Download => download(stdio, newline, history, loader.file_path.as_str())?,
+            Operation::Download => download(stdio, newline, log, loader.file_path.as_str())?,
             Operation::Upload(UploadMode::Rewrite) => {
-                history_upload(history, loader.file_path.as_str(), false)?
+                history_upload(log, loader.file_path.as_str(), false)?
             }
             Operation::Upload(UploadMode::Append) => {
-                history_upload(history, loader.file_path.as_str(), true)?
+                history_upload(log, loader.file_path.as_str(), true)?
             }
         }
     }
@@ -92,7 +92,7 @@ fn load_mode(
 fn download(
     stdio: &mut Stdio,
     newline: &NewLine,
-    history: &mut History,
+    log: &mut Log,
     file_path: &str,
 ) -> Result<(), Error> {
     let msg = format!(
@@ -102,7 +102,7 @@ fn download(
         newline.stderr_end()
     );
 
-    let download = history_download(history, file_path);
+    let download = history_download(log, file_path);
 
     if download.is_ok() {
         return Ok(());

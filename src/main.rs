@@ -1,7 +1,7 @@
 use crate::command::get_command_list;
 use crate::core::run;
 use crate::env::{get_args, history_file, split_env_path};
-use crate::history::{download as history_download, upload as history_upload, Log as History};
+use crate::history::{download as history_download, upload as history_upload, Log};
 use crate::io::Stdio;
 use crate::keyboard::handle_key;
 use crate::parser::parse;
@@ -33,27 +33,23 @@ fn main() -> Result<(), Error> {
         )
     };
 
-    let mut history = History::new();
+    let mut log = Log::new();
     let path = split_env_path()?;
     let bin_paths = path.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
     let args = get_args();
 
     if let Some(file_path) = history_file() {
-        history_download(&mut history, file_path.as_str())?;
+        history_download(&mut log, file_path.as_str())?;
     }
 
     if args.is_empty() {
-        run_interactive(&mut stdio, &mut history, &bin_paths)
+        run_interactive(&mut stdio, &mut log, &bin_paths)
     } else {
-        run_command(args.join(" "), &mut stdio, &mut history, &bin_paths)
+        run_command(args.join(" "), &mut stdio, &mut log, &bin_paths)
     }
 }
 
-fn run_interactive(
-    stdio: &mut Stdio,
-    history: &mut History,
-    bin_paths: &Vec<&str>,
-) -> Result<(), Error> {
+fn run_interactive(stdio: &mut Stdio, log: &mut Log, bin_paths: &Vec<&str>) -> Result<(), Error> {
     let mut input = String::new();
     let mut previous_key: Option<KeyEvent> = None;
     let mut has_user_typing = false;
@@ -79,7 +75,7 @@ fn run_interactive(
             &previous_key,
             &commands,
             bin_paths,
-            history,
+            log,
             has_user_typing,
         );
         previous_key = Some(key.unwrap());
@@ -110,12 +106,12 @@ fn run_interactive(
                 disable_raw_mode()?;
                 let parseds = parseds.iter().collect();
                 let output_starts_newline = true;
-                is_exit = run(&parseds, stdio, history, bin_paths, output_starts_newline)?;
+                is_exit = run(&parseds, stdio, log, bin_paths, output_starts_newline)?;
                 enable_raw_mode()?;
             }
 
             input.clear();
-            history.reset();
+            log.reset();
 
             if !is_exit {
                 write!(stdio.stdout(), "\r\n$ ")?;
@@ -125,7 +121,7 @@ fn run_interactive(
 
         if is_exit {
             if let Some(file_path) = history_file() {
-                history_upload(history, file_path.as_str(), false)?;
+                history_upload(log, file_path.as_str(), false)?;
             }
             break;
         }
@@ -140,13 +136,13 @@ fn run_interactive(
 fn run_command(
     input: String,
     stdio: &mut Stdio,
-    history: &mut History,
+    log: &mut Log,
     bin_paths: &Vec<&str>,
 ) -> Result<(), Error> {
     if let Some(parseds) = parse(input.as_str())? {
         let parseds = parseds.iter().collect();
         let output_starts_newline = false;
-        run(&parseds, stdio, history, bin_paths, output_starts_newline)?;
+        run(&parseds, stdio, log, bin_paths, output_starts_newline)?;
         println!(""); // %
     }
 

@@ -6,7 +6,7 @@ use crate::core::io::create_pipe;
 use crate::core::io::{mass_close as mass_close_pipes, mass_create as mass_create_pipes};
 use crate::fs::{get_write_file, search_executable_file_in_paths as find_bin};
 use crate::fs::{to_independent_file, to_nonblock_file, transfer_data};
-use crate::history::Log as History;
+use crate::history::Log;
 use crate::io::Stdio;
 use crate::parser::Parsed;
 use crate::process::{kill_forks, pid, to_group, Fork};
@@ -20,7 +20,7 @@ use std::thread::{spawn, JoinHandle};
 pub fn run(
     parseds: &Vec<&Parsed>,
     stdio: &mut Stdio,
-    history: &mut History,
+    log: &mut Log,
     bin_paths: &Vec<&str>,
     output_starts_newline: bool,
 ) -> Result<bool, Error> {
@@ -30,7 +30,7 @@ pub fn run(
         return Err(Error::other("empty parseds"));
     }
 
-    to_history(parseds, history);
+    to_history(parseds, log);
 
     if len == 1 {
         let parsed = parseds.first().unwrap();
@@ -43,13 +43,7 @@ pub fn run(
             if !builtin.is_blocking() {
                 // native run single, builtin and non-blocking command
                 // does not control the "exit"
-                run_native(
-                    parsed,
-                    stdio,
-                    history,
-                    Some(bin_paths),
-                    output_starts_newline,
-                )?;
+                run_native(parsed, stdio, log, Some(bin_paths), output_starts_newline)?;
                 return Ok(false);
             }
         }
@@ -57,25 +51,25 @@ pub fn run(
 
     // other commands run as forks
     // control the "exit"
-    run_forks(parseds, stdio, history, bin_paths, output_starts_newline)
+    run_forks(parseds, stdio, log, bin_paths, output_starts_newline)
 }
 
-fn to_history(parseds: &Vec<&Parsed>, history: &mut History) {
+fn to_history(parseds: &Vec<&Parsed>, log: &mut Log) {
     for parsed in parseds.iter() {
-        let mut to_history = parsed.command().to_string();
+        let mut to_log = parsed.command().to_string();
 
         if let Some(args) = parsed.args() {
-            to_history = format!("{} {}", to_history, args.join(" "));
+            to_log = format!("{} {}", to_log, args.join(" "));
         }
 
-        history.add(to_history);
+        log.add(to_log);
     }
 }
 
 fn run_native(
     parsed: &Parsed,
     stdio: &mut Stdio,
-    history: &mut History,
+    log: &mut Log,
     bin_paths: Option<&Vec<&str>>,
     output_starts_newline: bool,
 ) -> Result<(), Error> {
@@ -105,7 +99,7 @@ fn run_native(
             &builtin,
             args.as_ref(),
             &mut stdio,
-            history,
+            log,
             &newline,
             bin_paths,
         );
@@ -115,13 +109,13 @@ fn run_native(
     newline.stdout_start = output_starts_newline;
     newline.stderr_start = output_starts_newline;
 
-    run_builtin(&builtin, args.as_ref(), stdio, history, &newline, bin_paths)
+    run_builtin(&builtin, args.as_ref(), stdio, log, &newline, bin_paths)
 }
 
 fn run_forks(
     parseds: &Vec<&Parsed>,
     stdio: &mut Stdio,
-    history: &mut History,
+    log: &mut Log,
     bin_paths: &Vec<&str>,
     output_starts_newline: bool,
 ) -> Result<bool, Error> {
@@ -218,7 +212,7 @@ fn run_forks(
                         &builtin,
                         parsed.args().as_ref(),
                         &mut stdio,
-                        history,
+                        log,
                         &newline,
                         Some(bin_paths),
                     )?;

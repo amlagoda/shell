@@ -159,71 +159,71 @@ mod tests {
 
     #[test]
     fn test_lasts() {
-        let mut history = Log::new();
+        let mut log = Log::new();
 
-        let (mut iter, len) = history.lasts(None);
+        let (mut iter, len) = log.lasts(None);
         assert_eq!(None, iter.next());
         assert_eq!(0, len);
         drop(iter);
 
-        let (mut iter, len) = history.lasts(Some(1));
+        let (mut iter, len) = log.lasts(Some(1));
         assert_eq!(None, iter.next());
         assert_eq!(0, len);
         drop(iter);
 
-        history.add("1".to_string());
+        log.add("1".to_string());
 
-        let (mut iter, len) = history.lasts(None);
+        let (mut iter, len) = log.lasts(None);
         assert_eq!(Some("1"), iter.next());
         assert_eq!(None, iter.next());
         assert_eq!(1, len);
         drop(iter);
 
-        let (mut iter, len) = history.lasts(Some(0));
+        let (mut iter, len) = log.lasts(Some(0));
         assert_eq!(None, iter.next());
         assert_eq!(0, len);
         drop(iter);
 
-        let (mut iter, len) = history.lasts(Some(1));
+        let (mut iter, len) = log.lasts(Some(1));
         assert_eq!(Some("1"), iter.next());
         assert_eq!(None, iter.next());
         assert_eq!(1, len);
         drop(iter);
 
-        let (mut iter, len) = history.lasts(Some(2));
+        let (mut iter, len) = log.lasts(Some(2));
         assert_eq!(Some("1"), iter.next());
         assert_eq!(None, iter.next());
         assert_eq!(1, len);
         drop(iter);
 
-        history.add("2".to_string());
+        log.add("2".to_string());
 
-        let (mut iter, len) = history.lasts(None);
+        let (mut iter, len) = log.lasts(None);
         assert_eq!(Some("1"), iter.next());
         assert_eq!(Some("2"), iter.next());
         assert_eq!(None, iter.next());
         assert_eq!(2, len);
         drop(iter);
 
-        let (mut iter, len) = history.lasts(Some(0));
+        let (mut iter, len) = log.lasts(Some(0));
         assert_eq!(None, iter.next());
         assert_eq!(0, len);
         drop(iter);
 
-        let (mut iter, len) = history.lasts(Some(1));
+        let (mut iter, len) = log.lasts(Some(1));
         assert_eq!(Some("2"), iter.next());
         assert_eq!(None, iter.next());
         assert_eq!(1, len);
         drop(iter);
 
-        let (mut iter, len) = history.lasts(Some(2));
+        let (mut iter, len) = log.lasts(Some(2));
         assert_eq!(Some("1"), iter.next());
         assert_eq!(Some("2"), iter.next());
         assert_eq!(None, iter.next());
         assert_eq!(2, len);
         drop(iter);
 
-        let (mut iter, len) = history.lasts(Some(3));
+        let (mut iter, len) = log.lasts(Some(3));
         assert_eq!(Some("1"), iter.next());
         assert_eq!(Some("2"), iter.next());
         assert_eq!(None, iter.next());
