@@ -1,5 +1,5 @@
 use crate::command::fmt::NewLine;
-use crate::history::{download as history_download, upload as history_upload, Log};
+use crate::history::{download as download_log, upload as upload_log, Log};
 use crate::io::Stdio;
 use std::io::{BufWriter, Error, ErrorKind, Write};
 
@@ -78,10 +78,10 @@ fn load_mode(
         match loader.operation {
             Operation::Download => download(stdio, newline, log, loader.file_path.as_str())?,
             Operation::Upload(UploadMode::Rewrite) => {
-                history_upload(log, loader.file_path.as_str(), false)?
+                upload_log(log, loader.file_path.as_str(), false)?
             }
             Operation::Upload(UploadMode::Append) => {
-                history_upload(log, loader.file_path.as_str(), true)?
+                upload_log(log, loader.file_path.as_str(), true)?
             }
         }
     }
@@ -102,7 +102,7 @@ fn download(
         newline.stderr_end()
     );
 
-    let download = history_download(log, file_path);
+    let download = download_log(log, file_path);
 
     if download.is_ok() {
         return Ok(());

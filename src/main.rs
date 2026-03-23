@@ -1,7 +1,7 @@
 use crate::command::get_command_list;
 use crate::core::run;
 use crate::env::{get_args, history_file, split_env_path};
-use crate::history::{download as history_download, upload as history_upload, Log};
+use crate::history::{download as download_log, upload as upload_log, Log};
 use crate::io::Stdio;
 use crate::keyboard::handle_key;
 use crate::parser::parse;
@@ -39,7 +39,7 @@ fn main() -> Result<(), Error> {
     let args = get_args();
 
     if let Some(file_path) = history_file() {
-        history_download(&mut log, file_path.as_str())?;
+        download_log(&mut log, file_path.as_str())?;
     }
 
     if args.is_empty() {
@@ -121,7 +121,7 @@ fn run_interactive(stdio: &mut Stdio, log: &mut Log, bin_paths: &Vec<&str>) -> R
 
         if is_exit {
             if let Some(file_path) = history_file() {
-                history_upload(log, file_path.as_str(), false)?;
+                upload_log(log, file_path.as_str(), false)?;
             }
             break;
         }
