@@ -100,7 +100,7 @@ pub fn download(log: &mut Log, file_path: &str) -> Result<(), Error> {
 
         if loaded.len() == 50 {
             log.add(loaded);
-            loaded = Vec::with_capacity(100);
+            loaded = Vec::with_capacity(50);
         }
     }
 
