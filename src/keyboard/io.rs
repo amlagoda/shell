@@ -44,7 +44,7 @@ pub fn complete_input(
     }
 }
 
-fn complete(input: &str, variants: &Vec<&str>) -> Option<(Option<String>, Option<Vec<String>>)> {
+fn complete(input: &str, variants: &Vec<&str>) -> Option<Completion> {
     if input.is_empty() || variants.is_empty() {
         return None;
     }
@@ -69,8 +69,8 @@ fn complete(input: &str, variants: &Vec<&str>) -> Option<(Option<String>, Option
     let short = matches.iter().min_by_key(|r| r.len()).unwrap();
 
     if len == 1 {
-        let end = format!("{} ", short.replacen(input, "", 1));
-        return Some((Some(end), None));
+        let selected = short.replacen(input, "", 1);
+        return Some(Completion::new_selected(selected));
     }
 
     let is_chain = matches
@@ -79,9 +79,10 @@ fn complete(input: &str, variants: &Vec<&str>) -> Option<(Option<String>, Option
         .all(|r| r.starts_with(short.as_str()));
 
     if is_chain {
-        Some((Some(short.replacen(input, "", 1)), None))
+        let selected = short.replacen(input, "", 1);
+        Some(Completion::new_selected(selected))
     } else {
-        Some((None, Some(matches)))
+        Some(Completion::new_variants(matches))
     }
 }
 
