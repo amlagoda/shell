@@ -8,7 +8,7 @@ pub struct Loader {
 impl Loader {
     pub fn try_new(file_path: String, flag: &str) -> Result<Loader, Error> {
         let loader = Loader {
-            file_path: file_path,
+            file_path,
             operation: Operation::try_from(flag)?,
         };
 
@@ -20,17 +20,11 @@ impl Loader {
     }
 
     pub fn is_download(&self) -> bool {
-        match self.operation {
-            Operation::Download => true,
-            _ => false,
-        }
+        matches!(self.operation, Operation::Download)
     }
 
     pub fn is_upload_append(&self) -> bool {
-        match self.operation {
-            Operation::Upload(UploadMode::Append) => true,
-            _ => false,
-        }
+        matches!(self.operation, Operation::Upload(UploadMode::Append))
     }
 }
 

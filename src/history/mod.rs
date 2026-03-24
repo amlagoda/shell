@@ -33,7 +33,7 @@ impl Log {
         if let Some(count) = count {
             if len > 0 && count < len {
                 start = len - count;
-                len = len - start;
+                len -= start;
             }
         }
 

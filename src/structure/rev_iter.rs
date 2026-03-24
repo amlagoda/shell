@@ -8,7 +8,7 @@ impl RevIter {
     pub fn new(last: usize) -> RevIter {
         RevIter {
             current: last,
-            last: last,
+            last,
             is_started: false,
         }
     }

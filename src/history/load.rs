@@ -12,7 +12,7 @@ pub fn download(log: &mut Log, file_path: &str) -> Result<(), Error> {
         loaded.push(line?);
 
         if loaded.len() == 50 {
-            log.add(loaded.drain(..).collect());
+            log.add(loaded.drain(..).collect()); // not mem::take to save capacity
         }
     }
 

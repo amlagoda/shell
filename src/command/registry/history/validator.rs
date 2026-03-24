@@ -16,10 +16,8 @@ pub fn validate(args: Option<&Vec<&str>>) -> Result<(Option<usize>, Option<Vec<L
         return Ok((count, loaders));
     }
 
-    let mut iter = args.unwrap().into_iter();
+    let mut iter = args.unwrap().iter();
     while let Some(arg) = iter.next() {
-        let arg = *arg;
-
         if let Ok(parsed) = arg.parse::<usize>() {
             if mode != MODE_NOT_DEFINED {
                 return Err(err);
@@ -27,7 +25,7 @@ pub fn validate(args: Option<&Vec<&str>>) -> Result<(Option<usize>, Option<Vec<L
 
             mode = MODE_PRINT;
             count = Some(parsed);
-        } else if LOAD_FLAGS.contains(&arg) {
+        } else if LOAD_FLAGS.contains(arg) {
             if ![MODE_NOT_DEFINED, MODE_LOAD].contains(&mode) {
                 return Err(err);
             }
