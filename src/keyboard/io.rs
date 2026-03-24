@@ -92,6 +92,27 @@ fn paths_to_names(paths: &Vec<&str>) -> Vec<String> {
         .collect::<Vec<String>>()
 }
 
+struct Completion {
+    selected: Option<String>,
+    variants: Option<Vec<String>>,
+}
+
+impl Completion {
+    fn new_selected(selected: String) -> Completion {
+        Completion {
+            selected: Some(selected),
+            variants: None,
+        }
+    }
+
+    fn new_variants(variants: Vec<String>) -> Completion {
+        Completion {
+            selected: None,
+            variants: Some(variants),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
