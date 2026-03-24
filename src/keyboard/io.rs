@@ -92,6 +92,7 @@ fn paths_to_names(paths: &Vec<&str>) -> Vec<String> {
         .map(|r| r.split("/").last().unwrap().to_string())
         .collect::<Vec<String>>()
 }
+
 #[derive(Debug, PartialEq)]
 struct Completion {
     selected: Option<String>,
