@@ -3,61 +3,49 @@ use crate::history::Log;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 pub fn handle_key(
-    mut input: String,
+    input: String,
     key: &KeyEvent,
     previous_key: &Option<KeyEvent>,
     commands: &Vec<&str>,
     bin_paths: &Vec<&str>,
     log: &mut Log,
-    mut has_user_typing: bool,
-) -> (
-    String,
-    Option<String>,
-    Option<String>,
-    Option<usize>,
-    bool,
-    bool,
-    bool,
-) {
-    let mut to_print: Option<String> = None;
-    let mut hint: Option<String> = None;
-    let mut backspace_len: Option<usize> = None;
-    let mut is_enter = false;
-    let mut is_exit = false;
+    has_user_typing: bool,
+) -> HandledKey {
+    let mut handled_key = HandledKey::new(input, has_user_typing);
 
     match key.code {
         KeyCode::Enter => {
-            is_enter = true;
-            has_user_typing = false;
+            handled_key.is_enter = true;
+            handled_key.has_user_typing = false;
         }
 
         KeyCode::Backspace => {
-            if !input.is_empty() {
-                input.pop();
-                backspace_len = Some(1);
+            if !handled_key.input.is_empty() {
+                handled_key.input.pop();
+                handled_key.backspace_len = Some(1);
             }
-
-            if input.is_empty() {
-                has_user_typing = false;
+            // not else
+            if handled_key.input.is_empty() {
+                handled_key.has_user_typing = false;
             }
         }
 
         KeyCode::Tab => {
-            to_print = Some("\x07".to_string());
+            handled_key.to_print = Some("\x07".to_string());
 
-            let r = complete(input.as_str(), commands, bin_paths);
+            let r = complete(handled_key.input.as_str(), commands, bin_paths);
 
             if let Some((end, variants)) = r {
                 if let Some(r) = variants {
                     if let Some(f) = previous_key {
                         if f.code == KeyCode::Tab {
-                            hint = Some(r.join("  "));
-                            to_print = None;
+                            handled_key.hint = Some(r.join("  "));
+                            handled_key.to_print = None;
                         }
                     }
                 } else if let Some(r) = end {
-                    input.push_str(r.as_str());
-                    to_print = Some(r);
+                    handled_key.input.push_str(r.as_str());
+                    handled_key.to_print = Some(r);
                 }
             }
         }
@@ -66,22 +54,22 @@ pub fn handle_key(
             let is_ctrl = key.modifiers == KeyModifiers::CONTROL;
 
             if r == 'c' && is_ctrl {
-                to_print = Some("^C".to_string());
-                is_exit = true;
+                handled_key.to_print = Some("^C".to_string());
+                handled_key.is_exit = true;
             } else if r == 'j' && is_ctrl {
-                is_enter = true;
-                has_user_typing = false;
+                handled_key.is_enter = true;
+                handled_key.has_user_typing = false;
             } else {
-                input.push(r);
-                to_print = Some(r.to_string());
-                has_user_typing = true;
+                handled_key.input.push(r);
+                handled_key.to_print = Some(r.to_string());
+                handled_key.has_user_typing = true;
             }
         }
 
         KeyCode::Up | KeyCode::Down => {
-            if !has_user_typing {
-                if !input.is_empty() {
-                    backspace_len = Some(input.len());
+            if !handled_key.has_user_typing {
+                if !handled_key.input.is_empty() {
+                    handled_key.backspace_len = Some(handled_key.input.len());
                 }
 
                 let command = if key.code == KeyCode::Up {
@@ -91,10 +79,10 @@ pub fn handle_key(
                 };
 
                 if let Some(command) = command {
-                    input = command;
-                    to_print = Some(input.clone());
+                    handled_key.input = command;
+                    handled_key.to_print = Some(handled_key.input.clone());
                 } else {
-                    to_print = Some(format!("{}\x07", input));
+                    handled_key.to_print = Some(format!("{}\x07", handled_key.input));
                 }
             }
         }
@@ -102,15 +90,31 @@ pub fn handle_key(
         _ => {}
     }
 
-    (
-        input,
-        to_print,
-        hint,
-        backspace_len,
-        is_enter,
-        is_exit,
-        has_user_typing,
-    )
+    handled_key
+}
+
+struct HandledKey {
+    input: String,
+    to_print: Option<String>,
+    hint: Option<String>,
+    backspace_len: Option<usize>,
+    is_enter: bool,
+    is_exit: bool,
+    has_user_typing: bool,
+}
+
+impl HandledKey {
+    fn new(input: String, has_user_typing: bool) -> HandledKey {
+        HandledKey {
+            input,
+            to_print: None,
+            hint: None,
+            backspace_len: None,
+            is_enter: false,
+            is_exit: false,
+            has_user_typing,
+        }
+    }
 }
 
 fn complete(
