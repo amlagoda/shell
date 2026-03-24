@@ -92,7 +92,7 @@ fn paths_to_names(paths: &Vec<&str>) -> Vec<String> {
         .map(|r| r.split("/").last().unwrap().to_string())
         .collect::<Vec<String>>()
 }
-
+#[derive(Debug, PartialEq)]
 struct Completion {
     selected: Option<String>,
     variants: Option<Vec<String>>,
@@ -160,19 +160,19 @@ mod tests {
         assert_eq!(None, complete("foo", &vec!("foo", "foo")));
 
         let r = complete("f", &vec!["fo", "foo", "fooo"]);
-        let f = (Some("o".to_string()), None);
+        let f = Completion::new_selected("o".to_string());
         assert_eq!(Some(f), r);
 
         let r = complete("f", &vec!["fo", "foo"]);
-        let f = (Some("o".to_string()), None);
+        let f = Completion::new_selected("o".to_string());
         assert_eq!(Some(f), r);
 
         let r = complete("f", &vec!["foo", "foo"]);
-        let f = (Some("oo ".to_string()), None);
+        let f = Completion::new_selected("oo ".to_string());
         assert_eq!(Some(f), r);
 
         let r = complete("f", &vec!["foo"]);
-        let f = (Some("oo ".to_string()), None);
+        let f = Completion::new_selected("oo ".to_string());
         assert_eq!(Some(f), r);
 
         let r = complete("f", &vec!["fo", "foo", "fi", "fii"]);
@@ -180,7 +180,7 @@ mod tests {
             .iter()
             .map(|r| r.to_string())
             .collect::<Vec<String>>();
-        let f = (None, Some(m));
+        let f = Completion::new_variants(m);
         assert_eq!(Some(f), r);
     }
 
