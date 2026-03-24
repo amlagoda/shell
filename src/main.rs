@@ -69,7 +69,7 @@ fn run_interactive(stdio: &mut Stdio, log: &mut Log, bin_paths: &Vec<&str>) -> R
         let r = get_command_list();
         let commands = r.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
 
-        let (i, to_print, hint, backspace_len, is_enter, mut is_exit, user_typing) = handle_key(
+        let handled_key = handle_key(
             input,
             &key.unwrap(),
             &previous_key,
@@ -78,11 +78,13 @@ fn run_interactive(stdio: &mut Stdio, log: &mut Log, bin_paths: &Vec<&str>) -> R
             log,
             has_user_typing,
         );
-        previous_key = Some(key.unwrap());
-        input = i;
-        has_user_typing = user_typing;
 
-        if let Some(len) = backspace_len {
+        let mut is_exit = handled_key.is_exit();
+        previous_key = Some(key.unwrap());
+        input = handled_key.get_input().to_string();
+        has_user_typing = handled_key.has_user_typing();
+
+        if let Some(len) = handled_key.get_backspace_len() {
             execute!(
                 stdio.stdout(),
                 MoveLeft(len as u16),
@@ -90,18 +92,18 @@ fn run_interactive(stdio: &mut Stdio, log: &mut Log, bin_paths: &Vec<&str>) -> R
             )?;
         }
 
-        if let Some(r) = to_print {
+        if let Some(r) = handled_key.get_to_print() {
             stdio.stdout().flush()?;
             write!(stdio.stdout(), "{}", r)?;
             stdio.stdout().flush()?;
         }
 
-        if let Some(r) = hint {
+        if let Some(r) = handled_key.get_hint() {
             write!(stdio.stdout(), "\r\n{}\r\n$ {}", r, input)?;
             stdio.stdout().flush()?;
         }
 
-        if is_enter {
+        if handled_key.is_enter() {
             if let Some(parseds) = parse(input.as_str())? {
                 disable_raw_mode()?;
                 let parseds = parseds.iter().collect();

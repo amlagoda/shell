@@ -93,7 +93,7 @@ pub fn handle_key(
     handled_key
 }
 
-struct HandledKey {
+pub struct HandledKey {
     input: String,
     to_print: Option<String>,
     hint: Option<String>,
@@ -114,6 +114,34 @@ impl HandledKey {
             is_exit: false,
             has_user_typing,
         }
+    }
+
+    pub fn get_input(&self) -> &str {
+        self.input.as_str()
+    }
+
+    pub fn get_to_print(&self) -> Option<&str> {
+        self.to_print.as_deref()
+    }
+
+    pub fn get_hint(&self) -> Option<&str> {
+        self.hint.as_deref()
+    }
+
+    pub fn get_backspace_len(&self) -> Option<usize> {
+        self.backspace_len
+    }
+
+    pub fn is_enter(&self) -> bool {
+        self.is_enter
+    }
+
+    pub fn is_exit(&self) -> bool {
+        self.is_exit
+    }
+
+    pub fn has_user_typing(&self) -> bool {
+        self.has_user_typing
     }
 }
 
