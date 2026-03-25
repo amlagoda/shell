@@ -1,4 +1,4 @@
-use crate::command::registry::history::structure::Loader;
+use crate::command::registry::history::load::Loader;
 use std::io::Error;
 
 pub fn validate(args: Option<&Vec<&str>>) -> Result<Validated, Error> {
