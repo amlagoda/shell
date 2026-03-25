@@ -2,10 +2,14 @@ pub fn is_redirect(arg: &str) -> bool {
     [">", "1>", "2>", ">>", "1>>", "2>>"].contains(&arg)
 }
 
-pub fn to_redirect(redirect: &str, path: &str) -> Redirect {
+pub fn to_redirect(redirect: &str, path: &str) -> Option<Redirect> {
+    if !is_redirect(redirect) {
+        return None;
+    }
+
     let (flow, mode) = parse_redirect(normalize_redirect(redirect).as_str());
 
-    Redirect::new(flow, mode, path.to_string())
+    Some(Redirect::new(flow, mode, path.to_string()))
 }
 
 pub struct Redirect {
@@ -110,7 +114,7 @@ mod tests {
 
     #[test]
     fn test_to_redirect() {
-        let redirect = to_redirect("2>", "path");
+        let redirect = to_redirect("2>", "path").unwrap();
 
         assert!(redirect.is_stderr());
 

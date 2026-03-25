@@ -89,7 +89,7 @@ fn to_parsed(mut args: VecDeque<String>) -> Result<Option<Vec<Parsed>>, Error> {
             redirect_mode = true;
         } else if is_redirect_path(current.as_str(), prev) {
             redirect_mode = false;
-            parsed.redirect = Some(to_redirect(prev.unwrap(), current.as_str()));
+            parsed.redirect = to_redirect(prev.unwrap(), current.as_str());
         } else if is_pipeline(current.as_str()) {
             pipeline_mode = true;
             command_mode = false;
