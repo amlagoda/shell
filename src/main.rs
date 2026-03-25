@@ -130,7 +130,6 @@ fn run_interactive(stdio: &mut Stdio, log: &mut Log, bin_paths: &Vec<&str>) -> R
     }
 
     disable_raw_mode()?;
-    println!(""); // %
 
     Ok(())
 }
@@ -145,7 +144,6 @@ fn run_command(
         let parseds = parseds.iter().collect();
         let output_starts_newline = false;
         run(&parseds, stdio, log, bin_paths, output_starts_newline)?;
-        println!(""); // %
     }
 
     Ok(())

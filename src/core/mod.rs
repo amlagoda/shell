@@ -60,10 +60,9 @@ fn to_log(parseds: &Vec<&Parsed>, log: &mut Log) {
     for parsed in parseds {
         let command = parsed.command().to_string();
 
-        let args = parsed.args().map_or_else(
-            || "".to_string(),
-            |args| format!(" {}", args.join(" ").to_string()),
-        );
+        let args = parsed
+            .args()
+            .map_or_else(|| "".to_string(), |args| format!(" {}", args.join(" ")));
 
         to_log.push(format!("{}{}", command, args));
     }
