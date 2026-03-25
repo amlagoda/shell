@@ -1,8 +1,8 @@
 pub struct NewLine {
-    pub stdout_start: bool,
-    pub stdout_end: bool,
-    pub stderr_start: bool,
-    pub stderr_end: bool,
+    stdout_start: bool,
+    stdout_end: bool,
+    stderr_start: bool,
+    stderr_end: bool,
 }
 
 impl NewLine {
@@ -29,6 +29,22 @@ impl NewLine {
 
     pub fn stderr_end(&self) -> String {
         to_string(self.stderr_end)
+    }
+
+    pub fn set_stdout_start(&mut self, value: bool) {
+        self.stdout_start = value;
+    }
+
+    pub fn set_stdout_end(&mut self, value: bool) {
+        self.stdout_end = value;
+    }
+
+    pub fn set_stderr_start(&mut self, value: bool) {
+        self.stderr_start = value;
+    }
+
+    pub fn set_stderr_end(&mut self, value: bool) {
+        self.stderr_end = value;
     }
 }
 

@@ -90,12 +90,12 @@ fn run_native(
 
         if redirect.is_stderr() {
             stderr = file;
-            newline.stderr_end = true;
-            newline.stdout_start = true;
+            newline.set_stderr_end(true);
+            newline.set_stdout_start(true);
         } else {
             stdout = file;
-            newline.stdout_end = true;
-            newline.stderr_start = true;
+            newline.set_stdout_end(true);
+            newline.set_stderr_start(true);
         }
 
         let mut stdio = Stdio::new(stdin, stdout, stderr);
@@ -111,8 +111,8 @@ fn run_native(
     }
 
     let mut newline = NewLine::new();
-    newline.stdout_start = output_starts_newline;
-    newline.stderr_start = output_starts_newline;
+    newline.set_stdout_start(output_starts_newline);
+    newline.set_stderr_start(output_starts_newline);
 
     run_builtin(&builtin, args.as_ref(), stdio, log, &newline, bin_paths)
 }
@@ -210,8 +210,8 @@ fn run_forks(
                     };
 
                     let mut newline = NewLine::new();
-                    newline.stdout_end = true;
-                    newline.stderr_end = true;
+                    newline.set_stdout_end(true);
+                    newline.set_stderr_end(true);
 
                     run_builtin(
                         &builtin,
