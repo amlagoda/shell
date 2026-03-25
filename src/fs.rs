@@ -4,7 +4,7 @@ use std::io::{Error, ErrorKind, Read, Write};
 use std::os::fd::FromRawFd;
 use std::os::unix::fs::PermissionsExt;
 use std::path::Path;
-use std::sync::atomic::{AtomicBool, Ordering::Relaxed};
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread::sleep;
 use std::time::Duration;
@@ -30,6 +30,7 @@ pub fn transfer_data(
     mut to: File,
     proceed: Arc<AtomicBool>,
     mut skip_first_newline: bool,
+    memory_ordering: Ordering,
 ) -> Result<(), Error> {
     let mut buffer = [0; 4096];
 
@@ -45,7 +46,7 @@ pub fn transfer_data(
             }
             Err(err) => {
                 if err.kind() == ErrorKind::WouldBlock {
-                    if !proceed.load(Relaxed) {
+                    if !proceed.load(memory_ordering) {
                         while let Ok(read_bytes) = from.read(&mut buffer) {
                             if read_bytes == 0 {
                                 break;

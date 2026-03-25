@@ -327,17 +327,18 @@ fn run_forks(
         return Err(err);
     }
 
+    let memory_ordering = Ordering::Relaxed;
     let mut handlers: Vec<JoinHandle<Result<(), Error>>> = vec![];
     for (from, to, proceed) in datasets.unwrap() {
         // required transfer ownership
         handlers.push(spawn(move || {
-            transfer_data(from, to, proceed, !output_starts_newline)
+            transfer_data(from, to, proceed, !output_starts_newline, memory_ordering)
         }));
     }
 
     forks.pop().unwrap().blocking_waiting();
     kill_forks(forks);
-    proceed.store(false, Ordering::Relaxed);
+    proceed.store(false, memory_ordering);
 
     for handler in handlers {
         match handler.join() {
