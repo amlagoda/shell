@@ -141,11 +141,11 @@ mod tests {
         let path = get_fixture_dir();
 
         let r = complete_input("f", &vec!["bar"], &vec![format!("{}1/", path).as_str()]);
-        let f = (Some("oo ".to_string()), None);
+        let f = Completion::new_selected("oo ".to_string());
         assert_eq!(Some(f), r);
 
         let r = complete_input("f", &vec!["fooo"], &vec![format!("{}1/", path).as_str()]);
-        let f = (Some("ooo ".to_string()), None);
+        let f = Completion::new_selected("ooo ".to_string());
         assert_eq!(Some(f), r);
 
         let r = complete_input(
@@ -157,7 +157,7 @@ mod tests {
             .iter()
             .map(|r| r.to_string())
             .collect::<Vec<String>>();
-        let f = (None, Some(m));
+        let f = Completion::new_variants(m);
         assert_eq!(Some(f), r);
     }
 
