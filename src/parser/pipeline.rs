@@ -2,11 +2,15 @@ pub fn is_pipeline(arg: &str) -> bool {
     ["|", "|&"].contains(&arg)
 }
 
-pub fn to_pipeline(pipeline: &str) -> Pipeline {
+pub fn to_pipeline(pipeline: &str) -> Option<Pipeline> {
+    if !is_pipeline(pipeline) {
+        return None;
+    }
+
     if pipeline == "|&" {
-        Pipeline::StdoutStderr
+        Some(Pipeline::StdoutStderr)
     } else {
-        Pipeline::Stdout
+        Some(Pipeline::Stdout)
     }
 }
 
@@ -36,6 +40,6 @@ mod tests {
 
     #[test]
     fn test_to_pipeline() {
-        assert!(!to_pipeline("|&").is_stdout());
+        assert!(!to_pipeline("|&").unwrap().is_stdout());
     }
 }

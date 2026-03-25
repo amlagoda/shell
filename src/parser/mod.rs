@@ -93,7 +93,7 @@ fn to_parsed(mut args: VecDeque<String>) -> Result<Option<Vec<Parsed>>, Error> {
         } else if is_pipeline(current.as_str()) {
             pipeline_mode = true;
             command_mode = false;
-            parsed.pipeline = Some(to_pipeline(current.as_str()));
+            parsed.pipeline = to_pipeline(current.as_str());
         } else {
             // is arg
             if parsed.args.is_none() {
