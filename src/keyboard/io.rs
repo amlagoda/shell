@@ -1,18 +1,17 @@
 use crate::fs::search_executable_files_in_paths;
 
-pub fn complete_input(
-    input: &str,
-    commands: &Vec<&str>,
-    paths: &Vec<&str>,
-) -> Option<(Option<String>, Option<Vec<String>>)> {
+pub fn complete_input(input: &str, commands: &Vec<&str>, paths: &Vec<&str>) -> Option<Completion> {
     let mut variants: Option<Vec<String>> = None;
 
-    if let Some((end, var)) = complete(input, commands) {
-        if end.is_some() {
-            return Some((end, None));
+    if let Some(completion) = complete(input, commands) {
+        if completion.is_selected() {
+            return Some(completion);
         }
 
-        variants = var;
+        variants = completion
+            .get_variants()
+            .as_ref()
+            .map(|v| v.iter().map(|s| s.to_string()).collect());
     }
 
     if let Some(r) = search_executable_files_in_paths(input, paths) {
@@ -20,16 +19,21 @@ pub fn complete_input(
         let r = paths_to_names(&r);
         let names = r.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
 
-        if let Some((end, var)) = complete(input, &names) {
-            if end.is_some() {
-                return Some((end, None));
+        if let Some(completion) = complete(input, &names) {
+            if completion.is_selected() {
+                return Some(completion);
             }
 
+            let f = completion
+                .get_variants()
+                .as_ref()
+                .map(|v| v.iter().map(|s| s.to_string()).collect());
+
             if let Some(mut r) = variants {
-                r.append(&mut var.unwrap());
+                r.append(&mut f.unwrap());
                 variants = Some(r);
             } else {
-                variants = var;
+                variants = f;
             }
         }
     }
@@ -38,7 +42,9 @@ pub fn complete_input(
         r.sort_unstable();
         r.dedup();
 
-        Some((None, Some(r)))
+        let r = r.iter().map(|s| s.to_string()).collect();
+
+        Some(Completion::new_variants(r))
     } else {
         None
     }
@@ -112,6 +118,16 @@ impl Completion {
             selected: None,
             variants: Some(variants),
         }
+    }
+
+    fn is_selected(&self) -> bool {
+        self.selected.is_some()
+    }
+
+    fn get_variants(&self) -> Option<Vec<&str>> {
+        self.variants
+            .as_ref()
+            .map(|v| v.iter().map(|s| s.as_str()).collect())
     }
 }
 
