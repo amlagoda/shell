@@ -30,12 +30,12 @@ pub fn run_command(
         return Ok(());
     }
 
-    let (count, loaders) = validated.unwrap();
+    let validated = validated.unwrap();
 
-    if let Some(loaders) = loaders {
+    if let Some(loaders) = validated.get_loaders() {
         load_mode(stdio, newline, log, loaders)
     } else {
-        print_mode(stdio, newline, log, count)
+        print_mode(stdio, newline, log, validated.get_count())
     }
 }
 
@@ -77,7 +77,7 @@ fn load_mode(
     stdio: &mut Stdio,
     newline: &NewLine,
     log: &mut Log,
-    loaders: Vec<Loader>,
+    loaders: Vec<&Loader>,
 ) -> Result<(), Error> {
     for loader in loaders {
         if loader.is_download() {

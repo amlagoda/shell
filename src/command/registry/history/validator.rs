@@ -1,7 +1,7 @@
 use crate::command::registry::history::structure::Loader;
 use std::io::Error;
 
-pub fn validate(args: Option<&Vec<&str>>) -> Result<(Option<usize>, Option<Vec<Loader>>), Error> {
+pub fn validate(args: Option<&Vec<&str>>) -> Result<Validated, Error> {
     const LOAD_FLAGS: [&str; 3] = ["-r", "-w", "-a"];
     const MODE_NOT_DEFINED: u8 = 0;
     const MODE_PRINT: u8 = 1;
@@ -13,7 +13,7 @@ pub fn validate(args: Option<&Vec<&str>>) -> Result<(Option<usize>, Option<Vec<L
     let mut count: Option<usize> = None;
 
     if args.is_none() {
-        return Ok((count, loaders));
+        return Ok(Validated::new(count, loaders));
     }
 
     let mut iter = args.unwrap().iter();
@@ -50,5 +50,24 @@ pub fn validate(args: Option<&Vec<&str>>) -> Result<(Option<usize>, Option<Vec<L
         }
     }
 
-    Ok((count, loaders))
+    Ok(Validated::new(count, loaders))
+}
+
+pub struct Validated {
+    count: Option<usize>,
+    loaders: Option<Vec<Loader>>,
+}
+
+impl Validated {
+    fn new(count: Option<usize>, loaders: Option<Vec<Loader>>) -> Validated {
+        Validated { count, loaders }
+    }
+
+    pub fn get_count(&self) -> Option<usize> {
+        self.count
+    }
+
+    pub fn get_loaders(&self) -> Option<Vec<&Loader>> {
+        self.loaders.as_ref().map(|v| v.iter().collect())
+    }
 }
