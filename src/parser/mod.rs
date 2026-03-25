@@ -39,7 +39,7 @@ impl Parsed {
     pub fn args(&self) -> Option<Vec<&str>> {
         self.args
             .as_ref()
-            .map(|r| r.iter().map(|r| r.as_str()).collect::<Vec<&str>>())
+            .map(|r| r.iter().map(|r| r.as_str()).collect())
     }
 
     pub fn redirect(&self) -> Option<&Redirect> {
