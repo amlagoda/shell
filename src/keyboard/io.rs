@@ -75,7 +75,7 @@ fn complete(input: &str, variants: &Vec<&str>) -> Option<Completion> {
     let short = matches.iter().min_by_key(|r| r.len()).unwrap();
 
     if len == 1 {
-        let selected = short.replacen(input, "", 1);
+        let selected = format!("{} ", short.replacen(input, "", 1));
         return Some(Completion::new_selected(selected));
     }
 
@@ -100,7 +100,7 @@ fn paths_to_names(paths: &Vec<&str>) -> Vec<String> {
 }
 
 #[derive(Debug, PartialEq)]
-struct Completion {
+pub struct Completion {
     selected: Option<String>,
     variants: Option<Vec<String>>,
 }
@@ -120,11 +120,15 @@ impl Completion {
         }
     }
 
-    fn is_selected(&self) -> bool {
+    pub fn is_selected(&self) -> bool {
         self.selected.is_some()
     }
 
-    fn get_variants(&self) -> Option<Vec<&str>> {
+    pub fn get_selected(&self) -> Option<&str> {
+        self.selected.as_deref()
+    }
+
+    pub fn get_variants(&self) -> Option<Vec<&str>> {
         self.variants
             .as_ref()
             .map(|v| v.iter().map(|s| s.as_str()).collect())

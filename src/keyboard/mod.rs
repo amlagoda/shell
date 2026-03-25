@@ -37,17 +37,19 @@ pub fn handle_key(
 
             let r = complete_input(handled_key.input.as_str(), commands, bin_paths);
 
-            if let Some((end, variants)) = r {
-                if let Some(r) = variants {
+            if let Some(completion) = r {
+                if let Some(r) = completion.get_variants() {
                     if let Some(f) = previous_key {
                         if f.code == KeyCode::Tab {
                             handled_key.hint = Some(r.join("  "));
                             handled_key.to_print = None;
                         }
                     }
-                } else if let Some(r) = end {
-                    handled_key.input.push_str(r.as_str());
-                    handled_key.to_print = Some(r);
+                } else {
+                    let selected = completion.get_selected().unwrap();
+
+                    handled_key.input.push_str(selected);
+                    handled_key.to_print = Some(selected.to_string());
                 }
             }
         }
