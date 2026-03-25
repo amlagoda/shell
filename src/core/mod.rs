@@ -55,18 +55,18 @@ pub fn run(
 }
 
 fn to_log(parseds: &Vec<&Parsed>, log: &mut Log) {
-    let to_log = parseds
-        .iter()
-        .map(|parsed| {
-            let mut to_log = parsed.command().to_string();
+    let mut to_log = Vec::with_capacity(10);
 
-            if let Some(args) = parsed.args() {
-                to_log = format!("{} {}", to_log, args.join(" "));
-            }
+    for parsed in parseds {
+        let command = parsed.command().to_string();
 
-            to_log
-        })
-        .collect();
+        let args = parsed.args().map_or_else(
+            || "".to_string(),
+            |args| format!(" {}", args.join(" ").to_string()),
+        );
+
+        to_log.push(format!("{}{}", command, args));
+    }
 
     log.add(to_log);
 }
