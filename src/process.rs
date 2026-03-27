@@ -70,7 +70,7 @@ impl Fork {
             .chain(args.unwrap_or(vec![]))
             .collect();
 
-        let mut args: Vec<CString> = vec![];
+        let mut args: Vec<CString> = Vec::with_capacity(merged_args.capacity());
 
         for arg in merged_args {
             match CString::new(arg) {
