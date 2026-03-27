@@ -35,7 +35,7 @@ fn main() -> Result<(), Error> {
 
     let mut log = Log::new();
     let path = split_env_path()?;
-    let bin_paths = path.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
+    let bin_paths = path.iter().map(|r| r.as_str()).collect();
     let args = get_args();
 
     if let Some(file_path) = get_history_log_path() {
@@ -67,7 +67,7 @@ fn run_interactive(stdio: &mut Stdio, log: &mut Log, bin_paths: &Vec<&str>) -> R
         }
 
         let r = get_command_list();
-        let commands = r.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
+        let commands = r.iter().map(|r| r.as_str()).collect();
 
         let handled_key = handle_key(
             input,
