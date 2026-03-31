@@ -133,7 +133,7 @@ fn run_forks(
         let command = parsed.command();
         let only_executable = true;
 
-        if to_builtin(command).is_some() || find_file(command, only_executable, bin_paths).is_some()
+        if to_builtin(command).is_some() || find_file(command, bin_paths, only_executable).is_some()
         {
             let fork = Fork::try_new();
 

@@ -20,7 +20,7 @@ pub fn run_command(
     } else if let Some(bin_paths) = bin_paths {
         let only_executable = true;
 
-        if let Some(path) = find_file(command.as_str(), only_executable, bin_paths) {
+        if let Some(path) = find_file(command.as_str(), bin_paths, only_executable) {
             msg = format!("{} is {}", command, path);
             to_stderr = false;
         }

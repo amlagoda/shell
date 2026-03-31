@@ -2,7 +2,7 @@ use std::fs::{read_dir, DirEntry, ReadDir};
 use std::io::Error;
 use std::os::unix::fs::PermissionsExt;
 
-pub fn find_file(name: &str, only_executable: bool, paths: &Vec<&str>) -> Option<String> {
+pub fn find_file(name: &str, paths: &Vec<&str>, only_executable: bool) -> Option<String> {
     // errors remains here
     // because we need to go down the list
     for path in paths {
@@ -18,8 +18,8 @@ pub fn find_file(name: &str, only_executable: bool, paths: &Vec<&str>) -> Option
 
 pub fn find_files(
     starts_with: &str,
-    only_executable: bool,
     paths: &Vec<&str>,
+    only_executable: bool,
 ) -> Option<Vec<String>> {
     let mut files = vec![];
 
@@ -120,13 +120,13 @@ mod tests {
         let paths = vec![r.as_str()];
         let only_executable = true;
 
-        let r = find_file("exe", only_executable, &paths).unwrap();
+        let r = find_file("exe", &paths, only_executable).unwrap();
         assert_eq!(format!("{}exe", get_fixture_dir()), r);
 
-        let r = find_file("not_exe", only_executable, &paths);
+        let r = find_file("not_exe", &paths, only_executable);
         assert!(r.is_none());
 
-        let r = find_file("not_exists", only_executable, &paths);
+        let r = find_file("not_exists", &paths, only_executable);
         assert!(r.is_none());
     }
 
@@ -136,11 +136,11 @@ mod tests {
         let paths = vec![r.as_str()];
         let only_executable = true;
 
-        let r = find_files("ex", only_executable, &paths).unwrap();
+        let r = find_files("ex", &paths, only_executable).unwrap();
         let f = vec![format!("{}exe", get_fixture_dir())];
         assert_eq!(f, r);
 
-        let r = find_files("not", only_executable, &paths);
+        let r = find_files("not", &paths, only_executable);
         assert!(r.is_none());
     }
 
