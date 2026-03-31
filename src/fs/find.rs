@@ -2,7 +2,7 @@ use std::fs::{read_dir, DirEntry, ReadDir};
 use std::io::Error;
 use std::os::unix::fs::PermissionsExt;
 
-pub fn find_file(name: &str, executable: bool, paths: &Vec<&str>) -> Option<String> {
+pub fn find_file(name: &str, only_executable: bool, paths: &Vec<&str>) -> Option<String> {
     // errors remains here
     // because we need to go down the list
     for path in paths {
@@ -16,7 +16,11 @@ pub fn find_file(name: &str, executable: bool, paths: &Vec<&str>) -> Option<Stri
     None
 }
 
-pub fn find_files(starts_with: &str, executable: bool, paths: &Vec<&str>) -> Option<Vec<String>> {
+pub fn find_files(
+    starts_with: &str,
+    only_executable: bool,
+    paths: &Vec<&str>,
+) -> Option<Vec<String>> {
     let mut files = vec![];
 
     for path in paths {
@@ -114,15 +118,15 @@ mod tests {
     fn test_search_executable_file_in_paths() {
         let r = get_fixture_dir();
         let paths = vec![r.as_str()];
-        let executable = true;
+        let only_executable = true;
 
-        let r = find_file("exe", executable, &paths).unwrap();
+        let r = find_file("exe", only_executable, &paths).unwrap();
         assert_eq!(format!("{}exe", get_fixture_dir()), r);
 
-        let r = find_file("not_exe", executable, &paths);
+        let r = find_file("not_exe", only_executable, &paths);
         assert!(r.is_none());
 
-        let r = find_file("not_exists", executable, &paths);
+        let r = find_file("not_exists", only_executable, &paths);
         assert!(r.is_none());
     }
 
@@ -130,13 +134,13 @@ mod tests {
     fn test_search_executable_files_in_paths() {
         let r = get_fixture_dir();
         let paths = vec![r.as_str()];
-        let executable = true;
+        let only_executable = true;
 
-        let r = find_files("ex", executable, &paths).unwrap();
+        let r = find_files("ex", only_executable, &paths).unwrap();
         let f = vec![format!("{}exe", get_fixture_dir())];
         assert_eq!(f, r);
 
-        let r = find_files("not", executable, &paths);
+        let r = find_files("not", only_executable, &paths);
         assert!(r.is_none());
     }
 

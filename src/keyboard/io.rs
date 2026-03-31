@@ -14,8 +14,8 @@ pub fn complete_input(input: &str, commands: &Vec<&str>, paths: &Vec<&str>) -> O
             .map(|v| v.iter().map(|s| s.to_string()).collect());
     }
 
-    let executable = true;
-    if let Some(r) = find_files(input, executable, paths) {
+    let only_executable = true;
+    if let Some(r) = find_files(input, only_executable, paths) {
         let r = r.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
         let r = paths_to_names(&r);
         let names = r.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
