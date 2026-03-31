@@ -1,7 +1,6 @@
 mod load;
 
-pub use load::download;
-pub use load::upload;
+pub use load::{download, upload};
 
 use crate::structure::KeyValue;
 use crate::structure::RevIter;
