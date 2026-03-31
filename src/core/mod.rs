@@ -4,7 +4,7 @@ use crate::command::fmt::NewLine;
 use crate::command::{run_command as run_builtin, to_command as to_builtin};
 use crate::core::io::create_pipe;
 use crate::core::io::{mass_close as mass_close_pipes, mass_create as mass_create_pipes};
-use crate::fs::{get_write_file, search_executable_file_in_paths as find_bin};
+use crate::fs::{find_file, get_write_file};
 use crate::fs::{to_independent_file, to_nonblock_file, transfer_data};
 use crate::history::Log;
 use crate::io::Stdio;
@@ -131,8 +131,9 @@ fn run_forks(
 
     for parsed in parseds {
         let command = parsed.command();
+        let executable = true;
 
-        if to_builtin(command).is_some() || find_bin(command, bin_paths).is_some() {
+        if to_builtin(command).is_some() || find_file(command, executable, bin_paths).is_some() {
             let fork = Fork::try_new();
 
             if let Err(err) = fork {

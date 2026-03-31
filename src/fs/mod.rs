@@ -1,4 +1,4 @@
-mod search;
+mod find;
 
 use libc::{dup as c_dup, fcntl as c_fcntl, F_SETFL, O_NONBLOCK};
 use std::fs::{File, OpenOptions};
@@ -10,8 +10,7 @@ use std::sync::Arc;
 use std::thread::sleep;
 use std::time::Duration;
 
-pub use search::search_executable_file_in_paths;
-pub use search::search_executable_files_in_paths;
+pub use find::{find_file, find_files};
 
 pub fn to_nonblock_file(file_descriptor: u32) -> Result<File, Error> {
     let status = unsafe { c_fcntl(file_descriptor as i32, F_SETFL, O_NONBLOCK) };

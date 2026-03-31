@@ -1,4 +1,4 @@
-use crate::fs::search_executable_files_in_paths;
+use crate::fs::find_files;
 
 pub fn complete_input(input: &str, commands: &Vec<&str>, paths: &Vec<&str>) -> Option<Completion> {
     let mut variants: Option<Vec<String>> = None;
@@ -14,7 +14,8 @@ pub fn complete_input(input: &str, commands: &Vec<&str>, paths: &Vec<&str>) -> O
             .map(|v| v.iter().map(|s| s.to_string()).collect());
     }
 
-    if let Some(r) = search_executable_files_in_paths(input, paths) {
+    let executable = true;
+    if let Some(r) = find_files(input, executable, paths) {
         let r = r.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
         let r = paths_to_names(&r);
         let names = r.iter().map(|r| r.as_str()).collect::<Vec<&str>>();

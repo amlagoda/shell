@@ -1,6 +1,6 @@
 use crate::command::fmt::NewLine;
 use crate::command::registry::Builtin;
-use crate::fs::search_executable_file_in_paths;
+use crate::fs::find_file;
 use crate::io::Stdio;
 use std::io::{Error, Write};
 
@@ -18,7 +18,9 @@ pub fn run_command(
         msg = format!("{} is a shell builtin", command);
         to_stderr = false;
     } else if let Some(bin_paths) = bin_paths {
-        if let Some(path) = search_executable_file_in_paths(command.as_str(), bin_paths) {
+        let executable = true;
+
+        if let Some(path) = find_file(command.as_str(), executable, bin_paths) {
             msg = format!("{} is {}", command, path);
             to_stderr = false;
         }

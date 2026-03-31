@@ -2,7 +2,7 @@ use std::fs::{read_dir, DirEntry, ReadDir};
 use std::io::Error;
 use std::os::unix::fs::PermissionsExt;
 
-pub fn search_executable_file_in_paths(name: &str, paths: &Vec<&str>) -> Option<String> {
+pub fn find_file(name: &str, executable: bool, paths: &Vec<&str>) -> Option<String> {
     // errors remains here
     // because we need to go down the list
     for path in paths {
@@ -16,10 +16,7 @@ pub fn search_executable_file_in_paths(name: &str, paths: &Vec<&str>) -> Option<
     None
 }
 
-pub fn search_executable_files_in_paths(
-    starts_with: &str,
-    paths: &Vec<&str>,
-) -> Option<Vec<String>> {
+pub fn find_files(starts_with: &str, executable: bool, paths: &Vec<&str>) -> Option<Vec<String>> {
     let mut files = vec![];
 
     for path in paths {
@@ -117,14 +114,15 @@ mod tests {
     fn test_search_executable_file_in_paths() {
         let r = get_fixture_dir();
         let paths = vec![r.as_str()];
+        let executable = true;
 
-        let r = search_executable_file_in_paths("exe", &paths).unwrap();
+        let r = find_file("exe", executable, &paths).unwrap();
         assert_eq!(format!("{}exe", get_fixture_dir()), r);
 
-        let r = search_executable_file_in_paths("not_exe", &paths);
+        let r = find_file("not_exe", executable, &paths);
         assert!(r.is_none());
 
-        let r = search_executable_file_in_paths("not_exists", &paths);
+        let r = find_file("not_exists", executable, &paths);
         assert!(r.is_none());
     }
 
@@ -132,12 +130,13 @@ mod tests {
     fn test_search_executable_files_in_paths() {
         let r = get_fixture_dir();
         let paths = vec![r.as_str()];
+        let executable = true;
 
-        let r = search_executable_files_in_paths("ex", &paths).unwrap();
+        let r = find_files("ex", executable, &paths).unwrap();
         let f = vec![format!("{}exe", get_fixture_dir())];
         assert_eq!(f, r);
 
-        let r = search_executable_files_in_paths("not", &paths);
+        let r = find_files("not", executable, &paths);
         assert!(r.is_none());
     }
 
