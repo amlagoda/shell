@@ -7,8 +7,8 @@ pub fn find_file(name: &str, paths: &Vec<&str>, only_executable: bool) -> Option
     // because we need to go down the list
     for path in paths {
         if let Ok(dir) = read_dir(path) {
-            if let Some(r) = find_file_in_dir(name, dir, only_executable) {
-                return Some(r);
+            if let Some(found_path) = find_file_in_dir(name, dir, only_executable) {
+                return Some(found_path);
             }
         }
     }
@@ -21,22 +21,22 @@ pub fn find_files(
     paths: &Vec<&str>,
     only_executable: bool,
 ) -> Option<Vec<String>> {
-    let mut files = vec![];
+    // errors remains here
+    // because we need to go down the list
+    let mut found_paths = vec![];
 
     for path in paths {
-        // errors remains here
-        // because we need to go down the list
         if let Ok(dir) = read_dir(path) {
             if let Some(mut r) = find_files_in_dir(starts_with, dir, only_executable) {
-                files.append(&mut r);
+                found_paths.append(&mut r);
             }
         }
     }
 
-    if files.is_empty() {
+    if found_paths.is_empty() {
         None
     } else {
-        Some(files)
+        Some(found_paths)
     }
 }
 
@@ -50,20 +50,14 @@ fn find_file_in_dir(name: &str, dir: ReadDir, only_executable: bool) -> Option<S
             continue;
         }
 
-        let current_name = current_name.unwrap();
-
-        if name != current_name {
-            println!("{:?}", name);
-            println!("{:?}", current_name);
+        if name != current_name.unwrap() {
             continue;
         }
 
-        if only_executable {
-            if is_executable_file(&entry).ok()? {
-                return Some(get_path(&entry).unwrap());
+        if is_file(&entry, only_executable).is_ok_and(|s| s == true) {
+            if let Some(path) = get_path(&entry) {
+                return Some(path);
             }
-        } else {
-            return Some(get_path(&entry).unwrap());
         }
     }
 
@@ -77,34 +71,30 @@ fn find_files_in_dir(
 ) -> Option<Vec<String>> {
     // errors remains here
     // because we need to go down the list
-    let mut files = vec![];
+    let mut paths = vec![];
 
     for entry in dir.flatten() {
-        let current_name = get_name(&entry);
+        let name = get_name(&entry);
 
-        if current_name.is_none() {
+        if name.is_none() {
             continue;
         }
 
-        let current_name = current_name.unwrap();
-
-        if !current_name.starts_with(starts_with) {
+        if !name.unwrap().starts_with(starts_with) {
             continue;
         }
 
-        if only_executable {
-            if is_executable_file(&entry).ok()? {
-                files.push(get_path(&entry).unwrap());
+        if is_file(&entry, only_executable).is_ok_and(|s| s == true) {
+            if let Some(path) = get_path(&entry) {
+                paths.push(path);
             }
-        } else {
-            files.push(get_path(&entry).unwrap());
         }
     }
 
-    if files.is_empty() {
+    if paths.is_empty() {
         None
     } else {
-        Some(files)
+        Some(paths)
     }
 }
 
@@ -116,13 +106,17 @@ fn get_path(entry: &DirEntry) -> Option<String> {
     entry.path().to_str().map(|r| Some(r.to_string()))?
 }
 
-fn is_executable_file(entry: &DirEntry) -> Result<bool, Error> {
-    let r = entry.metadata()?;
+fn is_file(entry: &DirEntry, is_executable: bool) -> Result<bool, Error> {
+    let metadata = entry.metadata()?;
 
-    if r.is_dir() {
-        Ok(false)
+    if metadata.is_dir() {
+        return Ok(false);
+    }
+
+    if is_executable {
+        Ok(metadata.permissions().mode() & 0o111 != 0) // windows no
     } else {
-        Ok(r.permissions().mode() & 0o111 != 0) // windows no
+        Ok(true)
     }
 }
 
