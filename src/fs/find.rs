@@ -7,7 +7,7 @@ pub fn find_file(name: &str, paths: &Vec<&str>, only_executable: bool) -> Option
     // because we need to go down the list
     for path in paths {
         if let Ok(dir) = read_dir(path) {
-            if let Some(r) = search_executable_file_in_dir(name, dir) {
+            if let Some(r) = find_file_in_dir(name, dir, only_executable) {
                 return Some(r);
             }
         }
@@ -27,7 +27,7 @@ pub fn find_files(
         // errors remains here
         // because we need to go down the list
         if let Ok(dir) = read_dir(path) {
-            if let Some(mut r) = search_executable_files_in_dir(starts_with, dir) {
+            if let Some(mut r) = find_files_in_dir(starts_with, dir, only_executable) {
                 files.append(&mut r);
             }
         }
@@ -40,26 +40,64 @@ pub fn find_files(
     }
 }
 
-fn search_executable_file_in_dir(name: &str, dir: ReadDir) -> Option<String> {
+fn find_file_in_dir(name: &str, dir: ReadDir, only_executable: bool) -> Option<String> {
     // errors remains here
     // because we need to go down the list
     for entry in dir.flatten() {
-        if let Some(r) = name_equals_and_executable(name, &entry) {
-            return Some(r);
+        let current_name = get_name(&entry);
+
+        if current_name.is_none() {
+            continue;
+        }
+
+        let current_name = current_name.unwrap();
+
+        if name != current_name {
+            println!("{:?}", name);
+            println!("{:?}", current_name);
+            continue;
+        }
+
+        if only_executable {
+            if is_executable_file(&entry).ok()? {
+                return Some(get_path(&entry).unwrap());
+            }
+        } else {
+            return Some(get_path(&entry).unwrap());
         }
     }
 
     None
 }
 
-fn search_executable_files_in_dir(starts_with: &str, dir: ReadDir) -> Option<Vec<String>> {
+fn find_files_in_dir(
+    starts_with: &str,
+    dir: ReadDir,
+    only_executable: bool,
+) -> Option<Vec<String>> {
     // errors remains here
     // because we need to go down the list
     let mut files = vec![];
 
     for entry in dir.flatten() {
-        if let Some(r) = name_starts_with_and_executable(starts_with, &entry) {
-            files.push(r);
+        let current_name = get_name(&entry);
+
+        if current_name.is_none() {
+            continue;
+        }
+
+        let current_name = current_name.unwrap();
+
+        if !current_name.starts_with(starts_with) {
+            continue;
+        }
+
+        if only_executable {
+            if is_executable_file(&entry).ok()? {
+                files.push(get_path(&entry).unwrap());
+            }
+        } else {
+            files.push(get_path(&entry).unwrap());
         }
     }
 
@@ -70,32 +108,11 @@ fn search_executable_files_in_dir(starts_with: &str, dir: ReadDir) -> Option<Vec
     }
 }
 
-fn name_equals_and_executable(name: &str, entry: &DirEntry) -> Option<String> {
-    if !is_executable_file(entry).ok()? {
-        return None;
-    }
-
-    if name != entry.file_name().into_string().ok()? {
-        return None;
-    }
-
-    entry.path().to_str().map(|r| Some(r.to_string()))?
+fn get_name(entry: &DirEntry) -> Option<String> {
+    entry.file_name().into_string().ok()
 }
 
-fn name_starts_with_and_executable(starts_with: &str, entry: &DirEntry) -> Option<String> {
-    if !is_executable_file(entry).ok()? {
-        return None;
-    }
-
-    if !entry
-        .file_name()
-        .into_string()
-        .ok()?
-        .starts_with(starts_with)
-    {
-        return None;
-    }
-
+fn get_path(entry: &DirEntry) -> Option<String> {
     entry.path().to_str().map(|r| Some(r.to_string()))?
 }
 
@@ -115,7 +132,7 @@ mod tests {
     use std::env::current_dir;
 
     #[test]
-    fn test_search_executable_file_in_paths() {
+    fn test_find_file() {
         let r = get_fixture_dir();
         let paths = vec![r.as_str()];
         let only_executable = true;
@@ -131,7 +148,7 @@ mod tests {
     }
 
     #[test]
-    fn test_search_executable_files_in_paths() {
+    fn test_find_files() {
         let r = get_fixture_dir();
         let paths = vec![r.as_str()];
         let only_executable = true;
