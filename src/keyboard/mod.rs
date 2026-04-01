@@ -1,5 +1,6 @@
 mod io;
 
+use crate::env::get_current_dir;
 use crate::history::Log;
 use crate::keyboard::io::complete_input;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
@@ -35,7 +36,12 @@ pub fn handle_key(
         KeyCode::Tab => {
             handled_key.to_print = Some("\x07".to_string());
 
-            let r = complete_input(handled_key.input.as_str(), commands, bin_paths);
+            let r = complete_input(
+                handled_key.input.as_str(),
+                commands,
+                bin_paths,
+                get_current_dir().as_str(),
+            );
 
             if let Some(completion) = r {
                 if let Some(r) = completion.get_variants() {

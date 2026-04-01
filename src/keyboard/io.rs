@@ -1,6 +1,24 @@
 use crate::fs::find_files;
 
-pub fn complete_input(input: &str, commands: &Vec<&str>, paths: &Vec<&str>) -> Option<Completion> {
+pub fn complete_input(
+    input: &str,
+    commands: &Vec<&str>,
+    paths: &Vec<&str>,
+    current_path: &str,
+) -> Option<Completion> {
+    let args: Vec<&str> = input.split(" ").collect();
+    let len = args.len();
+
+    if len == 1 {
+        complete_command(args[0], commands, paths)
+    } else if len == 2 {
+        complete_file(args[1], current_path)
+    } else {
+        None
+    }
+}
+
+fn complete_command(input: &str, commands: &Vec<&str>, paths: &Vec<&str>) -> Option<Completion> {
     let mut variants: Option<Vec<String>> = None;
 
     if let Some(completion) = complete(input, commands) {
@@ -49,6 +67,10 @@ pub fn complete_input(input: &str, commands: &Vec<&str>, paths: &Vec<&str>) -> O
     } else {
         None
     }
+}
+
+fn complete_file(input: &str, path: &str) -> Option<Completion> {
+    None
 }
 
 fn complete(input: &str, variants: &Vec<&str>) -> Option<Completion> {
@@ -139,17 +161,28 @@ impl Completion {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::env::current_dir;
+    use crate::env::get_current_dir;
 
     #[test]
     fn test_complete_input() {
         let path = get_fixture_dir();
+        let current_path = "";
 
-        let r = complete_input("f", &vec!["bar"], &vec![format!("{}1/", path).as_str()]);
+        let r = complete_input(
+            "f",
+            &vec!["bar"],
+            &vec![format!("{}1/", path).as_str()],
+            current_path,
+        );
         let f = Completion::new_selected("oo ".to_string());
         assert_eq!(Some(f), r);
 
-        let r = complete_input("f", &vec!["fooo"], &vec![format!("{}1/", path).as_str()]);
+        let r = complete_input(
+            "f",
+            &vec!["fooo"],
+            &vec![format!("{}1/", path).as_str()],
+            current_path,
+        );
         let f = Completion::new_selected("ooo ".to_string());
         assert_eq!(Some(f), r);
 
@@ -157,6 +190,7 @@ mod tests {
             "f",
             &vec!["foo", "fii"],
             &vec![format!("{}2/", path).as_str()],
+            current_path,
         );
         let m = vec!["fii", "foo", "fyy"]
             .iter()
@@ -209,10 +243,5 @@ mod tests {
     fn get_fixture_dir() -> String {
         // ends with a slash
         format!("{}/test/fixture/keyboard/", get_current_dir())
-    }
-
-    fn get_current_dir() -> String {
-        // does not end with a slash
-        current_dir().unwrap().to_str().unwrap().to_string()
     }
 }
