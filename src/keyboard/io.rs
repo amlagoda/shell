@@ -70,7 +70,44 @@ fn complete_command(input: &str, commands: &Vec<&str>, paths: &Vec<&str>) -> Opt
 }
 
 fn complete_file(input: &str, path: &str) -> Option<Completion> {
-    None
+    let mut variants: Option<Vec<String>> = None;
+    let only_executable = false;
+
+    if let Some(r) = find_files(input, &vec![path], only_executable) {
+        let r = r.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
+        let r = paths_to_names(&r);
+        let names = r.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
+
+        if let Some(completion) = complete(input, &names) {
+            if completion.is_selected() {
+                return Some(completion);
+            }
+
+            let f = completion
+                .get_variants()
+                .as_ref()
+                .map(|v| v.iter().map(|s| s.to_string()).collect());
+
+            if let Some(mut r) = variants {
+                r.append(&mut f.unwrap());
+                variants = Some(r);
+            } else {
+                variants = f;
+            }
+        }
+    }
+
+    if let Some(mut r) = variants {
+        r.sort_unstable();
+        r.dedup();
+
+        let r = r.iter().map(|s| s.to_string()).collect();
+
+        Some(Completion::new_variants(r))
+    } else {
+        println!("4");
+        None
+    }
 }
 
 fn complete(input: &str, variants: &Vec<&str>) -> Option<Completion> {
