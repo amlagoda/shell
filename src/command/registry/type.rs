@@ -62,7 +62,7 @@ fn get_command(args: Option<&Vec<&str>>) -> String {
 // #[cfg(test)]
 // mod tests {
 //     use super::*;
-//     use std::env::current_dir;
+//     use crate::env::get_current_dir;
 
 //     #[test]
 //     fn test_run_command() -> Result<(), Error> {
@@ -84,10 +84,5 @@ fn get_command(args: Option<&Vec<&str>>) -> String {
 //     fn get_fixture_dir() -> String {
 //         // ends with a slash
 //         format!("{}/test/fixture/command/registry/type", get_current_dir())
-//     }
-
-//     fn get_current_dir() -> String {
-//         // does not end with a slash
-//         current_dir().unwrap().to_str().unwrap().to_string()
 //     }
 // }

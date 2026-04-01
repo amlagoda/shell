@@ -27,16 +27,12 @@ pub fn run_command(stdio: &mut Stdio, newline: &NewLine) -> Result<(), Error> {
 // #[cfg(test)]
 // mod tests {
 //     use super::*;
+//     use crate::env::get_current_dir;
 
 //     #[test]
 //     fn test_run_command() -> Result<(), Error> {
 //         assert_eq!(get_current_dir(), run_command()?.output().unwrap());
 
 //         Ok(())
-//     }
-
-//     fn get_current_dir() -> String {
-//         // does not end with a slash
-//         current_dir().unwrap().to_str().unwrap().to_string()
 //     }
 // }

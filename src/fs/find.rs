@@ -123,7 +123,7 @@ fn is_file(entry: &DirEntry, is_executable: bool) -> Result<bool, Error> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::env::current_dir;
+    use crate::env::get_current_dir;
 
     #[test]
     fn test_find_file() {
@@ -158,10 +158,5 @@ mod tests {
     fn get_fixture_dir() -> String {
         // ends with a slash
         format!("{}/test/fixture/fs/", get_current_dir())
-    }
-
-    fn get_current_dir() -> String {
-        // does not end with a slash
-        current_dir().unwrap().to_str().unwrap().to_string()
     }
 }

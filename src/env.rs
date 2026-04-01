@@ -1,4 +1,4 @@
-use std::env::{args, /*current_exe,*/ var};
+use std::env::{args, current_dir, /*current_exe,*/ var};
 use std::io::Error;
 
 pub fn split_env_path() -> Result<Vec<String>, Error> {
@@ -16,6 +16,11 @@ pub fn get_args() -> Vec<String> {
 
 pub fn get_history_log_path() -> Option<String> {
     var("HISTFILE").ok()
+}
+
+pub fn get_current_dir() -> String {
+    // does not end with a slash
+    current_dir().unwrap().to_str().unwrap().to_string()
 }
 
 // pub fn get_current_exe() -> Result<String, Error> {
