@@ -54,7 +54,7 @@ fn find_file_in_dir(name: &str, dir: ReadDir, only_executable: bool) -> Option<S
             continue;
         }
 
-        if is_file(&entry, only_executable).is_ok_and(|s| s == true) {
+        if is_file(&entry, only_executable).is_ok_and(|s| s) {
             if let Some(path) = get_path(&entry) {
                 return Some(path);
             }
@@ -84,7 +84,7 @@ fn find_files_in_dir(
             continue;
         }
 
-        if is_file(&entry, only_executable).is_ok_and(|s| s == true) {
+        if is_file(&entry, only_executable).is_ok_and(|s| s) {
             if let Some(path) = get_path(&entry) {
                 paths.push(path);
             }
