@@ -23,7 +23,7 @@ pub fn find_files(
 ) -> Option<Vec<String>> {
     // errors remains here
     // because we need to go down the list
-    let mut found_paths = vec![];
+    let mut found_paths = Vec::with_capacity(20);
 
     for path in paths {
         if let Ok(dir) = read_dir(path) {
@@ -71,7 +71,7 @@ fn find_files_in_dir(
 ) -> Option<Vec<String>> {
     // errors remains here
     // because we need to go down the list
-    let mut paths = vec![];
+    let mut paths = Vec::with_capacity(20);
 
     for entry in dir.flatten() {
         let name = get_name(&entry);
