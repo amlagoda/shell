@@ -22,24 +22,26 @@ pub fn to_nonblock_file(file_descriptor: u32) -> Result<File, Error> {
     Ok(file)
 }
 
-pub fn to_independent_file(file_descriptor: u32) -> File {
-    unsafe { File::from_raw_fd(c_dup(file_descriptor as i32)) }
+pub fn to_independent_file(file_descriptor: u32) -> Result<File, Error> {
+    let file_descriptor = unsafe { c_dup(file_descriptor as i32) };
+
+    if file_descriptor == -1 {
+        return Err(Error::other("dup error"));
+    }
+
+    Ok(unsafe { File::from_raw_fd(c_dup(file_descriptor as i32)) })
 }
 
 pub fn get_write_file(path: &str, append: bool) -> Result<File, Error> {
-    let file = OpenOptions::new()
+    OpenOptions::new()
         .create(true)
         .read(true)
         .write(true)
         .truncate(!append)
         .append(append)
-        .open(Path::new(path))?;
-
-    Ok(file)
+        .open(Path::new(path))
 }
 
 pub fn get_read_file(path: &str) -> Result<File, Error> {
-    let file = OpenOptions::new().read(true).open(Path::new(path))?;
-
-    Ok(file)
+    OpenOptions::new().read(true).open(Path::new(path))
 }

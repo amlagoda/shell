@@ -365,8 +365,8 @@ fn transfer_datasets(
     let stdout_from = to_nonblock_file(stdout)?;
     let stderr_from = to_nonblock_file(stderr)?;
 
-    let stdout_to = to_independent_file(stdio.stdout().as_raw_fd() as u32);
-    let stderr_to = to_independent_file(stdio.stderr().as_raw_fd() as u32);
+    let stdout_to = to_independent_file(stdio.stdout().as_raw_fd() as u32)?;
+    let stderr_to = to_independent_file(stdio.stderr().as_raw_fd() as u32)?;
 
     let (stdout_proceed, stderr_proceed) = (Arc::clone(proceed), Arc::clone(proceed));
 
