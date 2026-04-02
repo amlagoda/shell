@@ -5,7 +5,7 @@ use crate::command::{run_command as run_builtin, to_command as to_builtin};
 use crate::core::io::create_pipe;
 use crate::core::io::{mass_close as mass_close_pipes, mass_create as mass_create_pipes};
 use crate::fs::{find_file, get_write_file};
-use crate::fs::{to_independent_file, to_nonblock_file, transfer_data};
+use crate::fs::{to_cloned_file, to_nonblock_file, transfer_data};
 use crate::history::Log;
 use crate::io::Stdio;
 use crate::parser::Parsed;
@@ -365,8 +365,8 @@ fn transfer_datasets(
     let stdout_from = to_nonblock_file(stdout)?;
     let stderr_from = to_nonblock_file(stderr)?;
 
-    let stdout_to = to_independent_file(stdio.stdout().as_raw_fd() as u32)?;
-    let stderr_to = to_independent_file(stdio.stderr().as_raw_fd() as u32)?;
+    let stdout_to = to_cloned_file(stdio.stdout().as_raw_fd() as u32)?;
+    let stderr_to = to_cloned_file(stdio.stderr().as_raw_fd() as u32)?;
 
     let (stdout_proceed, stderr_proceed) = (Arc::clone(proceed), Arc::clone(proceed));
 
