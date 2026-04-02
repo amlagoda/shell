@@ -14,6 +14,7 @@ use std::io::{stderr, stdin, stdout, Error, Write};
 use std::os::fd::{AsRawFd, FromRawFd};
 
 mod command;
+mod complete;
 mod core;
 mod env;
 mod fs;

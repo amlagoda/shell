@@ -1,8 +1,6 @@
-mod io;
-
+use crate::complete::complete_input;
 use crate::env::get_current_dir;
 use crate::history::Log;
-use crate::keyboard::io::complete_input;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 pub fn handle_key(
