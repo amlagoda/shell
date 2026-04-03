@@ -20,12 +20,9 @@ pub fn transfer_data(
 
     loop {
         match from.read(&mut buffer) {
+            Ok(0) => break,
             Ok(read_bytes) => {
-                if read_bytes == 0 {
-                    break;
-                }
-
-                skip_first_newline = write_lines(&mut to, &buffer, read_bytes, skip_first_newline)?;
+                skip_first_newline = write_lines(&mut to, &buffer, read_bytes, skip_first_newline)?
             }
             Err(err) => {
                 if err.kind() == ErrorKind::WouldBlock {
