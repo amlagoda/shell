@@ -1,5 +1,6 @@
 use std::fs::File;
 use std::io::{Error, ErrorKind, Read, Write};
+use std::str::from_utf8;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread::sleep;
@@ -12,6 +13,9 @@ pub fn transfer_data(
     mut skip_first_newline: bool,
     memory_ordering: Ordering,
 ) -> Result<(), Error> {
+    // using buffers (BufReader, BufWriter) does not increase performance
+    // because we still have to flush them after each record
+    // for commands like tail -f file | head -n 5
     let mut buffer = [0; 4096];
 
     loop {
@@ -22,7 +26,6 @@ pub fn transfer_data(
                 }
 
                 skip_first_newline = write_lines(&mut to, &buffer, read_bytes, skip_first_newline)?;
-                buffer = [0; 4096];
             }
             Err(err) => {
                 if err.kind() == ErrorKind::WouldBlock {
@@ -34,7 +37,6 @@ pub fn transfer_data(
 
                             skip_first_newline =
                                 write_lines(&mut to, &buffer, read_bytes, skip_first_newline)?;
-                            buffer = [0; 4096];
                         }
                         break;
                     }
@@ -59,8 +61,7 @@ fn write_lines(
     read_bytes: usize,
     mut skip_first_newline: bool,
 ) -> Result<bool, Error> {
-    let readed = String::from_utf8(buffer[..read_bytes].to_vec())
-        .map_err(|_| Error::other("from_utf8 error"))?;
+    let readed = from_utf8(&buffer[..read_bytes]).map_err(|_| Error::other("from_utf8 error"))?;
 
     // skip unnecessary newlines
     for line in readed.split("\n").filter(|r| !["\n", "\0", ""].contains(r)) {
