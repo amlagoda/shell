@@ -71,9 +71,9 @@ fn run_interactive(stdio: &mut Stdio, log: &mut Log, bin_paths: &Vec<&str>) -> R
         let commands = r.iter().map(|r| r.as_str()).collect();
 
         let handled_key = handle_key(
-            input,
+            input.as_str(),
             &key.unwrap(),
-            &previous_key,
+            &previous_key.as_ref(),
             &commands,
             bin_paths,
             log,

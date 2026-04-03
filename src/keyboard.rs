@@ -4,15 +4,15 @@ use crate::history::Log;
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
 pub fn handle_key(
-    input: String,
+    input: &str,
     key: &KeyEvent,
-    previous_key: &Option<KeyEvent>,
+    previous_key: &Option<&KeyEvent>,
     commands: &Vec<&str>,
     bin_paths: &Vec<&str>,
     log: &mut Log,
     has_user_typing: bool,
 ) -> HandledKey {
-    let mut handled_key = HandledKey::new(input, has_user_typing);
+    let mut handled_key = HandledKey::new(input.to_string(), has_user_typing);
 
     match key.code {
         KeyCode::Enter => {
