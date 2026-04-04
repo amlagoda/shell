@@ -21,7 +21,7 @@ pub struct HandledKey {
 }
 
 impl HandledKey {
-    fn new(input: String, has_user_typing: bool) -> HandledKey {
+    pub fn new(input: String, has_user_typing: bool) -> HandledKey {
         HandledKey {
             input,
             to_print: None,
@@ -59,9 +59,5 @@ impl HandledKey {
 
     pub fn has_user_typing(&self) -> bool {
         self.has_user_typing
-    }
-
-    pub fn set_user_typing(&mut self, value: bool) {
-        self.has_user_typing = value;
     }
 }

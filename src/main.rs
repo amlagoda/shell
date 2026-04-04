@@ -82,7 +82,7 @@ fn run_interactive(stdio: &mut Stdio, log: &mut Log, bin_paths: &Vec<&str>) -> R
 
         let mut is_exit = handled_key.is_exit();
         previous_key = Some(key.unwrap());
-        input = handled_key.get_input().to_string();
+        input = handled_key.input().to_string();
         has_user_typing = handled_key.has_user_typing();
 
         if let Some(len) = handled_key.get_backspace_len() {
