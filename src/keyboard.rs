@@ -1,6 +1,6 @@
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
 
-fn to_action(key: &KeyEvent) -> Option<TerminalAction> {
+pub fn to_action(key: &KeyEvent) -> Option<TerminalAction> {
     match key.code {
         KeyCode::Enter => Some(TerminalAction::Run),
         KeyCode::Backspace => Some(TerminalAction::InputSub),
@@ -22,7 +22,7 @@ fn from_char(symbol: char, is_ctrl: bool) -> Option<TerminalAction> {
     }
 }
 
-enum TerminalAction {
+pub enum TerminalAction {
     Run,
     Exit,
     HistoryNext,
