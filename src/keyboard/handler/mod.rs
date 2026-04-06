@@ -27,6 +27,3 @@ enum InteractiveAction {
     RemoveInput(usize),
     Exit,
 }
-
-// let handled_key = HandledKey::new(previous, current);
-// handled_key.iter().next() -> &InteractiveAction
