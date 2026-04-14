@@ -1,6 +1,6 @@
 use crossterm::event::KeyEvent;
 
-struct State {
+pub struct State {
     previous_key: Option<KeyEvent>,
 }
 
