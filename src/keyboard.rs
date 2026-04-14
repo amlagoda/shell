@@ -13,13 +13,15 @@ pub fn to_action(key: &KeyEvent) -> Option<TerminalAction> {
 }
 
 fn from_char(symbol: char, is_ctrl: bool) -> Option<TerminalAction> {
-    if symbol == 'c' && is_ctrl {
-        Some(TerminalAction::Exit)
+    let action = if symbol == 'c' && is_ctrl {
+        TerminalAction::Exit
     } else if symbol == 'j' && is_ctrl {
-        Some(TerminalAction::Run)
+        TerminalAction::Run
     } else {
-        Some(TerminalAction::InputAdd(symbol))
-    }
+        TerminalAction::InputAdd(symbol)
+    };
+
+    Some(action)
 }
 
 pub enum TerminalAction {
