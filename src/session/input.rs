@@ -11,15 +11,15 @@ impl Input {
         }
     }
 
-    fn data(&self) -> &str {
+    pub fn data(&self) -> &str {
         self.data.as_str()
     }
 
-    fn has_user_typing(&self) -> bool {
+    pub fn has_user_typing(&self) -> bool {
         self.has_user_typing
     }
 
-    fn push(&mut self, data: &str, is_user_typing: bool) {
+    pub fn push(&mut self, data: &str, is_user_typing: bool) {
         self.data.push_str(data);
 
         if is_user_typing {
@@ -27,12 +27,12 @@ impl Input {
         }
     }
 
-    fn remove_last(&mut self, len: usize) {
-        if len == 0 || self.data.is_empty() {
+    pub fn remove_last(&mut self, count: usize) {
+        if count == 0 || self.data.is_empty() {
             return;
         }
 
-        if len >= self.data.len() {
+        if count >= self.data.len() {
             self.data = String::new();
             self.has_user_typing = false;
             return;
@@ -41,11 +41,11 @@ impl Input {
         self.data = self
             .data
             .chars()
-            .take(self.data.chars().count() - len)
+            .take(self.data.chars().count() - count)
             .collect();
     }
 
-    fn clear(&mut self) {
+    pub fn clear(&mut self) {
         self.data = String::new();
         self.has_user_typing = false;
     }
