@@ -1,30 +1,27 @@
-mod input;
+mod keyboard;
+mod terminal;
 
-use crate::session::input::Input;
-use crossterm::event::KeyEvent;
+use crate::session::keyboard::Keyboard;
+use crate::session::terminal::Terminal;
 
 pub struct State {
-    previous_key: Option<KeyEvent>,
-    input: Input,
+    keyboard: Keyboard,
+    terminal: Terminal,
 }
 
 impl State {
     pub fn new() -> State {
         State {
-            previous_key: None,
-            input: Input::new(),
+            keyboard: Keyboard::new(),
+            terminal: Terminal::new(),
         }
     }
 
-    pub fn previous_key(&self) -> Option<&KeyEvent> {
-        self.previous_key.as_ref()
+    pub fn keyboard(&mut self) -> &mut Keyboard {
+        &mut self.keyboard
     }
 
-    pub fn set_previous_key(&mut self, key: KeyEvent) {
-        self.previous_key = Some(key)
-    }
-
-    pub fn input(&mut self) -> &mut Input {
-        &mut self.input
+    pub fn terminal(&mut self) -> &mut Terminal {
+        &mut self.terminal
     }
 }
