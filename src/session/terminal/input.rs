@@ -33,17 +33,14 @@ impl Input {
             return;
         }
 
-        if count >= self.data.len() {
-            self.data = String::new();
-            self.has_user_typing = false;
-            return;
-        }
+        let len = self.data.len();
 
-        self.data = self
-            .data
-            .chars()
-            .take(self.data.chars().count() - count)
-            .collect();
+        if count >= len {
+            self.data.clear();
+            self.has_user_typing = false;
+        } else {
+            self.data.truncate(len - count);
+        }
     }
 
     pub fn reset(&mut self) {
