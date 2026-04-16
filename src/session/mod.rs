@@ -1,8 +1,8 @@
 mod keyboard;
 mod terminal;
 
-use crate::session::keyboard::Keyboard;
-use crate::session::terminal::Terminal;
+use self::keyboard::Keyboard;
+use self::terminal::Terminal;
 
 pub struct State {
     keyboard: Keyboard,

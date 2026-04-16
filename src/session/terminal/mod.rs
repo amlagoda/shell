@@ -1,6 +1,6 @@
 mod input;
 
-use crate::session::terminal::input::Input;
+use self::input::Input;
 
 pub struct Terminal {
     input: Input,
