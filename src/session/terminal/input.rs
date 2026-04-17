@@ -11,8 +11,12 @@ impl Input {
         }
     }
 
-    pub fn get(&self) -> &str {
-        self.data.as_str()
+    pub fn get(&self) -> Option<&str> {
+        if self.data.is_empty() {
+            None
+        } else {
+            Some(self.data.as_str())
+        }
     }
 
     pub fn has_user_typing(&self) -> bool {
@@ -58,32 +62,32 @@ mod tests {
         let mut input = Input::new();
 
         input.push_as_system("a");
-        assert_eq!("a", input.get());
+        assert_eq!(Some("a"), input.get());
         assert_eq!(false, input.has_user_typing());
 
         input.push_as_user("b");
-        assert_eq!("ab", input.get());
+        assert_eq!(Some("ab"), input.get());
         assert_eq!(true, input.has_user_typing());
 
         input.push_as_system("c");
-        assert_eq!("abc", input.get());
+        assert_eq!(Some("abc"), input.get());
         assert_eq!(true, input.has_user_typing());
 
         input.remove_last(0);
-        assert_eq!("abc", input.get());
+        assert_eq!(Some("abc"), input.get());
         assert_eq!(true, input.has_user_typing());
 
         input.remove_last(1);
-        assert_eq!("ab", input.get());
+        assert_eq!(Some("ab"), input.get());
         assert_eq!(true, input.has_user_typing());
 
         input.remove_last(2);
-        assert_eq!("", input.get());
+        assert_eq!(None, input.get());
         assert_eq!(false, input.has_user_typing());
 
         input.push_as_user("abc");
         input.reset();
-        assert_eq!("", input.get());
+        assert_eq!(None, input.get());
         assert_eq!(false, input.has_user_typing());
     }
 }
