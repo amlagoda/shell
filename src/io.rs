@@ -1,4 +1,5 @@
 use std::fs::File;
+use std::os::fd::FromRawFd;
 
 pub struct Stdio {
     stdin: File,
@@ -7,7 +8,17 @@ pub struct Stdio {
 }
 
 impl Stdio {
-    pub fn new(stdin: File, stdout: File, stderr: File) -> Stdio {
+    pub fn new() -> Stdio {
+        unsafe {
+            Stdio {
+                stdin: File::from_raw_fd(0),
+                stdout: File::from_raw_fd(0),
+                stderr: File::from_raw_fd(0),
+            }
+        }
+    }
+
+    pub fn from(stdin: File, stdout: File, stderr: File) -> Stdio {
         Stdio {
             stdin,
             stdout,

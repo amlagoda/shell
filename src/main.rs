@@ -26,13 +26,7 @@ mod session;
 mod structure;
 
 fn main() -> Result<(), Error> {
-    let mut stdio = unsafe {
-        Stdio::new(
-            File::from_raw_fd(0),
-            File::from_raw_fd(1),
-            File::from_raw_fd(2),
-        )
-    };
+    let mut stdio = Stdio::new();
     let mut state = State::new();
     let mut log = Log::new();
     let path = split_env_path()?;
