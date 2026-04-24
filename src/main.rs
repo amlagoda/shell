@@ -28,9 +28,9 @@ mod structure;
 fn main() -> Result<(), Error> {
     let mut stdio = unsafe {
         Stdio::new(
-            File::from_raw_fd(stdin().as_raw_fd()),
-            File::from_raw_fd(stdout().as_raw_fd()),
-            File::from_raw_fd(stderr().as_raw_fd()),
+            File::from_raw_fd(0),
+            File::from_raw_fd(1),
+            File::from_raw_fd(2),
         )
     };
     let mut state = State::new();
