@@ -11,8 +11,8 @@ pub fn handle(handled_key: &mut HandledKey, key: &KeyEvent, r: char) {
         handled_key.is_enter = true;
         handled_key.has_user_typing = false;
     } else {
-        handled_key.input.push(r);
-        handled_key.to_print = Some(r.to_string());
-        handled_key.has_user_typing = true;
+        // handled_key.input.push(r);
+        // handled_key.to_print = Some(r.to_string());
+        // handled_key.has_user_typing = true;
     }
 }

@@ -1,10 +1,12 @@
 use crate::command::get_command_list;
-use crate::core::run;
-use crate::env::{get_args, get_history_log_path, split_env_path};
+use crate::env::{get_args, get_current_dir, get_history_log_path, split_env_path};
 use crate::history::{download as download_log, upload as upload_log, Log};
 use crate::io::Stdio;
-use crate::keyboard::handle_key;
+// use crate::keyboard::handle_key;
+use crate::control::run;
+use crate::keyboard::to_action;
 use crate::parser::parse;
+use crate::session::State;
 use crossterm::cursor::MoveLeft;
 use crossterm::event::{read, KeyEvent};
 use crossterm::execute;
@@ -15,7 +17,9 @@ use std::os::fd::{AsRawFd, FromRawFd};
 
 mod command;
 mod complete;
+mod control;
 mod core;
+mod cursor;
 mod env;
 mod fs;
 mod history;
@@ -23,6 +27,7 @@ mod io;
 mod keyboard;
 mod parser;
 mod process;
+mod session;
 mod structure;
 
 fn main() -> Result<(), Error> {
@@ -33,7 +38,7 @@ fn main() -> Result<(), Error> {
             File::from_raw_fd(stderr().as_raw_fd()),
         )
     };
-
+    let mut state = State::new();
     let mut log = Log::new();
     let path = split_env_path()?;
     let bin_paths = path.iter().map(|r| r.as_str()).collect();
@@ -44,16 +49,21 @@ fn main() -> Result<(), Error> {
     }
 
     if args.is_empty() {
-        run_interactive(&mut stdio, &mut log, &bin_paths)
+        run_interactive(&mut state, &mut stdio, &mut log, &bin_paths)
     } else {
         run_command(args.join(" "), &mut stdio, &mut log, &bin_paths)
     }
 }
 
-fn run_interactive(stdio: &mut Stdio, log: &mut Log, bin_paths: &Vec<&str>) -> Result<(), Error> {
-    let mut input = String::new();
-    let mut previous_key: Option<KeyEvent> = None;
-    let mut has_user_typing = false;
+fn run_interactive(
+    state: &mut State,
+    stdio: &mut Stdio,
+    log: &mut Log,
+    bin_paths: &Vec<&str>,
+) -> Result<(), Error> {
+    // let mut input = String::new();
+    // let mut previous_key: Option<KeyEvent> = None;
+    // let mut has_user_typing = false;
 
     enable_raw_mode()?;
     write!(stdio.stdout(), "\r$ ")?;
@@ -68,6 +78,23 @@ fn run_interactive(stdio: &mut Stdio, log: &mut Log, bin_paths: &Vec<&str>) -> R
         }
 
         let r = get_command_list();
+        let commands = r.iter().map(|r| r.as_str()).collect();
+
+        let is_exit = run(
+            &key.unwrap(),
+            state,
+            stdio,
+            log,
+            &commands,
+            bin_paths,
+            get_current_dir().as_str(),
+        )?;
+
+        if is_exit {
+            break;
+        }
+
+        /*let r = get_command_list();
         let commands = r.iter().map(|r| r.as_str()).collect();
 
         let handled_key = handle_key(
@@ -127,7 +154,7 @@ fn run_interactive(stdio: &mut Stdio, log: &mut Log, bin_paths: &Vec<&str>) -> R
                 upload_log(log, file_path.as_str(), false)?;
             }
             break;
-        }
+        }*/
     }
 
     disable_raw_mode()?;
@@ -141,11 +168,11 @@ fn run_command(
     log: &mut Log,
     bin_paths: &Vec<&str>,
 ) -> Result<(), Error> {
-    if let Some(parseds) = parse(input.as_str())? {
-        let parseds = parseds.iter().collect();
-        let output_starts_newline = false;
-        run(&parseds, stdio, log, bin_paths, output_starts_newline)?;
-    }
+    // if let Some(parseds) = parse(input.as_str())? {
+    //     let parseds = parseds.iter().collect();
+    //     let output_starts_newline = false;
+    //     run(&parseds, stdio, log, bin_paths, output_starts_newline)?;
+    // }
 
     Ok(())
 }
