@@ -20,6 +20,8 @@ pub fn handle(
         return Ok(false);
     }
 
+    write!(stdio.stdout(), "\r")?;
+    stdio.stdout().flush()?;
     disable_raw_mode()?;
 
     let parseds = parse(input.unwrap())?.unwrap();
