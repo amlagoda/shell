@@ -22,7 +22,10 @@ pub fn handle(
     };
 
     if let Some(command) = command {
-        cursor_move_left(stdio.stdout(), input.get().unwrap().len() as u16)?;
+        if let Some(data) = input.get() {
+            cursor_move_left(stdio.stdout(), data.len() as u16)?;
+        }
+
         write!(stdio.stdout(), "{}", command)?;
 
         input.reset();
