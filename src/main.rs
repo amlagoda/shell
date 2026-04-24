@@ -6,9 +6,7 @@ use crate::io::Stdio;
 use crate::session::State;
 use crossterm::event::read;
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
-use std::fs::File;
-use std::io::{stderr, stdin, stdout, Error, Write};
-use std::os::fd::{AsRawFd, FromRawFd};
+use std::io::{Error, Write};
 
 mod command;
 mod complete;
