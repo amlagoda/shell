@@ -28,7 +28,10 @@ pub fn run(
 
     match action.unwrap() {
         TerminalAction::Command => is_exit = command(stdio, state, log, bin_paths)?,
-        TerminalAction::Exit => is_exit = true,
+        TerminalAction::Exit => {
+            exit(stdio)?;
+            is_exit = true;
+        }
         TerminalAction::HistoryNext => history(&HistoryDirection::Next, state, stdio, log)?,
         TerminalAction::HistoryPrev => history(&HistoryDirection::Prev, state, stdio, log)?,
         TerminalAction::InputAdd(symbol) => input_add(symbol.to_string().as_str(), state, stdio)?,
