@@ -81,6 +81,8 @@ fn run_interactive(
             get_current_dir().as_str(),
         )?;
 
+        state.keyboard().set_previous_key(key.unwrap());
+
         if is_exit {
             break;
         }
