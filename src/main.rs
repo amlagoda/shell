@@ -27,22 +27,23 @@ fn main() -> Result<(), Error> {
     let mut stdio = Stdio::new();
     let mut state = State::new();
     let mut log = Log::new();
-    let path = split_env_path()?;
-    let bin_paths = path.iter().map(|r| r.as_str()).collect();
+
+    let bin_paths = split_env_path()?;
+    let bin_paths = bin_paths.iter().map(|r| r.as_str()).collect();
     let args = get_args();
 
-    if let Some(file_path) = get_history_log_path() {
-        download_log(&mut log, file_path.as_str())?;
+    if let Some(path) = get_history_log_path() {
+        download_log(&mut log, path.as_str())?;
     }
 
     if args.is_empty() {
-        interactive_mode(&mut state, &mut stdio, &mut log, &bin_paths)
+        mode_interactive(&mut state, &mut stdio, &mut log, &bin_paths)
     } else {
-        command_mode(args.join(" "), &mut stdio, &mut log, &bin_paths)
+        mode_command(args.join(" "), &mut stdio, &mut log, &bin_paths)
     }
 }
 
-fn interactive_mode(
+fn mode_interactive(
     state: &mut State,
     stdio: &mut Stdio,
     log: &mut Log,
@@ -87,7 +88,7 @@ fn interactive_mode(
     Ok(())
 }
 
-fn command_mode(
+fn mode_command(
     input: String,
     stdio: &mut Stdio,
     log: &mut Log,
