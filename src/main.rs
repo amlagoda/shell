@@ -4,7 +4,7 @@ use crate::env::{get_args, get_current_dir, get_history_log_path, split_env_path
 use crate::history::{download as download_history_log, History};
 use crate::io::Stdio;
 use crate::session::State;
-use crossterm::event::read;
+use crossterm::event::read as read_key;
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 use std::io::{Error, Write};
 
@@ -54,29 +54,28 @@ fn mode_interactive(
     stdio.stdout().flush()?;
 
     loop {
-        let r = read()?;
-        let key = r.as_key_event();
+        let pressed_key = read_key()?.as_key_event();
 
-        if key.is_none() {
+        if pressed_key.is_none() {
             continue;
         }
 
-        let r = get_command_list();
-        let commands = r.iter().map(|r| r.as_str()).collect();
+        let available_commands = get_command_list();
+        let available_commands = available_commands.iter().map(|r| r.as_str()).collect();
         let output_starts_newline = true;
 
         let is_exit = run_interactive(
-            &key.unwrap(),
+            &pressed_key.unwrap(),
             state,
             stdio,
             history,
-            &commands,
+            &available_commands,
             bin_paths,
             get_current_dir().as_str(),
             output_starts_newline,
         )?;
 
-        state.keyboard().set_previous_key(key.unwrap());
+        state.keyboard().set_previous_key(pressed_key.unwrap());
 
         if is_exit {
             break;
