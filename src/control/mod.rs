@@ -3,6 +3,7 @@ mod handler;
 use crate::control::handler::{
     command, exit, history as history_get, input_add, input_complete, input_sub, HistoryDirection,
 };
+use crate::fmt::NewLine;
 use crate::history::History;
 use crate::io::Stdio;
 use crate::keyboard::{to_action, TerminalAction};
@@ -15,10 +16,10 @@ pub fn run_interactive(
     state: &mut State,
     stdio: &mut Stdio,
     history: &mut History,
+    newline: &NewLine,
     commands: &Vec<&str>,
     bin_paths: &Vec<&str>,
     current_dir: &str,
-    output_starts_newline: bool,
 ) -> Result<bool, Error> {
     let mut is_exit = false;
     let action = to_action(key);
@@ -28,9 +29,7 @@ pub fn run_interactive(
     }
 
     match action.unwrap() {
-        TerminalAction::Command => {
-            is_exit = command(stdio, state, history, bin_paths, output_starts_newline)?
-        }
+        TerminalAction::Command => is_exit = command(stdio, state, history, newline, bin_paths)?,
 
         TerminalAction::Exit => {
             exit(stdio)?;
@@ -52,8 +51,8 @@ pub fn run_command(
     state: &mut State,
     stdio: &mut Stdio,
     history: &mut History,
+    newline: &NewLine,
     bin_paths: &Vec<&str>,
-    output_starts_newline: bool,
 ) -> Result<bool, Error> {
-    command(stdio, state, history, bin_paths, output_starts_newline)
+    command(stdio, state, history, newline, bin_paths)
 }

@@ -1,5 +1,6 @@
 use crate::core::run;
 use crate::env::get_history_log_path;
+use crate::fmt::NewLine;
 use crate::history::{upload as upload_log, History};
 use crate::io::Stdio;
 use crate::parser::parse;
@@ -12,8 +13,8 @@ pub fn handle(
     stdio: &mut Stdio,
     state: &mut State,
     history: &mut History,
+    newline: &NewLine,
     bin_paths: &Vec<&str>,
-    output_starts_newline: bool,
 ) -> Result<bool, Error> {
     let input = state.terminal().input().get();
 
@@ -31,8 +32,8 @@ pub fn handle(
         &parseds.iter().collect(),
         stdio,
         history,
+        newline,
         bin_paths,
-        output_starts_newline,
     )?;
 
     enable_raw_mode()?;

@@ -21,8 +21,8 @@ pub fn run(
     parseds: &Vec<&Parsed>,
     stdio: &mut Stdio,
     history: &mut History,
+    newline: &NewLine,
     bin_paths: &Vec<&str>,
-    output_starts_newline: bool,
 ) -> Result<bool, Error> {
     let len = parseds.len();
 
@@ -43,13 +43,7 @@ pub fn run(
             if !builtin.is_blocking() {
                 // native run single, builtin and non-blocking command
                 // does not control the "exit"
-                run_native(
-                    parsed,
-                    stdio,
-                    history,
-                    Some(bin_paths),
-                    output_starts_newline,
-                )?;
+                run_native(parsed, stdio, history, newline, Some(bin_paths))?;
                 return Ok(false);
             }
         }
@@ -57,7 +51,7 @@ pub fn run(
 
     // other commands run as forks
     // control the "exit"
-    run_forks(parseds, stdio, history, bin_paths, output_starts_newline)
+    run_forks(parseds, stdio, history, newline, bin_paths)
 }
 
 fn to_history(parseds: &Vec<&Parsed>, history: &mut History) {
@@ -80,8 +74,8 @@ fn run_native(
     parsed: &Parsed,
     stdio: &mut Stdio,
     history: &mut History,
+    newline: &NewLine,
     bin_paths: Option<&Vec<&str>>,
-    output_starts_newline: bool,
 ) -> Result<(), Error> {
     let builtin = to_builtin(parsed.command()).ok_or(Error::other("not builtin"))?;
     let args = parsed.args();
@@ -115,19 +109,15 @@ fn run_native(
         );
     }
 
-    let mut newline = NewLine::new();
-    newline.set_stdout_start(output_starts_newline);
-    newline.set_stderr_start(output_starts_newline);
-
-    run_builtin(&builtin, args.as_ref(), stdio, history, &newline, bin_paths)
+    run_builtin(&builtin, args.as_ref(), stdio, history, newline, bin_paths)
 }
 
 fn run_forks(
     parseds: &Vec<&Parsed>,
     stdio: &mut Stdio,
     history: &mut History,
+    newline: &NewLine,
     bin_paths: &Vec<&str>,
-    output_starts_newline: bool,
 ) -> Result<bool, Error> {
     let mut pipeline_stderr = create_pipe()?;
     let mut pipelines_stdout = mass_create_pipes(count_pipes(parseds))?;
@@ -288,13 +278,8 @@ fn run_forks(
                 }
             }
         } else {
-            let msg = format!("{}: command not found", command);
-            if output_starts_newline {
-                write!(stdio.stderr(), "\r\n{}", msg)?;
-            } else {
-                write!(stdio.stderr(), "{}", msg)?;
-            }
-
+            let msg = format!("{}{}: command not found", newline.stderr_start(), command);
+            write!(stdio.stderr(), "{}", msg)?;
             stdio.stderr().flush()?;
         }
 
@@ -329,10 +314,12 @@ fn run_forks(
 
     let memory_ordering = Ordering::Relaxed;
     let mut handlers: Vec<JoinHandle<Result<(), Error>>> = vec![];
+    let skip_first_newline = newline.stdout_start().is_empty();
+
     for (from, to, proceed) in datasets.unwrap() {
         // required transfer ownership
         handlers.push(spawn(move || {
-            transfer_data(from, to, proceed, !output_starts_newline, memory_ordering)
+            transfer_data(from, to, proceed, skip_first_newline, memory_ordering)
         }));
     }
 
