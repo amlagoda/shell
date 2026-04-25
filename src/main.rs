@@ -39,7 +39,10 @@ fn main() -> Result<(), Error> {
     if args.is_empty() {
         mode_interactive(&mut state, &mut stdio, &mut history, &bin_paths)
     } else {
-        mode_command(args.join(" "), &mut stdio, &mut history, &bin_paths)
+        let input = args.join(" ");
+        state.terminal().input().push_as_system(input.as_str());
+
+        mode_command(&mut state, &mut stdio, &mut history, &bin_paths)
     }
 }
 
@@ -88,15 +91,13 @@ fn mode_interactive(
 }
 
 fn mode_command(
-    input: String,
+    state: &mut State,
     stdio: &mut Stdio,
     history: &mut History,
     bin_paths: &Vec<&str>,
 ) -> Result<(), Error> {
-    let mut state = State::new();
-    state.terminal().input().push_as_system(input.as_str());
     let output_starts_newline = false;
-    run_command(&mut state, stdio, history, bin_paths, output_starts_newline)?;
+    run_command(state, stdio, history, bin_paths, output_starts_newline)?;
 
     Ok(())
 }
