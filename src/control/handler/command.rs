@@ -13,6 +13,7 @@ pub fn handle(
     state: &mut State,
     log: &mut Log,
     bin_paths: &Vec<&str>,
+    output_starts_newline: bool,
 ) -> Result<bool, Error> {
     let input = state.terminal().input().get();
 
@@ -25,7 +26,6 @@ pub fn handle(
     disable_raw_mode()?;
 
     let parseds = parse(input.unwrap())?.unwrap();
-    let output_starts_newline = true;
 
     let mut is_exit = run(
         &parseds.iter().collect(),

@@ -10,7 +10,7 @@ use crate::session::State;
 use crossterm::event::KeyEvent;
 use std::io::Error;
 
-pub fn run(
+pub fn run_interactive(
     key: &KeyEvent,
     state: &mut State,
     stdio: &mut Stdio,
@@ -18,6 +18,7 @@ pub fn run(
     commands: &Vec<&str>,
     bin_paths: &Vec<&str>,
     current_dir: &str,
+    output_starts_newline: bool,
 ) -> Result<bool, Error> {
     let mut is_exit = false;
     let action = to_action(key);
@@ -27,7 +28,10 @@ pub fn run(
     }
 
     match action.unwrap() {
-        TerminalAction::Command => is_exit = command(stdio, state, log, bin_paths)?,
+        TerminalAction::Command => {
+            is_exit = command(stdio, state, log, bin_paths, output_starts_newline)?
+        }
+
         TerminalAction::Exit => {
             exit(stdio)?;
             is_exit = true;
@@ -42,4 +46,14 @@ pub fn run(
     };
 
     Ok(is_exit)
+}
+
+pub fn run_command(
+    state: &mut State,
+    stdio: &mut Stdio,
+    log: &mut Log,
+    bin_paths: &Vec<&str>,
+    output_starts_newline: bool,
+) -> Result<bool, Error> {
+    command(stdio, state, log, bin_paths, output_starts_newline)
 }

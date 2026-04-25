@@ -1,5 +1,5 @@
 use crate::command::get_command_list;
-use crate::control::run;
+use crate::control::{run_command, run_interactive};
 use crate::env::{get_args, get_current_dir, get_history_log_path, split_env_path};
 use crate::history::{download as download_log, Log};
 use crate::io::Stdio;
@@ -36,13 +36,13 @@ fn main() -> Result<(), Error> {
     }
 
     if args.is_empty() {
-        run_interactive(&mut state, &mut stdio, &mut log, &bin_paths)
+        interactive_mode(&mut state, &mut stdio, &mut log, &bin_paths)
     } else {
-        run_command(args.join(" "), &mut stdio, &mut log, &bin_paths)
+        command_mode(args.join(" "), &mut stdio, &mut log, &bin_paths)
     }
 }
 
-fn run_interactive(
+fn interactive_mode(
     state: &mut State,
     stdio: &mut Stdio,
     log: &mut Log,
@@ -62,8 +62,9 @@ fn run_interactive(
 
         let r = get_command_list();
         let commands = r.iter().map(|r| r.as_str()).collect();
+        let output_starts_newline = true;
 
-        let is_exit = run(
+        let is_exit = run_interactive(
             &key.unwrap(),
             state,
             stdio,
@@ -71,6 +72,7 @@ fn run_interactive(
             &commands,
             bin_paths,
             get_current_dir().as_str(),
+            output_starts_newline,
         )?;
 
         state.keyboard().set_previous_key(key.unwrap());
@@ -85,17 +87,16 @@ fn run_interactive(
     Ok(())
 }
 
-fn run_command(
+fn command_mode(
     input: String,
     stdio: &mut Stdio,
     log: &mut Log,
     bin_paths: &Vec<&str>,
 ) -> Result<(), Error> {
-    // if let Some(parseds) = parse(input.as_str())? {
-    //     let parseds = parseds.iter().collect();
-    //     let output_starts_newline = false;
-    //     run(&parseds, stdio, log, bin_paths, output_starts_newline)?;
-    // }
+    let mut state = State::new();
+    state.terminal().input().push_as_system(input.as_str());
+    let output_starts_newline = false;
+    run_command(&mut state, stdio, log, bin_paths, output_starts_newline)?;
 
     Ok(())
 }
