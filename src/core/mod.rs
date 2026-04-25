@@ -12,7 +12,7 @@ use crate::parser::Parsed;
 use crate::process::{kill_forks, pid, to_group, Fork};
 use std::fs::File;
 use std::io::{Error, Write};
-use std::os::fd::{AsRawFd, FromRawFd, IntoRawFd};
+use std::os::fd::{AsRawFd, IntoRawFd};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::thread::{spawn, JoinHandle};
@@ -202,14 +202,7 @@ fn run_forks(
                 pipeline_stderr.close();
 
                 if let Some(builtin) = to_builtin(command) {
-                    let mut stdio = unsafe {
-                        Stdio::from(
-                            File::from_raw_fd(0),
-                            File::from_raw_fd(1),
-                            File::from_raw_fd(2),
-                        )
-                    };
-
+                    let mut stdio = Stdio::new();
                     let mut newline = NewLine::new();
                     newline.set_stdout_end(true);
                     newline.set_stderr_end(true);

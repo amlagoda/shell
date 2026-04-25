@@ -6,9 +6,7 @@ use crate::io::Stdio;
 use crate::session::State;
 use crossterm::event::read;
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
-use std::fs::File;
-use std::io::{stderr, stdin, stdout, Error, Write};
-use std::os::fd::{AsRawFd, FromRawFd};
+use std::io::{Error, Write};
 
 mod command;
 mod complete;
@@ -26,13 +24,7 @@ mod session;
 mod structure;
 
 fn main() -> Result<(), Error> {
-    let mut stdio = unsafe {
-        Stdio::from(
-            File::from_raw_fd(0),
-            File::from_raw_fd(1),
-            File::from_raw_fd(2),
-        )
-    };
+    let mut stdio = Stdio::new();
     let mut state = State::new();
     let mut log = Log::new();
     let path = split_env_path()?;
