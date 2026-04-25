@@ -1,8 +1,8 @@
 use crate::fs::{get_read_file, get_write_file};
-use crate::history::Log;
+use crate::history::History;
 use std::io::{BufRead, BufReader, BufWriter, Error, ErrorKind, Write};
 
-pub fn download(log: &mut Log, file_path: &str) -> Result<(), Error> {
+pub fn download(history: &mut History, file_path: &str) -> Result<(), Error> {
     let err = Error::new(ErrorKind::NotFound, "No such file or directory");
     let file = get_read_file(file_path).map_err(|_| err)?;
     let buffer = BufReader::with_capacity(4096, file);
@@ -12,31 +12,31 @@ pub fn download(log: &mut Log, file_path: &str) -> Result<(), Error> {
         loaded.push(line?);
 
         if loaded.len() == 50 {
-            log.add(loaded.drain(..).collect()); // not mem::take to save capacity
+            history.add(loaded.drain(..).collect()); // not mem::take to save capacity
         }
     }
 
     if !loaded.is_empty() {
-        log.add(loaded);
+        history.add(loaded);
     }
 
     Ok(())
 }
 
-pub fn upload(log: &mut Log, file_path: &str, append: bool) -> Result<(), Error> {
+pub fn upload(history: &mut History, file_path: &str, append: bool) -> Result<(), Error> {
     let previous_index = if append {
-        log.get_upload_index(file_path)
+        history.get_upload_index(file_path)
     } else {
         None
     };
 
-    let (count, new_index) = upload_numbers(previous_index, log.len());
+    let (count, new_index) = upload_numbers(previous_index, history.len());
 
     if new_index.is_none() {
         return Ok(());
     }
 
-    let (records, _) = log.lasts(count);
+    let (records, _) = history.lasts(count);
     let mut file = get_write_file(file_path, append)?;
     let mut buffer = BufWriter::with_capacity(4096, &mut file);
 
@@ -45,7 +45,7 @@ pub fn upload(log: &mut Log, file_path: &str, append: bool) -> Result<(), Error>
     }
 
     buffer.flush()?;
-    log.set_upload_index(file_path, new_index.unwrap());
+    history.set_upload_index(file_path, new_index.unwrap());
 
     Ok(())
 }

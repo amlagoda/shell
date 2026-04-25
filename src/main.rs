@@ -1,7 +1,7 @@
 use crate::command::get_command_list;
 use crate::control::{run_command, run_interactive};
 use crate::env::{get_args, get_current_dir, get_history_log_path, split_env_path};
-use crate::history::{download as download_log, Log};
+use crate::history::{download as download_log, History};
 use crate::io::Stdio;
 use crate::session::State;
 use crossterm::event::read;
@@ -26,27 +26,27 @@ mod structure;
 fn main() -> Result<(), Error> {
     let mut stdio = Stdio::new();
     let mut state = State::new();
-    let mut log = Log::new();
+    let mut history = History::new();
 
     let bin_paths = split_env_path()?;
     let bin_paths = bin_paths.iter().map(|r| r.as_str()).collect();
     let args = get_args();
 
     if let Some(path) = get_history_log_path() {
-        download_log(&mut log, path.as_str())?;
+        download_log(&mut history, path.as_str())?;
     }
 
     if args.is_empty() {
-        mode_interactive(&mut state, &mut stdio, &mut log, &bin_paths)
+        mode_interactive(&mut state, &mut stdio, &mut history, &bin_paths)
     } else {
-        mode_command(args.join(" "), &mut stdio, &mut log, &bin_paths)
+        mode_command(args.join(" "), &mut stdio, &mut history, &bin_paths)
     }
 }
 
 fn mode_interactive(
     state: &mut State,
     stdio: &mut Stdio,
-    log: &mut Log,
+    history: &mut History,
     bin_paths: &Vec<&str>,
 ) -> Result<(), Error> {
     enable_raw_mode()?;
@@ -69,7 +69,7 @@ fn mode_interactive(
             &key.unwrap(),
             state,
             stdio,
-            log,
+            history,
             &commands,
             bin_paths,
             get_current_dir().as_str(),
@@ -91,13 +91,13 @@ fn mode_interactive(
 fn mode_command(
     input: String,
     stdio: &mut Stdio,
-    log: &mut Log,
+    history: &mut History,
     bin_paths: &Vec<&str>,
 ) -> Result<(), Error> {
     let mut state = State::new();
     state.terminal().input().push_as_system(input.as_str());
     let output_starts_newline = false;
-    run_command(&mut state, stdio, log, bin_paths, output_starts_newline)?;
+    run_command(&mut state, stdio, history, bin_paths, output_starts_newline)?;
 
     Ok(())
 }

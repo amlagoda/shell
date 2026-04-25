@@ -4,14 +4,14 @@ mod valid;
 use crate::command::fmt::NewLine;
 use crate::command::registry::history::load::Loader;
 use crate::command::registry::history::valid::validate;
-use crate::history::{download as download_log, upload as upload_log, Log};
+use crate::history::{download as download_log, upload as upload_log, History};
 use crate::io::Stdio;
 use std::io::{BufWriter, Error, ErrorKind, Write};
 
 pub fn run_command(
     stdio: &mut Stdio,
     newline: &NewLine,
-    log: &mut Log,
+    history: &mut History,
     args: Option<&Vec<&str>>,
 ) -> Result<(), Error> {
     let validated = validate(args);
@@ -33,20 +33,20 @@ pub fn run_command(
     let validated = validated.unwrap();
 
     if let Some(loaders) = validated.get_loaders() {
-        load_mode(stdio, newline, log, loaders)
+        load_mode(stdio, newline, history, loaders)
     } else {
-        print_mode(stdio, newline, log, validated.get_count())
+        print_mode(stdio, newline, history, validated.get_count())
     }
 }
 
 fn print_mode(
     stdio: &mut Stdio,
     newline: &NewLine,
-    log: &mut Log,
+    history: &mut History,
     count: Option<usize>,
 ) -> Result<(), Error> {
-    let (records, len) = log.lasts(count);
-    let mut num = log.len() - len;
+    let (records, len) = history.lasts(count);
+    let mut num = history.len() - len;
     let mut buffer = BufWriter::with_capacity(4096, stdio.stdout());
 
     for (mut iter, command) in records.enumerate() {
@@ -76,15 +76,15 @@ fn print_mode(
 fn load_mode(
     stdio: &mut Stdio,
     newline: &NewLine,
-    log: &mut Log,
+    history: &mut History,
     loaders: Vec<&Loader>,
 ) -> Result<(), Error> {
     for loader in loaders {
         if loader.is_download() {
-            download(stdio, newline, log, loader.get_file_path())?;
+            download(stdio, newline, history, loader.get_file_path())?;
         } else {
             // is upload
-            upload_log(log, loader.get_file_path(), loader.is_upload_append())?;
+            upload_log(history, loader.get_file_path(), loader.is_upload_append())?;
         }
     }
 
@@ -94,7 +94,7 @@ fn load_mode(
 fn download(
     stdio: &mut Stdio,
     newline: &NewLine,
-    log: &mut Log,
+    history: &mut History,
     file_path: &str,
 ) -> Result<(), Error> {
     let msg = format!(
@@ -104,7 +104,7 @@ fn download(
         newline.stderr_end()
     );
 
-    let download = download_log(log, file_path);
+    let download = download_log(history, file_path);
 
     if download.is_ok() {
         return Ok(());

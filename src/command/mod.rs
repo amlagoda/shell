@@ -9,7 +9,7 @@ use crate::command::registry::pwd::run_command as run_command_pwd;
 use crate::command::registry::r#type::run_command as run_command_type;
 use crate::command::registry::yes::run_command as run_command_yes;
 use crate::command::registry::Builtin;
-use crate::history::Log;
+use crate::history::History;
 use crate::Stdio;
 use std::io::Error;
 
@@ -21,14 +21,14 @@ pub fn run_command(
     command: &Builtin,
     args: Option<&Vec<&str>>,
     stdio: &mut Stdio,
-    log: &mut Log,
+    history: &mut History,
     newline: &NewLine,
     bin_paths: Option<&Vec<&str>>,
 ) -> Result<(), Error> {
     match command {
         Builtin::Cd => run_command_cd(stdio, newline, args),
         Builtin::Echo => run_command_echo(stdio, newline, args),
-        Builtin::History => run_command_history(stdio, newline, log, args),
+        Builtin::History => run_command_history(stdio, newline, history, args),
         Builtin::Exit => Ok(()),
         Builtin::Pwd => run_command_pwd(stdio, newline),
         Builtin::Type => run_command_type(stdio, newline, bin_paths, args),

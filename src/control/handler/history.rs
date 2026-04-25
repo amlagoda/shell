@@ -1,5 +1,5 @@
 use crate::cursor::move_left as cursor_move_left;
-use crate::history::Log;
+use crate::history::History;
 use crate::io::Stdio;
 use crate::session::State;
 use std::io::{Error, Write};
@@ -8,7 +8,7 @@ pub fn handle(
     direction: &Direction,
     state: &mut State,
     stdio: &mut Stdio,
-    log: &mut Log,
+    history: &mut History,
 ) -> Result<(), Error> {
     let input = state.terminal().input();
 
@@ -17,8 +17,8 @@ pub fn handle(
     }
 
     let command = match direction {
-        Direction::Next => log.next(),
-        Direction::Prev => log.prev(),
+        Direction::Next => history.next(),
+        Direction::Prev => history.prev(),
     };
 
     if let Some(command) = command {

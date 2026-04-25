@@ -1,9 +1,9 @@
 mod handler;
 
 use crate::control::handler::{
-    command, exit, history, input_add, input_complete, input_sub, HistoryDirection,
+    command, exit, history as history_get, input_add, input_complete, input_sub, HistoryDirection,
 };
-use crate::history::Log;
+use crate::history::History;
 use crate::io::Stdio;
 use crate::keyboard::{to_action, TerminalAction};
 use crate::session::State;
@@ -14,7 +14,7 @@ pub fn run_interactive(
     key: &KeyEvent,
     state: &mut State,
     stdio: &mut Stdio,
-    log: &mut Log,
+    history: &mut History,
     commands: &Vec<&str>,
     bin_paths: &Vec<&str>,
     current_dir: &str,
@@ -29,15 +29,15 @@ pub fn run_interactive(
 
     match action.unwrap() {
         TerminalAction::Command => {
-            is_exit = command(stdio, state, log, bin_paths, output_starts_newline)?
+            is_exit = command(stdio, state, history, bin_paths, output_starts_newline)?
         }
 
         TerminalAction::Exit => {
             exit(stdio)?;
             is_exit = true;
         }
-        TerminalAction::HistoryNext => history(&HistoryDirection::Next, state, stdio, log)?,
-        TerminalAction::HistoryPrev => history(&HistoryDirection::Prev, state, stdio, log)?,
+        TerminalAction::HistoryNext => history_get(&HistoryDirection::Next, state, stdio, history)?,
+        TerminalAction::HistoryPrev => history_get(&HistoryDirection::Prev, state, stdio, history)?,
         TerminalAction::InputAdd(symbol) => input_add(symbol.to_string().as_str(), state, stdio)?,
         TerminalAction::InputSub => input_sub(state, stdio)?,
         TerminalAction::InputComplete => {
@@ -51,9 +51,9 @@ pub fn run_interactive(
 pub fn run_command(
     state: &mut State,
     stdio: &mut Stdio,
-    log: &mut Log,
+    history: &mut History,
     bin_paths: &Vec<&str>,
     output_starts_newline: bool,
 ) -> Result<bool, Error> {
-    command(stdio, state, log, bin_paths, output_starts_newline)
+    command(stdio, state, history, bin_paths, output_starts_newline)
 }

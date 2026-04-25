@@ -5,15 +5,15 @@ pub use load::{download, upload};
 use crate::structure::KeyValue;
 use crate::structure::RevIter;
 
-pub struct Log {
+pub struct History {
     data: Vec<String>,
     navigator: RevIter,
     uploads: KeyValue,
 }
 
-impl Log {
-    pub fn new() -> Log {
-        Log {
+impl History {
+    pub fn new() -> History {
+        History {
             data: Vec::with_capacity(50),
             navigator: RevIter::new(0),
             uploads: KeyValue::new(),
@@ -102,7 +102,7 @@ mod tests {
 
     #[test]
     fn test_lasts() {
-        let mut log = Log::new();
+        let mut log = History::new();
 
         let (mut iter, len) = log.lasts(None);
         assert_eq!(None, iter.next());
