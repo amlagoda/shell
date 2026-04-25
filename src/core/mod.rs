@@ -97,7 +97,7 @@ fn run_native(
             newline.set_stderr_start(true);
         }
 
-        let mut stdio = Stdio::new(stdin, stdout, stderr);
+        let mut stdio = Stdio::from(stdin, stdout, stderr);
 
         return run_builtin(
             &builtin,
@@ -203,7 +203,7 @@ fn run_forks(
 
                 if let Some(builtin) = to_builtin(command) {
                     let mut stdio = unsafe {
-                        Stdio::new(
+                        Stdio::from(
                             File::from_raw_fd(0),
                             File::from_raw_fd(1),
                             File::from_raw_fd(2),

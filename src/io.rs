@@ -7,7 +7,7 @@ pub struct Stdio {
 }
 
 impl Stdio {
-    pub fn new(stdin: File, stdout: File, stderr: File) -> Stdio {
+    pub fn from(stdin: File, stdout: File, stderr: File) -> Stdio {
         Stdio {
             stdin,
             stdout,
