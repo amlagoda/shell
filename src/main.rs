@@ -1,9 +1,9 @@
-use crate::control::{mode_command, mode_interactive};
-use crate::env::{get_args, get_history_log_path, split_env_path};
-use crate::fmt::NewLine;
-use crate::history::{download as download_history_log, History};
-use crate::io::Stdio;
-use crate::session::State;
+use self::control::{mode_command, mode_interactive};
+use self::env::{get_args, get_history_log_path, split_env_path};
+use self::fmt::NewLine;
+use self::history::{download as download_history_log, History};
+use self::io::Stdio;
+use self::session::State;
 use std::io::Error;
 
 mod command;
