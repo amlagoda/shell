@@ -1,7 +1,7 @@
 use crate::command::get_command_list;
 use crate::control::{run_command, run_interactive};
 use crate::env::{get_args, get_current_dir, get_history_log_path, split_env_path};
-use crate::history::{download as download_log, History};
+use crate::history::{download as download_history_log, History};
 use crate::io::Stdio;
 use crate::session::State;
 use crossterm::event::read;
@@ -33,7 +33,7 @@ fn main() -> Result<(), Error> {
     let args = get_args();
 
     if let Some(path) = get_history_log_path() {
-        download_log(&mut history, path.as_str())?;
+        download_history_log(&mut history, path.as_str())?;
     }
 
     if args.is_empty() {
