@@ -1,9 +1,9 @@
 mod load;
 mod valid;
 
-use crate::command::fmt::NewLine;
 use crate::command::registry::history::load::Loader;
 use crate::command::registry::history::valid::validate;
+use crate::fmt::NewLine;
 use crate::history::{download as download_log, upload as upload_log, History};
 use crate::io::Stdio;
 use std::io::{BufWriter, Error, ErrorKind, Write};

@@ -14,6 +14,7 @@ mod control;
 mod core;
 mod cursor;
 mod env;
+mod fmt;
 mod fs;
 mod history;
 mod io;

@@ -1,4 +1,4 @@
-use crate::command::fmt::NewLine;
+use crate::fmt::NewLine;
 use crate::io::Stdio;
 use std::env::{home_dir, set_current_dir};
 use std::fs::read_dir;

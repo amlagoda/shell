@@ -1,5 +1,5 @@
-use crate::command::fmt::NewLine;
 use crate::command::registry::Builtin;
+use crate::fmt::NewLine;
 use crate::fs::find_file;
 use crate::io::Stdio;
 use std::io::{Error, Write};

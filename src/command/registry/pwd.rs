@@ -1,4 +1,4 @@
-use crate::command::fmt::NewLine;
+use crate::fmt::NewLine;
 use crate::io::Stdio;
 use std::env::current_dir;
 use std::io::{Error, Write};
