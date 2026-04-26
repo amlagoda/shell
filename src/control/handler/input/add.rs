@@ -2,7 +2,7 @@ use crate::io::Stdio;
 use crate::session::State;
 use std::io::{Error, Write};
 
-pub fn handle(data: &str, state: &mut State, stdio: &mut Stdio) -> Result<(), Error> {
+pub fn handle(data: &str, stdio: &mut Stdio, state: &mut State) -> Result<(), Error> {
     write!(stdio.stdout(), "{}", data)?;
     stdio.stdout().flush()?;
 

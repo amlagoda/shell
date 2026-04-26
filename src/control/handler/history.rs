@@ -6,8 +6,8 @@ use std::io::{Error, Write};
 
 pub fn handle(
     direction: &Direction,
-    state: &mut State,
     stdio: &mut Stdio,
+    state: &mut State,
     history: &mut History,
 ) -> Result<(), Error> {
     let input = state.terminal().input();

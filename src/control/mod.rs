@@ -81,16 +81,15 @@ fn run_handler(
 
     match action.unwrap() {
         TerminalAction::Command => need_exit = command(stdio, state, history, setting)?,
-
         TerminalAction::Exit => {
             exit(stdio)?;
             need_exit = true;
         }
-        TerminalAction::HistoryNext => history_get(&HistoryDirection::Next, state, stdio, history)?,
-        TerminalAction::HistoryPrev => history_get(&HistoryDirection::Prev, state, stdio, history)?,
-        TerminalAction::InputAdd(symbol) => input_add(symbol.to_string().as_str(), state, stdio)?,
-        TerminalAction::InputSub => input_sub(state, stdio)?,
-        TerminalAction::InputComplete => input_complete(state, stdio, setting, available_commands)?,
+        TerminalAction::HistoryNext => history_get(&HistoryDirection::Next, stdio, state, history)?,
+        TerminalAction::HistoryPrev => history_get(&HistoryDirection::Prev, stdio, state, history)?,
+        TerminalAction::InputAdd(symbol) => input_add(symbol.to_string().as_str(), stdio, state)?,
+        TerminalAction::InputSub => input_sub(stdio, state)?,
+        TerminalAction::InputComplete => input_complete(stdio, state, setting, available_commands)?,
     };
 
     Ok(need_exit)

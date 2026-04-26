@@ -3,7 +3,7 @@ use crate::io::Stdio;
 use crate::session::State;
 use std::io::Error;
 
-pub fn handle(state: &mut State, stdio: &mut Stdio) -> Result<(), Error> {
+pub fn handle(stdio: &mut Stdio, state: &mut State) -> Result<(), Error> {
     let input = state.terminal().input();
 
     if input.get().is_some() {

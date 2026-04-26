@@ -5,8 +5,8 @@ use crossterm::event::KeyCode;
 use std::io::{Error, Write};
 
 pub fn handle(
-    state: &mut State,
     stdio: &mut Stdio,
+    state: &mut State,
     setting: &Setting,
     commands: &Vec<&str>,
 ) -> Result<(), Error> {
