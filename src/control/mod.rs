@@ -8,7 +8,7 @@ use crate::io::Stdio;
 use crate::keyboard::{to_action, TerminalAction};
 use crate::session::State;
 use crate::setting::Setting;
-use crossterm::event::{read as read_key, KeyEvent};
+use crossterm::event::{read as get_pressed_key, KeyEvent};
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 use std::io::{Error, Write};
 
@@ -23,7 +23,7 @@ pub fn mode_interactive(
     stdio.stdout().flush()?;
 
     loop {
-        let pressed_key = read_key()?.as_key_event();
+        let pressed_key = get_pressed_key()?.as_key_event();
 
         if pressed_key.is_none() {
             continue;
