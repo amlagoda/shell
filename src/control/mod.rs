@@ -72,19 +72,19 @@ fn run_interactive(
     setting: &Setting,
     available_commands: &Vec<&str>,
 ) -> Result<bool, Error> {
-    let mut is_exit = false;
+    let mut need_exit = false;
     let action = to_action(key);
 
     if action.is_none() {
-        return Ok(is_exit);
+        return Ok(need_exit);
     }
 
     match action.unwrap() {
-        TerminalAction::Command => is_exit = command(stdio, state, history, setting)?,
+        TerminalAction::Command => need_exit = command(stdio, state, history, setting)?,
 
         TerminalAction::Exit => {
             exit(stdio)?;
-            is_exit = true;
+            need_exit = true;
         }
         TerminalAction::HistoryNext => history_get(&HistoryDirection::Next, state, stdio, history)?,
         TerminalAction::HistoryPrev => history_get(&HistoryDirection::Prev, state, stdio, history)?,
@@ -93,5 +93,5 @@ fn run_interactive(
         TerminalAction::InputComplete => input_complete(state, stdio, setting, available_commands)?,
     };
 
-    Ok(is_exit)
+    Ok(need_exit)
 }
