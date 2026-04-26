@@ -1,7 +1,7 @@
 use self::control::{mode_command, mode_interactive};
 use self::env::{get_args, get_bin_paths, get_current_dir, get_history_log_path};
 use self::fmt::NewLine;
-use self::history::{download as download_history_log, History};
+use self::history::{download as download_history_log, upload as upload_history_log, History};
 use self::io::Stdio;
 use self::session::State;
 use self::setting::Setting;
@@ -43,12 +43,18 @@ fn main() -> Result<(), Error> {
         new_line.set_stderr_start(true);
 
         let setting = Setting::from(new_line, bin_paths, current_dir);
-        mode_interactive(&mut state, &mut stdio, &mut history, &setting)
+        mode_interactive(&mut state, &mut stdio, &mut history, &setting)?;
     } else {
         let input = args.join(" ");
         state.terminal().input().push_as_system(input.as_str());
 
         let setting = Setting::from(new_line, bin_paths, current_dir);
-        mode_command(&mut state, &mut stdio, &mut history, &setting)
+        mode_command(&mut state, &mut stdio, &mut history, &setting)?;
     }
+
+    if let Some(file_path) = get_history_log_path() {
+        upload_history_log(&mut history, file_path.as_str(), false)?;
+    }
+
+    Ok(())
 }
