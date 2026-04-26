@@ -33,11 +33,11 @@ pub fn mode_interactive(
         let available_commands = available_commands.iter().map(|r| r.as_str()).collect();
 
         let need_exit = run_handler(
-            &pressed_key.unwrap(),
             state,
             stdio,
             history,
             setting,
+            &pressed_key.unwrap(),
             &available_commands,
         )?;
 
@@ -65,15 +65,15 @@ pub fn mode_command(
 }
 
 fn run_handler(
-    key: &KeyEvent,
     state: &mut State,
     stdio: &mut Stdio,
     history: &mut History,
     setting: &Setting,
+    pressed_key: &KeyEvent,
     available_commands: &Vec<&str>,
 ) -> Result<bool, Error> {
     let mut need_exit = false;
-    let action = to_action(key);
+    let action = to_action(pressed_key);
 
     if action.is_none() {
         return Ok(need_exit);
