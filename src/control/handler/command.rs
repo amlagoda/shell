@@ -21,14 +21,10 @@ pub fn handle(
         return Ok(false);
     }
 
-    write!(stdio.stdout(), "\r")?;
-    stdio.stdout().flush()?;
-    disable_raw_mode()?;
-
     let parseds = parse(input.unwrap())?.unwrap();
 
+    disable_raw_mode()?;
     let mut is_exit = run(&parseds.iter().collect(), stdio, history, setting)?;
-
     enable_raw_mode()?;
 
     state.terminal().input().reset();
