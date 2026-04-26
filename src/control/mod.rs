@@ -59,12 +59,12 @@ pub fn mode_command(
     history: &mut History,
     setting: &Setting,
 ) -> Result<(), Error> {
-    run_command(state, stdio, history, setting)?;
+    command(stdio, state, history, setting)?;
 
     Ok(())
 }
 
-pub fn run_interactive(
+fn run_interactive(
     key: &KeyEvent,
     state: &mut State,
     stdio: &mut Stdio,
@@ -94,13 +94,4 @@ pub fn run_interactive(
     };
 
     Ok(is_exit)
-}
-
-pub fn run_command(
-    state: &mut State,
-    stdio: &mut Stdio,
-    history: &mut History,
-    setting: &Setting,
-) -> Result<bool, Error> {
-    command(stdio, state, history, setting)
 }
