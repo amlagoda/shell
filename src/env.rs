@@ -1,7 +1,7 @@
 use std::env::{args, current_dir, /*current_exe,*/ var};
 use std::io::Error;
 
-pub fn split_env_path() -> Result<Vec<String>, Error> {
+pub fn get_bin_paths() -> Result<Vec<String>, Error> {
     Ok(var("PATH")
         .map_err(|e| Error::other(e.to_string()))?
         .split(':')

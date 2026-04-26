@@ -1,5 +1,5 @@
 use self::control::{mode_command, mode_interactive};
-use self::env::{get_args, get_current_dir, get_history_log_path, split_env_path};
+use self::env::{get_args, get_bin_paths, get_current_dir, get_history_log_path};
 use self::fmt::NewLine;
 use self::history::{download as download_history_log, History};
 use self::io::Stdio;
@@ -31,7 +31,7 @@ fn main() -> Result<(), Error> {
     let mut new_line = NewLine::new();
 
     let current_dir = get_current_dir();
-    let bin_paths = split_env_path()?;
+    let bin_paths = get_bin_paths()?;
     let args = get_args();
 
     if let Some(path) = get_history_log_path() {
