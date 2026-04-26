@@ -32,7 +32,7 @@ pub fn mode_interactive(
         let available_commands = get_command_list();
         let available_commands = available_commands.iter().map(|r| r.as_str()).collect();
 
-        let is_exit = run_interactive(
+        let need_exit = run_interactive(
             &pressed_key.unwrap(),
             state,
             stdio,
@@ -43,7 +43,7 @@ pub fn mode_interactive(
 
         state.keyboard().set_previous_key(pressed_key.unwrap());
 
-        if is_exit {
+        if need_exit {
             break;
         }
     }
@@ -70,7 +70,7 @@ fn run_interactive(
     stdio: &mut Stdio,
     history: &mut History,
     setting: &Setting,
-    commands: &Vec<&str>,
+    available_commands: &Vec<&str>,
 ) -> Result<bool, Error> {
     let mut is_exit = false;
     let action = to_action(key);
@@ -90,7 +90,7 @@ fn run_interactive(
         TerminalAction::HistoryPrev => history_get(&HistoryDirection::Prev, state, stdio, history)?,
         TerminalAction::InputAdd(symbol) => input_add(symbol.to_string().as_str(), state, stdio)?,
         TerminalAction::InputSub => input_sub(state, stdio)?,
-        TerminalAction::InputComplete => input_complete(state, stdio, setting, commands)?,
+        TerminalAction::InputComplete => input_complete(state, stdio, setting, available_commands)?,
     };
 
     Ok(is_exit)
