@@ -32,7 +32,7 @@ pub fn mode_interactive(
         let available_commands = get_command_list();
         let available_commands = available_commands.iter().map(|r| r.as_str()).collect();
 
-        let need_exit = run_interactive(
+        let need_exit = run_handler(
             &pressed_key.unwrap(),
             state,
             stdio,
@@ -64,7 +64,7 @@ pub fn mode_command(
     Ok(())
 }
 
-fn run_interactive(
+fn run_handler(
     key: &KeyEvent,
     state: &mut State,
     stdio: &mut Stdio,
