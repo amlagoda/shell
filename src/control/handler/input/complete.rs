@@ -1,15 +1,14 @@
-use crate::complete::complete_input;
 use crate::io::Stdio;
 use crate::session::State;
+use crate::{complete::complete_input, setting::Setting};
 use crossterm::event::KeyCode;
 use std::io::{Error, Write};
 
 pub fn handle(
     state: &mut State,
     stdio: &mut Stdio,
+    setting: &Setting,
     commands: &Vec<&str>,
-    bin_paths: &Vec<&str>,
-    current_dir: &str,
 ) -> Result<(), Error> {
     let input = state.terminal().input().get();
 
@@ -17,7 +16,7 @@ pub fn handle(
         return not_found(stdio);
     }
 
-    let completion = complete_input(input.unwrap(), commands, bin_paths, current_dir);
+    let completion = complete_input(input.unwrap(), setting, commands);
 
     if completion.is_none() {
         return not_found(stdio);

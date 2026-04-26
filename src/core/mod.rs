@@ -10,6 +10,7 @@ use crate::history::History;
 use crate::io::Stdio;
 use crate::parser::Parsed;
 use crate::process::{kill_forks, pid, to_group, Fork};
+use crate::setting::Setting;
 use std::fs::File;
 use std::io::{Error, Write};
 use std::os::fd::{AsRawFd, IntoRawFd};
@@ -21,8 +22,7 @@ pub fn run(
     parseds: &Vec<&Parsed>,
     stdio: &mut Stdio,
     history: &mut History,
-    newline: &NewLine,
-    bin_paths: &Vec<&str>,
+    setting: &Setting,
 ) -> Result<bool, Error> {
     let len = parseds.len();
 
@@ -43,7 +43,13 @@ pub fn run(
             if !builtin.is_blocking() {
                 // native run single, builtin and non-blocking command
                 // does not control the "exit"
-                run_native(parsed, stdio, history, newline, Some(bin_paths))?;
+                run_native(
+                    parsed,
+                    stdio,
+                    history,
+                    setting.new_line(),
+                    Some(&setting.bin_paths()),
+                )?;
                 return Ok(false);
             }
         }
@@ -51,7 +57,13 @@ pub fn run(
 
     // other commands run as forks
     // control the "exit"
-    run_forks(parseds, stdio, history, newline, bin_paths)
+    run_forks(
+        parseds,
+        stdio,
+        history,
+        setting.new_line(),
+        &setting.bin_paths(),
+    )
 }
 
 fn to_history(parseds: &Vec<&Parsed>, history: &mut History) {
