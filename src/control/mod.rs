@@ -1,16 +1,14 @@
 mod handler;
 
+use self::handler::{command, exit, history as history_get, HistoryDirection};
+use self::handler::{input_add, input_complete, input_sub};
 use crate::command::get_command_list;
-use crate::control::handler::{
-    command, exit, history as history_get, input_add, input_complete, input_sub, HistoryDirection,
-};
 use crate::history::History;
 use crate::io::Stdio;
 use crate::keyboard::{to_action, TerminalAction};
 use crate::session::State;
 use crate::setting::Setting;
-use crossterm::event::read as read_key;
-use crossterm::event::KeyEvent;
+use crossterm::event::{read as read_key, KeyEvent};
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 use std::io::{Error, Write};
 
