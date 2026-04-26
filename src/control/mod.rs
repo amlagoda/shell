@@ -19,6 +19,7 @@ pub fn mode_interactive(
     setting: &Setting,
 ) -> Result<(), Error> {
     enable_raw_mode()?;
+
     write!(stdio.stdout(), "\r$ ")?;
     stdio.stdout().flush()?;
 
