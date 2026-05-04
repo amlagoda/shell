@@ -1,14 +1,21 @@
 use crate::fmt::NewLine;
 
 pub struct Setting {
+    mode: ProgramMode,
     new_line: NewLine,
     bin_paths: Vec<String>,
     current_dir: String,
 }
 
 impl Setting {
-    pub fn from(new_line: NewLine, bin_paths: Vec<String>, current_dir: String) -> Setting {
+    pub fn from(
+        mode: ProgramMode,
+        new_line: NewLine,
+        bin_paths: Vec<String>,
+        current_dir: String,
+    ) -> Setting {
         Setting {
+            mode,
             new_line,
             bin_paths,
             current_dir,
@@ -26,4 +33,13 @@ impl Setting {
     pub fn current_dir(&self) -> &str {
         self.current_dir.as_str()
     }
+
+    pub fn is_interactive_mode(&self) -> bool {
+        matches!(self.mode, ProgramMode::Interactive)
+    }
+}
+
+pub enum ProgramMode {
+    Interactive,
+    Command,
 }

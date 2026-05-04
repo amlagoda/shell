@@ -4,7 +4,7 @@ use self::fmt::NewLine;
 use self::history::{download as download_history_log, upload as upload_history_log, History};
 use self::io::Stdio;
 use self::session::State;
-use self::setting::Setting;
+use self::setting::{ProgramMode, Setting};
 use std::io::Error;
 
 mod command;
@@ -42,13 +42,13 @@ fn main() -> Result<(), Error> {
         new_line.set_stdout_start(true);
         new_line.set_stderr_start(true);
 
-        let setting = Setting::from(new_line, bin_paths, current_dir);
+        let setting = Setting::from(ProgramMode::Interactive, new_line, bin_paths, current_dir);
         mode_interactive(&mut state, &mut stdio, &mut history, &setting)?;
     } else {
         let input = args.join(" ");
         state.terminal().input().push_as_system(input.as_str());
 
-        let setting = Setting::from(new_line, bin_paths, current_dir);
+        let setting = Setting::from(ProgramMode::Command, new_line, bin_paths, current_dir);
         mode_command(&mut state, &mut stdio, &mut history, &setting)?;
     }
 

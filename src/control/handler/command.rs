@@ -28,10 +28,17 @@ pub fn handle(
     state.terminal().input().reset();
     history.reset();
 
-    if !need_exit {
-        write!(stdio.stdout(), "\r\n$ ")?;
-        stdio.stdout().flush()?;
+    if need_exit {
+        return Ok(true);
     }
 
-    Ok(need_exit)
+    if setting.is_interactive_mode() {
+        write!(stdio.stdout(), "\r\n$ ")?;
+    } else {
+        write!(stdio.stdout(), "\r\n")?;
+    }
+
+    stdio.stdout().flush()?;
+
+    Ok(false)
 }
