@@ -30,12 +30,11 @@ pub fn handle(
     state.terminal().input().reset();
     history.reset();
 
-    if need_exit {
-        Ok(true)
-    } else {
+    if !need_exit {
         print_newline(stdio, setting)?;
-        Ok(false)
     }
+
+    Ok(need_exit)
 }
 
 fn print_newline(stdio: &mut Stdio, setting: &Setting) -> Result<(), Error> {
