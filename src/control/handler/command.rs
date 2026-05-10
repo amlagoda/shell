@@ -16,6 +16,8 @@ pub fn handle(
     let input = state.terminal().input().get();
 
     if input.is_none() {
+        print_newline(stdio, setting)?;
+
         return Ok(false);
     }
 
@@ -29,9 +31,14 @@ pub fn handle(
     history.reset();
 
     if need_exit {
-        return Ok(true);
+        Ok(true)
+    } else {
+        print_newline(stdio, setting)?;
+        Ok(false)
     }
+}
 
+fn print_newline(stdio: &mut Stdio, setting: &Setting) -> Result<(), Error> {
     if setting.is_interactive_mode() {
         write!(stdio.stdout(), "\r\n$ ")?;
     } else {
@@ -40,5 +47,5 @@ pub fn handle(
 
     stdio.stdout().flush()?;
 
-    Ok(false)
+    Ok(())
 }
