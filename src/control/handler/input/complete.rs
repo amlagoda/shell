@@ -5,7 +5,7 @@ use crate::{complete::complete_input, setting::Setting};
 use std::io::{Error, Write};
 
 pub fn handle(stdio: &mut Stdio, state: &mut State, setting: &Setting) -> Result<(), Error> {
-    let input = state.terminal().input().get();
+    let input = state.input().get();
 
     if input.is_none() {
         return not_found(stdio, setting);
@@ -26,7 +26,7 @@ pub fn handle(stdio: &mut Stdio, state: &mut State, setting: &Setting) -> Result
 
     if let Some(previous_action) = state.previous_action() {
         if matches!(previous_action, TerminalAction::InputComplete) {
-            let input = state.terminal().input().get();
+            let input = state.input().get();
             return more_found(stdio, input.unwrap(), variants.unwrap());
         }
     }
@@ -47,7 +47,7 @@ fn one_found(stdio: &mut Stdio, state: &mut State, found: &str) -> Result<(), Er
     write!(stdio.stdout(), "{}", found)?;
     stdio.stdout().flush()?;
 
-    state.terminal().input().push_as_system(found);
+    state.input().push_as_system(found);
 
     Ok(())
 }

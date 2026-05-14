@@ -4,7 +4,7 @@ use crate::session::State;
 use std::io::Error;
 
 pub fn handle(stdio: &mut Stdio, state: &mut State) -> Result<(), Error> {
-    let input = state.terminal().input();
+    let input = state.input();
 
     if input.get().is_some() {
         cursor_move_left(stdio.stdout(), 1)?;

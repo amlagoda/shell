@@ -55,7 +55,7 @@ fn main() -> Result<(), Error> {
         mode_interactive(&mut state, &mut stdio, &mut history, &setting)?;
     } else {
         let input = args.join(" ");
-        state.terminal().input().push_as_system(input.as_str());
+        state.input().push_as_system(input.as_str());
 
         let setting = Setting::from(
             ProgramMode::Command,

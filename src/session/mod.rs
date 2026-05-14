@@ -1,17 +1,17 @@
 mod terminal;
 
-use self::terminal::Terminal;
+use self::terminal::Input;
 use crate::keyboard::TerminalAction;
 
 pub struct State {
-    terminal: Terminal,
+    input: Input,
     previous_action: Option<TerminalAction>,
 }
 
 impl State {
     pub fn new() -> State {
         State {
-            terminal: Terminal::new(),
+            input: Input::new(),
             previous_action: None,
         }
     }
@@ -24,7 +24,7 @@ impl State {
         self.previous_action = Some(action);
     }
 
-    pub fn terminal(&mut self) -> &mut Terminal {
-        &mut self.terminal
+    pub fn input(&mut self) -> &mut Input {
+        &mut self.input
     }
 }

@@ -6,7 +6,7 @@ pub fn handle(data: &str, stdio: &mut Stdio, state: &mut State) -> Result<(), Er
     write!(stdio.stdout(), "{}", data)?;
     stdio.stdout().flush()?;
 
-    state.terminal().input().push_as_user(data);
+    state.input().push_as_user(data);
 
     Ok(())
 }

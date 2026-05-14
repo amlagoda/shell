@@ -12,7 +12,7 @@ pub fn handle(
     history: &mut History,
     setting: &Setting,
 ) -> Result<bool, Error> {
-    let input = state.terminal().input().get();
+    let input = state.input().get();
 
     if input.is_none() {
         print_newline(stdio, setting)?;
@@ -23,7 +23,7 @@ pub fn handle(
     let parseds = parse(input.unwrap())?.unwrap();
     let is_exit = run(&parseds.iter().collect(), stdio, history, setting)?;
 
-    state.terminal().input().reset();
+    state.input().reset();
     history.reset();
 
     if !is_exit {

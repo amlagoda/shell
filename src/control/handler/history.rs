@@ -11,7 +11,7 @@ pub fn handle(
     history: &mut History,
     setting: &Setting,
 ) -> Result<(), Error> {
-    let input = state.terminal().input();
+    let input = state.input();
 
     if input.has_user_typing() {
         return Ok(());
