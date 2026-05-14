@@ -1,8 +1,8 @@
 mod pipeline;
 mod redirect;
 
-use crate::parser::pipeline::{is_pipeline, to_pipeline, Pipeline};
-use crate::parser::redirect::{is_redirect, to_redirect, Redirect};
+use self::pipeline::{is_pipeline, to_pipeline, Pipeline};
+use self::redirect::{is_redirect, to_redirect, Redirect};
 use std::collections::VecDeque;
 use std::io::Error;
 
