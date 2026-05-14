@@ -41,6 +41,10 @@ impl Setting {
         self.available_commands.iter().map(|r| r.as_str()).collect()
     }
 
+    pub fn bell(&self) -> &str {
+        "\x07"
+    }
+
     pub fn is_interactive_mode(&self) -> bool {
         matches!(self.mode, ProgramMode::Interactive)
     }

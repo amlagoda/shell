@@ -77,8 +77,12 @@ fn run_handler(
             enable_raw_mode()?;
         }
         TerminalAction::Exit => is_exit = exit(stdio)?,
-        TerminalAction::HistoryNext => history_get(&HistoryDirection::Next, stdio, state, history)?,
-        TerminalAction::HistoryPrev => history_get(&HistoryDirection::Prev, stdio, state, history)?,
+        TerminalAction::HistoryNext => {
+            history_get(&HistoryDirection::Next, stdio, state, history, setting)?
+        }
+        TerminalAction::HistoryPrev => {
+            history_get(&HistoryDirection::Prev, stdio, state, history, setting)?
+        }
         TerminalAction::InputAdd(symbol) => input_add(symbol.to_string().as_str(), stdio, state)?,
         TerminalAction::InputSub => input_sub(stdio, state)?,
         TerminalAction::InputComplete => input_complete(stdio, state, setting)?,

@@ -8,13 +8,13 @@ pub fn handle(stdio: &mut Stdio, state: &mut State, setting: &Setting) -> Result
     let input = state.terminal().input().get();
 
     if input.is_none() {
-        return not_found(stdio);
+        return not_found(stdio, setting);
     }
 
     let completion = complete_input(input.unwrap(), setting);
 
     if completion.is_none() {
-        return not_found(stdio);
+        return not_found(stdio, setting);
     }
 
     let completion = completion.unwrap();
@@ -31,7 +31,7 @@ pub fn handle(stdio: &mut Stdio, state: &mut State, setting: &Setting) -> Result
         }
     }
 
-    not_found(stdio)
+    not_found(stdio, setting)
 }
 
 fn more_found(stdio: &mut Stdio, current: &str, found: Vec<&str>) -> Result<(), Error> {
@@ -52,8 +52,8 @@ fn one_found(stdio: &mut Stdio, state: &mut State, found: &str) -> Result<(), Er
     Ok(())
 }
 
-fn not_found(stdio: &mut Stdio) -> Result<(), Error> {
-    write!(stdio.stdout(), "\x07")?;
+fn not_found(stdio: &mut Stdio, setting: &Setting) -> Result<(), Error> {
+    write!(stdio.stdout(), "{}", setting.bell())?;
     stdio.stdout().flush()?;
 
     Ok(())
