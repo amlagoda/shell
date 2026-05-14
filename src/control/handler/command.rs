@@ -21,16 +21,16 @@ pub fn handle(
     }
 
     let parseds = parse(input.unwrap())?.unwrap();
-    let need_exit = run(&parseds.iter().collect(), stdio, history, setting)?;
+    let is_exit = run(&parseds.iter().collect(), stdio, history, setting)?;
 
     state.terminal().input().reset();
     history.reset();
 
-    if !need_exit {
+    if !is_exit {
         print_newline(stdio, setting)?;
     }
 
-    Ok(need_exit)
+    Ok(is_exit)
 }
 
 fn print_newline(stdio: &mut Stdio, setting: &Setting) -> Result<(), Error> {

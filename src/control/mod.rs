@@ -36,11 +36,11 @@ pub fn mode_interactive(
         }
 
         let action = action.unwrap();
-        let need_exit = run_handler(state, stdio, history, setting, &action)?;
+        let is_exit = run_handler(state, stdio, history, setting, &action)?;
 
         state.set_previous_action(action);
 
-        if need_exit {
+        if is_exit {
             break;
         }
     }
@@ -68,15 +68,15 @@ fn run_handler(
     setting: &Setting,
     action: &TerminalAction,
 ) -> Result<bool, Error> {
-    let mut need_exit = false;
+    let mut is_exit = false;
 
     match action {
         TerminalAction::Command => {
             disable_raw_mode()?;
-            need_exit = command(stdio, state, history, setting)?;
+            is_exit = command(stdio, state, history, setting)?;
             enable_raw_mode()?;
         }
-        TerminalAction::Exit => need_exit = exit(stdio)?,
+        TerminalAction::Exit => is_exit = exit(stdio)?,
         TerminalAction::HistoryNext => history_get(&HistoryDirection::Next, stdio, state, history)?,
         TerminalAction::HistoryPrev => history_get(&HistoryDirection::Prev, stdio, state, history)?,
         TerminalAction::InputAdd(symbol) => input_add(symbol.to_string().as_str(), stdio, state)?,
@@ -84,5 +84,5 @@ fn run_handler(
         TerminalAction::InputComplete => input_complete(stdio, state, setting)?,
     };
 
-    Ok(need_exit)
+    Ok(is_exit)
 }
