@@ -2,7 +2,6 @@ mod handler;
 
 use self::handler::{command, exit, history as history_get, HistoryDirection};
 use self::handler::{input_add, input_complete, input_sub};
-use crate::command::get_command_list;
 use crate::history::History;
 use crate::io::Stdio;
 use crate::keyboard::{to_action, TerminalAction};
@@ -30,17 +29,7 @@ pub fn mode_interactive(
             continue;
         }
 
-        let available_commands = get_command_list();
-        let available_commands = available_commands.iter().map(|r| r.as_str()).collect();
-
-        let need_exit = run_handler(
-            state,
-            stdio,
-            history,
-            setting,
-            &pressed_key.unwrap(),
-            &available_commands,
-        )?;
+        let need_exit = run_handler(state, stdio, history, setting, &pressed_key.unwrap())?;
 
         state.keyboard().set_previous_key(pressed_key.unwrap());
 
@@ -71,7 +60,6 @@ fn run_handler(
     history: &mut History,
     setting: &Setting,
     pressed_key: &KeyEvent,
-    available_commands: &Vec<&str>,
 ) -> Result<bool, Error> {
     let mut need_exit = false;
     let action = to_action(pressed_key);
@@ -87,7 +75,7 @@ fn run_handler(
         TerminalAction::HistoryPrev => history_get(&HistoryDirection::Prev, stdio, state, history)?,
         TerminalAction::InputAdd(symbol) => input_add(symbol.to_string().as_str(), stdio, state)?,
         TerminalAction::InputSub => input_sub(stdio, state)?,
-        TerminalAction::InputComplete => input_complete(stdio, state, setting, available_commands)?,
+        TerminalAction::InputComplete => input_complete(stdio, state, setting)?,
     };
 
     Ok(need_exit)

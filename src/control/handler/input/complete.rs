@@ -4,19 +4,14 @@ use crate::{complete::complete_input, setting::Setting};
 use crossterm::event::KeyCode;
 use std::io::{Error, Write};
 
-pub fn handle(
-    stdio: &mut Stdio,
-    state: &mut State,
-    setting: &Setting,
-    commands: &Vec<&str>,
-) -> Result<(), Error> {
+pub fn handle(stdio: &mut Stdio, state: &mut State, setting: &Setting) -> Result<(), Error> {
     let input = state.terminal().input().get();
 
     if input.is_none() {
         return not_found(stdio);
     }
 
-    let completion = complete_input(input.unwrap(), setting, commands);
+    let completion = complete_input(input.unwrap(), setting);
 
     if completion.is_none() {
         return not_found(stdio);

@@ -5,6 +5,7 @@ pub struct Setting {
     new_line: NewLine,
     bin_paths: Vec<String>,
     current_dir: String,
+    available_commands: Vec<String>,
 }
 
 impl Setting {
@@ -13,12 +14,14 @@ impl Setting {
         new_line: NewLine,
         bin_paths: Vec<String>,
         current_dir: String,
+        available_commands: Vec<String>,
     ) -> Setting {
         Setting {
             mode,
             new_line,
             bin_paths,
             current_dir,
+            available_commands,
         }
     }
 
@@ -32,6 +35,10 @@ impl Setting {
 
     pub fn current_dir(&self) -> &str {
         self.current_dir.as_str()
+    }
+
+    pub fn available_commands(&self) -> Vec<&str> {
+        self.available_commands.iter().map(|r| r.as_str()).collect()
     }
 
     pub fn is_interactive_mode(&self) -> bool {

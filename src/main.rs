@@ -1,3 +1,4 @@
+use self::command::get_command_list;
 use self::control::{mode_command, mode_interactive};
 use self::env::{get_args, get_bin_paths, get_current_dir, get_history_log_path};
 use self::fmt::NewLine;
@@ -33,6 +34,7 @@ fn main() -> Result<(), Error> {
     let current_dir = get_current_dir();
     let bin_paths = get_bin_paths()?;
     let args = get_args();
+    let available_commands = get_command_list();
 
     if let Some(path) = get_history_log_path() {
         download_history_log(&mut history, path.as_str())?;
@@ -42,13 +44,27 @@ fn main() -> Result<(), Error> {
         new_line.set_stdout_start(true);
         new_line.set_stderr_start(true);
 
-        let setting = Setting::from(ProgramMode::Interactive, new_line, bin_paths, current_dir);
+        let setting = Setting::from(
+            ProgramMode::Interactive,
+            new_line,
+            bin_paths,
+            current_dir,
+            available_commands,
+        );
+
         mode_interactive(&mut state, &mut stdio, &mut history, &setting)?;
     } else {
         let input = args.join(" ");
         state.terminal().input().push_as_system(input.as_str());
 
-        let setting = Setting::from(ProgramMode::Command, new_line, bin_paths, current_dir);
+        let setting = Setting::from(
+            ProgramMode::Command,
+            new_line,
+            bin_paths,
+            current_dir,
+            available_commands,
+        );
+
         mode_command(&mut state, &mut stdio, &mut history, &setting)?;
     }
 

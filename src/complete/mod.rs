@@ -1,11 +1,11 @@
 use crate::{fs::find_files, setting::Setting};
 
-pub fn complete_input(input: &str, setting: &Setting, commands: &Vec<&str>) -> Option<Completion> {
+pub fn complete_input(input: &str, setting: &Setting) -> Option<Completion> {
     let args: Vec<&str> = input.split(" ").collect();
     let len = args.len();
 
     if len == 1 {
-        complete_command(args[0], commands, &setting.bin_paths())
+        complete_command(args[0], &setting.available_commands(), &setting.bin_paths())
     } else if len == 2 {
         complete_file(args[1], setting.current_dir())
     } else {
