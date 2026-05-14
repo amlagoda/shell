@@ -4,7 +4,6 @@ use crate::io::Stdio;
 use crate::parser::parse;
 use crate::session::State;
 use crate::setting::Setting;
-use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 use std::io::{Error, Write};
 
 pub fn handle(
@@ -22,10 +21,7 @@ pub fn handle(
     }
 
     let parseds = parse(input.unwrap())?.unwrap();
-
-    disable_raw_mode()?;
     let need_exit = run(&parseds.iter().collect(), stdio, history, setting)?;
-    enable_raw_mode()?;
 
     state.terminal().input().reset();
     history.reset();
