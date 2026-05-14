@@ -7,7 +7,7 @@ use crate::io::Stdio;
 use crate::keyboard::{to_action, TerminalAction};
 use crate::session::State;
 use crate::setting::Setting;
-use crossterm::event::{read as get_pressed_key, KeyEvent};
+use crossterm::event::read as get_pressed_key;
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
 use std::io::{Error, Write};
 
@@ -29,7 +29,13 @@ pub fn mode_interactive(
             continue;
         }
 
-        let need_exit = run_handler(state, stdio, history, setting, &pressed_key.unwrap())?;
+        let action = to_action(&pressed_key.unwrap());
+
+        if action.is_none() {
+            continue;
+        }
+
+        let need_exit = run_handler(state, stdio, history, setting, &action.unwrap())?;
 
         state.keyboard().set_previous_key(pressed_key.unwrap());
 
@@ -59,16 +65,11 @@ fn run_handler(
     stdio: &mut Stdio,
     history: &mut History,
     setting: &Setting,
-    pressed_key: &KeyEvent,
+    action: &TerminalAction,
 ) -> Result<bool, Error> {
     let mut need_exit = false;
-    let action = to_action(pressed_key);
 
-    if action.is_none() {
-        return Ok(need_exit);
-    }
-
-    match action.unwrap() {
+    match action {
         TerminalAction::Command => {
             disable_raw_mode()?;
             need_exit = command(stdio, state, history, setting)?;
