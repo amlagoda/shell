@@ -35,9 +35,10 @@ pub fn mode_interactive(
             continue;
         }
 
-        let need_exit = run_handler(state, stdio, history, setting, &action.unwrap())?;
+        let action = action.unwrap();
+        let need_exit = run_handler(state, stdio, history, setting, &action)?;
 
-        state.keyboard().set_previous_key(pressed_key.unwrap());
+        state.set_previous_action(action);
 
         if need_exit {
             break;

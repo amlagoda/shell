@@ -1,7 +1,7 @@
 use crate::io::Stdio;
+use crate::keyboard::TerminalAction;
 use crate::session::State;
 use crate::{complete::complete_input, setting::Setting};
-use crossterm::event::KeyCode;
 use std::io::{Error, Write};
 
 pub fn handle(stdio: &mut Stdio, state: &mut State, setting: &Setting) -> Result<(), Error> {
@@ -24,8 +24,8 @@ pub fn handle(stdio: &mut Stdio, state: &mut State, setting: &Setting) -> Result
         return one_found(completion.get_selected().unwrap(), stdio, state);
     }
 
-    if let Some(previous_key) = state.keyboard().previous_key() {
-        if previous_key.code == KeyCode::Tab {
+    if let Some(previous_action) = state.previous_action() {
+        if matches!(previous_action, TerminalAction::InputComplete) {
             let input = state.terminal().input().get();
             return more_found(input.unwrap(), variants.unwrap(), stdio);
         }
