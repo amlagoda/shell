@@ -21,20 +21,20 @@ pub fn handle(stdio: &mut Stdio, state: &mut State, setting: &Setting) -> Result
     let variants = completion.get_variants();
 
     if variants.is_none() {
-        return one_found(completion.get_selected().unwrap(), stdio, state);
+        return one_found(stdio, state, completion.get_selected().unwrap());
     }
 
     if let Some(previous_action) = state.previous_action() {
         if matches!(previous_action, TerminalAction::InputComplete) {
             let input = state.terminal().input().get();
-            return more_found(input.unwrap(), variants.unwrap(), stdio);
+            return more_found(stdio, input.unwrap(), variants.unwrap());
         }
     }
 
     not_found(stdio)
 }
 
-fn more_found(current: &str, found: Vec<&str>, stdio: &mut Stdio) -> Result<(), Error> {
+fn more_found(stdio: &mut Stdio, current: &str, found: Vec<&str>) -> Result<(), Error> {
     let to_print = format!("\r\n{}\r\n$ {}", found.join("  "), current);
 
     write!(stdio.stdout(), "{}", to_print)?;
@@ -43,7 +43,7 @@ fn more_found(current: &str, found: Vec<&str>, stdio: &mut Stdio) -> Result<(), 
     Ok(())
 }
 
-fn one_found(found: &str, stdio: &mut Stdio, state: &mut State) -> Result<(), Error> {
+fn one_found(stdio: &mut Stdio, state: &mut State, found: &str) -> Result<(), Error> {
     write!(stdio.stdout(), "{}", found)?;
     stdio.stdout().flush()?;
 
