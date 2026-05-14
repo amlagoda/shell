@@ -32,18 +32,18 @@ impl Input {
         self.data.push_str(data);
     }
 
-    pub fn remove_last(&mut self, count: usize) {
+    pub fn remove_last(&mut self, mut count: usize) {
         if count == 0 || self.data.is_empty() {
             return;
         }
 
-        let len = self.data.len();
-
-        if count >= len {
+        if count >= self.data.chars().count() {
             self.data.clear();
             self.has_user_typing = false;
         } else {
-            self.data.truncate(len - count);
+            while count > 0 && self.data.pop().is_some() {
+                count -= 1;
+            }
         }
     }
 
