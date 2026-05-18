@@ -42,13 +42,13 @@ pub fn run_command(
 }
 
 fn get_path(args: Option<&Vec<&str>>) -> String {
+    let mut path = "~";
+
     if let Some(args) = args {
-        if !args.is_empty() {
-            return args.first().unwrap().to_string();
-        }
+        path = args.first().unwrap_or(&path);
     }
 
-    "~".to_string()
+    path.to_string()
 }
 
 // I'm not testing the command cd because
