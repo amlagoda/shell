@@ -5,6 +5,8 @@ pub mod pwd;
 pub mod r#type;
 pub mod yes;
 
+use std::fmt::{Display, Error, Formatter};
+
 pub enum Builtin {
     Cd,
     Echo,
@@ -51,16 +53,20 @@ impl Builtin {
     }
 }
 
-impl ToString for Builtin {
-    fn to_string(&self) -> String {
-        match self {
-            Builtin::Cd => String::from("cd"),
-            Builtin::Echo => String::from("echo"),
-            Builtin::History => String::from("history"),
-            Builtin::Exit => String::from("exit"),
-            Builtin::Pwd => String::from("pwd"),
-            Builtin::Type => String::from("type"),
-            Builtin::Yes => String::from("yes"),
-        }
+impl Display for Builtin {
+    fn fmt(&self, formatter: &mut Formatter<'_>) -> Result<(), Error> {
+        let to_write = match self {
+            Builtin::Cd => "cd",
+            Builtin::Echo => "echo",
+            Builtin::History => "history",
+            Builtin::Exit => "exit",
+            Builtin::Pwd => "pwd",
+            Builtin::Type => "type",
+            Builtin::Yes => "yes",
+        };
+
+        write!(formatter, "{}", to_write)?;
+
+        Ok(())
     }
 }
