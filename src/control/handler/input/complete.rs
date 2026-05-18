@@ -4,17 +4,22 @@ use crate::session::State;
 use crate::{complete::complete_input, setting::Setting};
 use std::io::{Error, Write};
 
-pub fn handle(stdio: &mut Stdio, state: &mut State, setting: &Setting) -> Result<(), Error> {
+pub fn handle(
+    stdio: &mut Stdio,
+    state: &mut State,
+    setting: &Setting,
+    bell: &str,
+) -> Result<(), Error> {
     let input = state.input().get();
 
     if input.is_none() {
-        return not_found(stdio, setting);
+        return not_found(stdio, bell);
     }
 
     let completion = complete_input(input.unwrap(), setting);
 
     if completion.is_none() {
-        return not_found(stdio, setting);
+        return not_found(stdio, bell);
     }
 
     let completion = completion.unwrap();
@@ -31,7 +36,7 @@ pub fn handle(stdio: &mut Stdio, state: &mut State, setting: &Setting) -> Result
         }
     }
 
-    not_found(stdio, setting)
+    not_found(stdio, bell)
 }
 
 fn more_found(stdio: &mut Stdio, current: &str, found: Vec<&str>) -> Result<(), Error> {
@@ -52,8 +57,8 @@ fn one_found(stdio: &mut Stdio, state: &mut State, found: &str) -> Result<(), Er
     Ok(())
 }
 
-fn not_found(stdio: &mut Stdio, setting: &Setting) -> Result<(), Error> {
-    write!(stdio.stdout(), "{}", setting.bell())?;
+fn not_found(stdio: &mut Stdio, bell: &str) -> Result<(), Error> {
+    write!(stdio.stdout(), "{}", bell)?;
     stdio.stdout().flush()?;
 
     Ok(())

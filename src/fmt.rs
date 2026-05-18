@@ -55,3 +55,7 @@ fn to_string(val: bool) -> String {
         "".to_string()
     }
 }
+
+pub fn bell() -> String {
+    "\x07".to_string()
+}

@@ -1,7 +1,7 @@
+use crate::cursor::move_left as cursor_move_left;
 use crate::history::History;
 use crate::io::Stdio;
 use crate::session::State;
-use crate::{cursor::move_left as cursor_move_left, setting::Setting};
 use std::io::{Error, Write};
 
 pub fn handle(
@@ -9,7 +9,7 @@ pub fn handle(
     stdio: &mut Stdio,
     state: &mut State,
     history: &mut History,
-    setting: &Setting,
+    bell: &str,
 ) -> Result<(), Error> {
     let input = state.input();
 
@@ -32,7 +32,7 @@ pub fn handle(
         input.reset();
         input.push_as_system(command.as_str());
     } else {
-        write!(stdio.stdout(), "{}", setting.bell())?;
+        write!(stdio.stdout(), "{}", bell)?;
     }
 
     stdio.stdout().flush()?;

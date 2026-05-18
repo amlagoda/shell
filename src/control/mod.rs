@@ -2,6 +2,7 @@ mod handler;
 
 use self::handler::{command, exit, history as history_get, HistoryDirection};
 use self::handler::{input_add, input_complete, input_sub};
+use crate::fmt::bell;
 use crate::history::History;
 use crate::io::Stdio;
 use crate::keyboard::{to_action, TerminalAction};
@@ -18,9 +19,10 @@ pub fn mode_interactive(
     setting: &Setting,
 ) -> Result<(), Error> {
     enable_raw_mode()?;
-
     write!(stdio.stdout(), "\r$ ")?;
     stdio.stdout().flush()?;
+
+    let bell = bell();
 
     loop {
         let pressed_key = get_pressed_key()?.as_key_event();
@@ -36,7 +38,7 @@ pub fn mode_interactive(
         }
 
         let action = action.unwrap();
-        let is_exit = run_handler(state, stdio, history, setting, &action)?;
+        let is_exit = run_handler(state, stdio, history, setting, &action, bell.as_str())?;
 
         state.set_previous_action(action);
 
@@ -67,6 +69,7 @@ fn run_handler(
     history: &mut History,
     setting: &Setting,
     action: &TerminalAction,
+    bell: &str,
 ) -> Result<bool, Error> {
     let mut is_exit = false;
 
@@ -78,14 +81,14 @@ fn run_handler(
         }
         TerminalAction::Exit => is_exit = exit(stdio)?,
         TerminalAction::HistoryNext => {
-            history_get(&HistoryDirection::Next, stdio, state, history, setting)?
+            history_get(&HistoryDirection::Next, stdio, state, history, bell)?
         }
         TerminalAction::HistoryPrev => {
-            history_get(&HistoryDirection::Prev, stdio, state, history, setting)?
+            history_get(&HistoryDirection::Prev, stdio, state, history, bell)?
         }
         TerminalAction::InputAdd(symbol) => input_add(symbol.to_string().as_str(), stdio, state)?,
         TerminalAction::InputSub => input_sub(stdio, state)?,
-        TerminalAction::InputComplete => input_complete(stdio, state, setting)?,
+        TerminalAction::InputComplete => input_complete(stdio, state, setting, bell)?,
     };
 
     Ok(is_exit)
