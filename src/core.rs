@@ -1,4 +1,5 @@
 use crate::command::{run_command as run_builtin, to_command as to_builtin};
+use crate::control::Exit;
 use crate::fmt::NewLine;
 use crate::fs::{find_file, get_write_file};
 use crate::fs::{to_cloned_file, to_nonblock_file, transfer_data};
@@ -20,7 +21,7 @@ pub fn run(
     stdio: &mut Stdio,
     history: &mut History,
     setting: &Setting,
-) -> Result<bool, Error> {
+) -> Result<Exit, Error> {
     let len = parseds.len();
 
     if len == 0 {
@@ -34,7 +35,7 @@ pub fn run(
 
         if let Some(builtin) = to_builtin(parsed.command()) {
             if builtin.is_exit() {
-                return Ok(true);
+                return Ok(Exit::Yes);
             }
 
             if !builtin.is_blocking() {
@@ -47,7 +48,8 @@ pub fn run(
                     setting.new_line(),
                     Some(&setting.bin_paths()),
                 )?;
-                return Ok(false);
+
+                return Ok(Exit::No);
             }
         }
     }
@@ -127,7 +129,7 @@ fn run_forks(
     history: &mut History,
     newline: &NewLine,
     bin_paths: &Vec<&str>,
-) -> Result<bool, Error> {
+) -> Result<Exit, Error> {
     let mut pipeline_stderr = create_pipe()?;
     let mut pipelines_stdout = mass_create_pipes(count_pipes(parseds))?;
     let mut forks: Vec<Fork> = vec![];
@@ -222,7 +224,7 @@ fn run_forks(
                     )?;
 
                     //always return exit=true after the fork is completed
-                    return Ok(true);
+                    return Ok(Exit::Yes);
                 } else {
                     // any return value is a error, which is equivalent to exit=true
                     return Err(fork.hot_reload_bin(parsed.command(), parsed.args()));
@@ -298,7 +300,7 @@ fn run_forks(
     if forks.is_empty() {
         mass_close_pipes(pipelines_stdout);
         pipeline_stderr.close();
-        return Ok(false);
+        return Ok(Exit::No);
     }
 
     pipeline_stderr.close_write_end();
@@ -348,7 +350,7 @@ fn run_forks(
     mass_close_pipes(pipelines_stdout);
     pipeline_stderr.close();
 
-    Ok(false)
+    Ok(Exit::No)
 }
 
 fn transfer_datasets(

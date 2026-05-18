@@ -1,6 +1,6 @@
 mod handler;
 
-use self::handler::{command, exit, history as history_get, HistoryDirection};
+use self::handler::{command, exit as command_exit, history as history_get, HistoryDirection};
 use self::handler::{input_add, input_complete, input_sub};
 use crate::fmt::bell;
 use crate::history::History;
@@ -38,11 +38,11 @@ pub fn mode_interactive(
         }
 
         let action = action.unwrap();
-        let is_exit = run_handler(state, stdio, history, setting, &action, bell.as_str())?;
+        let exit = run_handler(state, stdio, history, setting, &action, bell.as_str())?;
 
         state.set_previous_action(action);
 
-        if is_exit {
+        if matches!(exit, Exit::Yes) {
             break;
         }
     }
@@ -70,16 +70,19 @@ fn run_handler(
     setting: &Setting,
     action: &TerminalAction,
     bell: &str,
-) -> Result<bool, Error> {
-    let mut is_exit = false;
+) -> Result<Exit, Error> {
+    let mut exit = Exit::No;
 
     match action {
         TerminalAction::Command => {
             disable_raw_mode()?;
-            is_exit = command(stdio, state, history, setting)?;
+            exit = command(stdio, state, history, setting)?;
             enable_raw_mode()?;
         }
-        TerminalAction::Exit => is_exit = exit(stdio)?,
+        TerminalAction::Exit => {
+            command_exit(stdio)?;
+            exit = Exit::Yes;
+        }
         TerminalAction::HistoryNext => {
             history_get(&HistoryDirection::Next, stdio, state, history, bell)?
         }
@@ -91,5 +94,10 @@ fn run_handler(
         TerminalAction::InputComplete => input_complete(stdio, state, setting, bell)?,
     };
 
-    Ok(is_exit)
+    Ok(exit)
+}
+
+pub enum Exit {
+    Yes,
+    No,
 }

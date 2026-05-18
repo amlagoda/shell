@@ -1,3 +1,4 @@
+use crate::control::Exit;
 use crate::core::run;
 use crate::fmt::new_line_raw;
 use crate::history::History;
@@ -12,13 +13,13 @@ pub fn handle(
     state: &mut State,
     history: &mut History,
     setting: &Setting,
-) -> Result<bool, Error> {
+) -> Result<Exit, Error> {
     let input = state.input().get();
 
     if input.is_none() {
         print_newline(stdio, setting)?;
 
-        return Ok(false);
+        return Ok(Exit::No);
     }
 
     let parseds = parse(input.unwrap())?;
@@ -26,19 +27,19 @@ pub fn handle(
     if parseds.is_none() {
         print_newline(stdio, setting)?;
 
-        return Ok(false);
+        return Ok(Exit::No);
     }
 
-    let is_exit = run(&parseds.unwrap().iter().collect(), stdio, history, setting)?;
+    let exit = run(&parseds.unwrap().iter().collect(), stdio, history, setting)?;
 
     state.input().reset();
     history.reset();
 
-    if !is_exit {
+    if matches!(exit, Exit::No) {
         print_newline(stdio, setting)?;
     }
 
-    Ok(is_exit)
+    Ok(exit)
 }
 
 fn print_newline(stdio: &mut Stdio, setting: &Setting) -> Result<(), Error> {
