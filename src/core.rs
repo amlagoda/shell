@@ -6,7 +6,7 @@ use crate::fs::{to_cloned_file, to_nonblock_file, transfer_data};
 use crate::history::History;
 use crate::io::Stdio;
 use crate::parser::Parsed;
-use crate::pipeline::{create_pipe, mass_close_pipes, mass_create_pipes};
+use crate::pipeline::{create_pipe, mass_create_pipes};
 use crate::process::{kill_forks, pid, to_group, Fork};
 use crate::setting::Setting;
 use std::fs::File;
@@ -146,7 +146,6 @@ fn run_forks(
             let fork = Fork::try_new();
 
             if let Err(err) = fork {
-                mass_close_pipes(pipelines_stdout);
                 kill_forks(forks);
                 return Err(err);
             }
@@ -160,18 +159,15 @@ fn run_forks(
 
                 if !is_first_command {
                     if let Err(err) = fork.set_stdin(pipelines_stdout[number - 1].read_end()) {
-                        mass_close_pipes(pipelines_stdout);
                         return Err(err);
                     }
                 }
 
                 if let Err(err) = fork.set_stdout(stdout) {
-                    mass_close_pipes(pipelines_stdout);
                     return Err(err);
                 }
 
                 if let Err(err) = fork.set_stderr(pipeline_stderr.write_end()) {
-                    mass_close_pipes(pipelines_stdout);
                     return Err(err);
                 }
 
@@ -181,7 +177,6 @@ fn run_forks(
                         let file = get_write_file(redirect.path(), redirect.is_append());
 
                         if let Err(err) = file {
-                            mass_close_pipes(pipelines_stdout);
                             return Err(err);
                         }
 
@@ -194,13 +189,12 @@ fn run_forks(
                         };
 
                         if let Err(err) = status {
-                            mass_close_pipes(pipelines_stdout);
                             return Err(err);
                         }
                     }
                 }
 
-                mass_close_pipes(pipelines_stdout);
+                drop(pipelines_stdout);
                 drop(pipeline_stderr);
 
                 if let Some(builtin) = to_builtin(command) {
@@ -236,7 +230,6 @@ fn run_forks(
                     let fork = Fork::try_new();
 
                     if let Err(err) = fork {
-                        mass_close_pipes(pipelines_stdout);
                         kill_forks(forks);
                         return Err(err);
                     }
@@ -247,21 +240,18 @@ fn run_forks(
                         to_group(0, group_pid);
 
                         if let Err(err) = fork.set_stdin(pipelines_stdout[number - 1].read_end()) {
-                            mass_close_pipes(pipelines_stdout);
                             return Err(err);
                         }
 
                         if let Err(err) = fork.set_stdout(pipelines_stdout[number].write_end()) {
-                            mass_close_pipes(pipelines_stdout);
                             return Err(err);
                         }
 
                         if let Err(err) = fork.set_stderr(pipeline_stderr.write_end()) {
-                            mass_close_pipes(pipelines_stdout);
                             return Err(err);
                         }
 
-                        mass_close_pipes(pipelines_stdout);
+                        drop(pipelines_stdout);
 
                         let mut args = vec![redirect.path()];
 
@@ -288,7 +278,6 @@ fn run_forks(
     }
 
     if forks.is_empty() {
-        mass_close_pipes(pipelines_stdout);
         return Ok(Exit::No);
     }
 
@@ -307,7 +296,6 @@ fn run_forks(
 
     if let Err(err) = datasets {
         kill_forks(forks);
-        mass_close_pipes(pipelines_stdout);
         return Err(err);
     }
 
@@ -333,9 +321,6 @@ fn run_forks(
             _ => {}
         }
     }
-
-    pipelines_stdout.pop();
-    mass_close_pipes(pipelines_stdout);
 
     Ok(Exit::No)
 }

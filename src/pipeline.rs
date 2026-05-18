@@ -17,8 +17,6 @@ pub fn mass_create_pipes(count: usize) -> Result<Vec<Pipeline>, Error> {
         });
 
         if let Err(err) = pipeline {
-            mass_close_pipes(pipelines);
-
             return Err(err);
         }
 
@@ -32,12 +30,6 @@ pub fn mass_create_pipes(count: usize) -> Result<Vec<Pipeline>, Error> {
 
 pub fn create_pipe() -> Result<Pipeline, Error> {
     Pipeline::try_new(PipelineEndsType::Pipe)
-}
-
-pub fn mass_close_pipes(pipelines: Vec<Pipeline>) {
-    for mut pipeline in pipelines {
-        pipeline.close();
-    }
 }
 
 pub struct Pipeline {
