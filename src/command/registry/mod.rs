@@ -77,3 +77,11 @@ impl Display for Builtin {
         Ok(())
     }
 }
+
+pub fn first_or_default(args: Option<&Vec<&str>>, default: &str) -> String {
+    if let Some(args) = args {
+        args.first().unwrap_or(&default).to_string()
+    } else {
+        default.to_string()
+    }
+}

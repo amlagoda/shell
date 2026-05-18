@@ -1,3 +1,4 @@
+use crate::command::registry::first_or_default as get_path;
 use crate::fmt::NewLine;
 use crate::io::Stdio;
 use std::env::{home_dir, set_current_dir};
@@ -9,7 +10,7 @@ pub fn run_command(
     newline: &NewLine,
     args: Option<&Vec<&str>>,
 ) -> Result<(), Error> {
-    let mut path = get_path(args);
+    let mut path = get_path(args, "~");
 
     if path == "~" {
         let err1 = Error::other("HOME is not set");
@@ -39,16 +40,6 @@ pub fn run_command(
     set_current_dir(path.as_str())?;
 
     Ok(())
-}
-
-fn get_path(args: Option<&Vec<&str>>) -> String {
-    let mut path = "~";
-
-    if let Some(args) = args {
-        path = args.first().unwrap_or(&path);
-    }
-
-    path.to_string()
 }
 
 // I'm not testing the command cd because

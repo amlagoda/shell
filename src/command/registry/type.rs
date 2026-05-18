@@ -1,4 +1,4 @@
-use crate::command::registry::Builtin;
+use crate::command::registry::{first_or_default as get_command, Builtin};
 use crate::fmt::NewLine;
 use crate::fs::find_file;
 use crate::io::Stdio;
@@ -10,7 +10,7 @@ pub fn run_command(
     bin_paths: Option<&Vec<&str>>,
     args: Option<&Vec<&str>>,
 ) -> Result<(), Error> {
-    let command = get_command(args);
+    let command = get_command(args, "");
     let mut msg = format!("{}: not found", command);
     let mut to_stderr = true;
 
@@ -49,16 +49,6 @@ pub fn run_command(
     }
 
     Ok(())
-}
-
-fn get_command(args: Option<&Vec<&str>>) -> String {
-    let mut command = "";
-
-    if let Some(args) = args {
-        command = args.first().unwrap_or(&command);
-    }
-
-    command.to_string()
 }
 
 // #[cfg(test)]
