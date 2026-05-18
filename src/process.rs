@@ -40,20 +40,24 @@ impl Fork {
         self.pid == 0
     }
 
-    pub fn set_stdin(&self, file_descriptor: u32) -> Result<(), Error> {
+    pub fn set_stdin(&self, file_descriptor: i32) -> Result<(), Error> {
         self.set_io(&Stdio::Stdin, file_descriptor)
     }
 
-    pub fn set_stdout(&self, file_descriptor: u32) -> Result<(), Error> {
+    pub fn set_stdout(&self, file_descriptor: i32) -> Result<(), Error> {
         self.set_io(&Stdio::Stdout, file_descriptor)
     }
 
-    pub fn set_stderr(&self, file_descriptor: u32) -> Result<(), Error> {
+    pub fn set_stderr(&self, file_descriptor: i32) -> Result<(), Error> {
         self.set_io(&Stdio::Stderr, file_descriptor)
     }
 
-    fn set_io(&self, io: &Stdio, file_descriptor: u32) -> Result<(), Error> {
-        let status = unsafe { c_dup2(file_descriptor as i32, io.as_uint() as i32) };
+    fn set_io(&self, io: &Stdio, file_descriptor: i32) -> Result<(), Error> {
+        if file_descriptor < 0 {
+            return Err(Error::other("incorrect file descriptor"));
+        }
+
+        let status = unsafe { c_dup2(file_descriptor, io.as_int()) };
 
         if status == -1 {
             Err(Error::other("dup2 error"))
@@ -124,7 +128,7 @@ enum Stdio {
 }
 
 impl Stdio {
-    fn as_uint(&self) -> u32 {
+    fn as_int(&self) -> i32 {
         match self {
             Stdio::Stdin => 0,
             Stdio::Stdout => 1,

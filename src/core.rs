@@ -189,7 +189,7 @@ fn run_forks(
                             return Err(err);
                         }
 
-                        let file_descriptor = file.unwrap().into_raw_fd() as u32;
+                        let file_descriptor = file.unwrap().into_raw_fd();
 
                         let status = if redirect.is_stdout() {
                             fork.set_stdout(file_descriptor)
@@ -354,8 +354,8 @@ fn run_forks(
 }
 
 fn transfer_datasets(
-    stdout: u32,
-    stderr: u32,
+    stdout: i32,
+    stderr: i32,
     stdio: &mut Stdio,
     proceed: &Arc<AtomicBool>,
 ) -> Result<[(File, File, Arc<AtomicBool>); 2], Error> {

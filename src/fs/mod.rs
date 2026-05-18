@@ -21,7 +21,11 @@ pub fn to_cloned_file(file_descriptor: u32) -> Result<File, Error> {
     Ok(unsafe { File::from_raw_fd(c_dup(file_descriptor as i32)) })
 }
 
-pub fn to_nonblock_file(file_descriptor: u32) -> Result<File, Error> {
+pub fn to_nonblock_file(file_descriptor: i32) -> Result<File, Error> {
+    if file_descriptor < 0 {
+        return Err(Error::other("incorrect file descriptor"));
+    }
+
     let status = unsafe { c_fcntl(file_descriptor as i32, F_SETFL, O_NONBLOCK) };
 
     if status == -1 {

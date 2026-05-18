@@ -40,8 +40,8 @@ pub fn mass_close_pipes(pipelines: Vec<Pipeline>) {
 }
 
 pub struct Pipeline {
-    read_end: u32,
-    write_end: u32,
+    read_end: i32,
+    write_end: i32,
 }
 
 impl Pipeline {
@@ -58,8 +58,8 @@ impl Pipeline {
 
         if status == 0 {
             let pipeline = Pipeline {
-                read_end: ends[0] as u32,
-                write_end: ends[1] as u32,
+                read_end: ends[0],
+                write_end: ends[1],
             };
 
             Ok(pipeline)
@@ -97,18 +97,18 @@ impl Pipeline {
         }
 
         let pipeline = Pipeline {
-            read_end: read_end as u32,
-            write_end: write_end as u32,
+            read_end: read_end,
+            write_end: write_end,
         };
 
         Ok(pipeline)
     }
 
-    pub fn read_end(&self) -> u32 {
+    pub fn read_end(&self) -> i32 {
         self.read_end
     }
 
-    pub fn write_end(&self) -> u32 {
+    pub fn write_end(&self) -> i32 {
         self.write_end
     }
 
