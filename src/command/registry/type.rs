@@ -52,11 +52,13 @@ pub fn run_command(
 }
 
 fn get_command(args: Option<&Vec<&str>>) -> String {
+    let mut command = "";
+
     if let Some(args) = args {
-        args.first().unwrap().to_string()
-    } else {
-        "".to_string()
+        command = args.first().unwrap_or(&command);
     }
+
+    command.to_string()
 }
 
 // #[cfg(test)]
