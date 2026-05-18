@@ -22,7 +22,10 @@ impl History {
 
     pub fn add(&mut self, mut values: Vec<String>) {
         self.data.append(&mut values);
-        self.navigator = RevIter::new(self.data.len() - 1);
+
+        if !self.data.is_empty() {
+            self.navigator = RevIter::new(self.data.len() - 1);
+        }
     }
 
     pub fn lasts(&self, count: Option<usize>) -> (impl Iterator<Item = &str>, usize) {
