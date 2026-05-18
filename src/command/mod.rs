@@ -1,11 +1,11 @@
 mod registry;
 
-use self::registry::cd::run_command as run_command_cd;
-use self::registry::echo::run_command as run_command_echo;
-use self::registry::history::run_command as run_command_history;
-use self::registry::pwd::run_command as run_command_pwd;
-use self::registry::r#type::run_command as run_command_type;
-use self::registry::yes::run_command as run_command_yes;
+use self::registry::cd as run_command_cd;
+use self::registry::echo as run_command_echo;
+use self::registry::history as run_command_history;
+use self::registry::pwd as run_command_pwd;
+use self::registry::r#type as run_command_type;
+use self::registry::yes as run_command_yes;
 use self::registry::Builtin;
 use crate::fmt::NewLine;
 use crate::history::History;

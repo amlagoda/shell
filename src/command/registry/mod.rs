@@ -1,9 +1,16 @@
-pub mod cd;
-pub mod echo;
-pub mod history;
-pub mod pwd;
-pub mod r#type;
-pub mod yes;
+mod cd;
+mod echo;
+mod history;
+mod pwd;
+mod r#type;
+mod yes;
+
+pub use cd::run_command as cd;
+pub use echo::run_command as echo;
+pub use history::run_command as history;
+pub use pwd::run_command as pwd;
+pub use r#type::run_command as r#type;
+pub use yes::run_command as yes;
 
 use std::fmt::{Display, Error, Formatter};
 
