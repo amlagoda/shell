@@ -107,19 +107,19 @@ impl Pipeline {
 
     fn close(&mut self) {
         if self.read_end >= 0 {
-            unsafe { c_close(self.read_end as i32) };
+            unsafe { c_close(self.read_end) };
             self.read_end = -1;
         }
 
         if self.write_end >= 0 {
-            unsafe { c_close(self.write_end as i32) };
+            unsafe { c_close(self.write_end) };
             self.write_end = -1;
         }
     }
 
     pub fn close_write_end(&mut self) {
         if self.write_end >= 0 {
-            unsafe { c_close(self.write_end as i32) };
+            unsafe { c_close(self.write_end) };
             self.write_end = -1;
         }
     }
