@@ -3,6 +3,7 @@ use libc::{grantpt as c_grantpt, posix_openpt as c_posix_openpt, O_NOCTTY, O_RDW
 use libc::{open as c_open, ptsname as c_ptsname, unlockpt as c_unlockpt};
 use std::ffi::CStr;
 use std::io::Error;
+use std::ops::Drop;
 
 // last pipeline is pty, others - pipe
 pub fn mass_create_pipes(count: usize) -> Result<Vec<Pipeline>, Error> {
@@ -112,7 +113,7 @@ impl Pipeline {
         self.write_end
     }
 
-    pub fn close(&mut self) {
+    fn close(&mut self) {
         if self.read_end >= 0 {
             unsafe { c_close(self.read_end as i32) };
             self.read_end = -1;
@@ -129,6 +130,12 @@ impl Pipeline {
             unsafe { c_close(self.write_end as i32) };
             self.write_end = -1;
         }
+    }
+}
+
+impl Drop for Pipeline {
+    fn drop(&mut self) {
+        self.close();
     }
 }
 

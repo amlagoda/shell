@@ -11,6 +11,7 @@ use crate::process::{kill_forks, pid, to_group, Fork};
 use crate::setting::Setting;
 use std::fs::File;
 use std::io::{Error, Write};
+use std::mem::drop;
 use std::os::fd::{AsRawFd, IntoRawFd};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -146,7 +147,6 @@ fn run_forks(
 
             if let Err(err) = fork {
                 mass_close_pipes(pipelines_stdout);
-                pipeline_stderr.close();
                 kill_forks(forks);
                 return Err(err);
             }
@@ -161,20 +161,17 @@ fn run_forks(
                 if !is_first_command {
                     if let Err(err) = fork.set_stdin(pipelines_stdout[number - 1].read_end()) {
                         mass_close_pipes(pipelines_stdout);
-                        pipeline_stderr.close();
                         return Err(err);
                     }
                 }
 
                 if let Err(err) = fork.set_stdout(stdout) {
                     mass_close_pipes(pipelines_stdout);
-                    pipeline_stderr.close();
                     return Err(err);
                 }
 
                 if let Err(err) = fork.set_stderr(pipeline_stderr.write_end()) {
                     mass_close_pipes(pipelines_stdout);
-                    pipeline_stderr.close();
                     return Err(err);
                 }
 
@@ -185,7 +182,6 @@ fn run_forks(
 
                         if let Err(err) = file {
                             mass_close_pipes(pipelines_stdout);
-                            pipeline_stderr.close();
                             return Err(err);
                         }
 
@@ -199,14 +195,13 @@ fn run_forks(
 
                         if let Err(err) = status {
                             mass_close_pipes(pipelines_stdout);
-                            pipeline_stderr.close();
                             return Err(err);
                         }
                     }
                 }
 
                 mass_close_pipes(pipelines_stdout);
-                pipeline_stderr.close();
+                drop(pipeline_stderr);
 
                 if let Some(builtin) = to_builtin(command) {
                     let mut stdio = Stdio::new();
@@ -242,7 +237,6 @@ fn run_forks(
 
                     if let Err(err) = fork {
                         mass_close_pipes(pipelines_stdout);
-                        pipeline_stderr.close();
                         kill_forks(forks);
                         return Err(err);
                     }
@@ -254,24 +248,20 @@ fn run_forks(
 
                         if let Err(err) = fork.set_stdin(pipelines_stdout[number - 1].read_end()) {
                             mass_close_pipes(pipelines_stdout);
-                            pipeline_stderr.close();
                             return Err(err);
                         }
 
                         if let Err(err) = fork.set_stdout(pipelines_stdout[number].write_end()) {
                             mass_close_pipes(pipelines_stdout);
-                            pipeline_stderr.close();
                             return Err(err);
                         }
 
                         if let Err(err) = fork.set_stderr(pipeline_stderr.write_end()) {
                             mass_close_pipes(pipelines_stdout);
-                            pipeline_stderr.close();
                             return Err(err);
                         }
 
                         mass_close_pipes(pipelines_stdout);
-                        pipeline_stderr.close();
 
                         let mut args = vec![redirect.path()];
 
@@ -299,7 +289,6 @@ fn run_forks(
 
     if forks.is_empty() {
         mass_close_pipes(pipelines_stdout);
-        pipeline_stderr.close();
         return Ok(Exit::No);
     }
 
@@ -319,7 +308,6 @@ fn run_forks(
     if let Err(err) = datasets {
         kill_forks(forks);
         mass_close_pipes(pipelines_stdout);
-        pipeline_stderr.close();
         return Err(err);
     }
 
@@ -348,7 +336,6 @@ fn run_forks(
 
     pipelines_stdout.pop();
     mass_close_pipes(pipelines_stdout);
-    pipeline_stderr.close();
 
     Ok(Exit::No)
 }
