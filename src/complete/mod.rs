@@ -100,7 +100,6 @@ fn complete_file(input: &str, path: &str) -> Option<Completion> {
 
         Some(Completion::new_variants(r))
     } else {
-        println!("4");
         None
     }
 }
