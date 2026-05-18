@@ -1,7 +1,7 @@
 mod io;
 
 use self::io::create_pipe;
-use self::io::{mass_close as mass_close_pipes, mass_create as mass_create_pipes};
+use self::io::{mass_close_pipes, mass_create_pipes};
 use crate::command::{run_command as run_builtin, to_command as to_builtin};
 use crate::fmt::NewLine;
 use crate::fs::{find_file, get_write_file};

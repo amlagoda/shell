@@ -5,7 +5,7 @@ use std::ffi::CStr;
 use std::io::Error;
 
 // last pipeline is pty, others - pipe
-pub fn mass_create(count: usize) -> Result<Vec<Pipeline>, Error> {
+pub fn mass_create_pipes(count: usize) -> Result<Vec<Pipeline>, Error> {
     let mut pipelines: Vec<Pipeline> = vec![];
 
     for num in 0..count {
@@ -16,7 +16,7 @@ pub fn mass_create(count: usize) -> Result<Vec<Pipeline>, Error> {
         });
 
         if let Err(err) = pipeline {
-            mass_close(pipelines);
+            mass_close_pipes(pipelines);
 
             return Err(err);
         }
@@ -33,7 +33,7 @@ pub fn create_pipe() -> Result<Pipeline, Error> {
     Pipeline::try_new(PipelineEndsType::Pipe)
 }
 
-pub fn mass_close(pipelines: Vec<Pipeline>) {
+pub fn mass_close_pipes(pipelines: Vec<Pipeline>) {
     for mut pipeline in pipelines {
         pipeline.close();
     }
