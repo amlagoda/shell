@@ -126,37 +126,41 @@ mod tests {
     use crate::env::get_current_dir;
 
     #[test]
-    fn test_find_file() {
-        let r = get_fixture_dir();
+    fn test_find_file() -> Result<(), Error> {
+        let r = get_fixture_dir()?;
         let paths = vec![r.as_str()];
         let only_executable = true;
 
         let r = find_file("exe", &paths, only_executable).unwrap();
-        assert_eq!(format!("{}exe", get_fixture_dir()), r);
+        assert_eq!(format!("{}exe", get_fixture_dir()?), r);
 
         let r = find_file("not_exe", &paths, only_executable);
         assert!(r.is_none());
 
         let r = find_file("not_exists", &paths, only_executable);
         assert!(r.is_none());
+
+        Ok(())
     }
 
     #[test]
-    fn test_find_files() {
-        let r = get_fixture_dir();
+    fn test_find_files() -> Result<(), Error> {
+        let r = get_fixture_dir()?;
         let paths = vec![r.as_str()];
         let only_executable = true;
 
         let r = find_files("ex", &paths, only_executable).unwrap();
-        let f = vec![format!("{}exe", get_fixture_dir())];
+        let f = vec![format!("{}exe", get_fixture_dir()?)];
         assert_eq!(f, r);
 
         let r = find_files("not", &paths, only_executable);
         assert!(r.is_none());
+
+        Ok(())
     }
 
-    fn get_fixture_dir() -> String {
+    fn get_fixture_dir() -> Result<String, Error> {
         // ends with a slash
-        format!("{}/test/fixture/fs/", get_current_dir())
+        Ok(format!("{}/test/fixture/fs/", get_current_dir()?))
     }
 }

@@ -31,7 +31,7 @@ fn main() -> Result<(), Error> {
     let mut history = History::new();
     let mut new_line = NewLine::new();
 
-    let current_dir = get_current_dir();
+    let current_dir = get_current_dir()?;
     let bin_paths = get_bin_paths()?;
     let args = get_args();
     let available_commands = get_command_list();

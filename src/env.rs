@@ -18,9 +18,12 @@ pub fn get_history_log_path() -> Option<String> {
     var("HISTFILE").ok()
 }
 
-pub fn get_current_dir() -> String {
+pub fn get_current_dir() -> Result<String, Error> {
     // does not end with a slash
-    current_dir().unwrap().to_str().unwrap().to_string()
+    let err = Error::other("invalid utf-8");
+    let current_dir = current_dir()?.to_str().ok_or(err)?.to_string();
+
+    Ok(current_dir)
 }
 
 // pub fn get_current_exe() -> Result<String, Error> {
