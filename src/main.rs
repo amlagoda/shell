@@ -20,6 +20,7 @@ mod history;
 mod io;
 mod keyboard;
 mod parser;
+mod pipeline;
 mod process;
 mod session;
 mod setting;

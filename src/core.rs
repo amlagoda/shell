@@ -1,7 +1,3 @@
-mod io;
-
-use self::io::create_pipe;
-use self::io::{mass_close_pipes, mass_create_pipes};
 use crate::command::{run_command as run_builtin, to_command as to_builtin};
 use crate::fmt::NewLine;
 use crate::fs::{find_file, get_write_file};
@@ -9,6 +5,7 @@ use crate::fs::{to_cloned_file, to_nonblock_file, transfer_data};
 use crate::history::History;
 use crate::io::Stdio;
 use crate::parser::Parsed;
+use crate::pipeline::{create_pipe, mass_close_pipes, mass_create_pipes};
 use crate::process::{kill_forks, pid, to_group, Fork};
 use crate::setting::Setting;
 use std::fs::File;
