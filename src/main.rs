@@ -2,7 +2,7 @@ use self::command::get_command_list;
 use self::control::{mode_command, mode_interactive};
 use self::env::{get_args, get_bin_paths, get_current_dir, get_history_log_path};
 use self::fmt::NewLine;
-use self::history::{download as download_history_log, upload as upload_history_log, History};
+use self::history::{download as download_history_log, upload as upload_history_log};
 use self::io::Stdio;
 use self::session::State;
 use self::setting::{ProgramMode, Setting};
@@ -29,7 +29,6 @@ mod structure;
 fn main() -> Result<(), Error> {
     let mut stdio = Stdio::new();
     let mut state = State::new();
-    let mut history = History::new();
     let mut new_line = NewLine::new();
 
     let current_dir = get_current_dir()?;
@@ -38,7 +37,7 @@ fn main() -> Result<(), Error> {
     let available_commands = get_command_list();
 
     if let Some(path) = get_history_log_path() {
-        download_history_log(&mut history, path.as_str())?;
+        download_history_log(state.history(), path.as_str())?;
     }
 
     if args.is_empty() {
@@ -53,7 +52,7 @@ fn main() -> Result<(), Error> {
             available_commands,
         );
 
-        mode_interactive(&mut state, &mut stdio, &mut history, &setting)?;
+        mode_interactive(&mut state, &mut stdio, &setting)?;
     } else {
         let input = args.join(" ");
         state.input().push_as_system(input.as_str());
@@ -66,11 +65,11 @@ fn main() -> Result<(), Error> {
             available_commands,
         );
 
-        mode_command(&mut state, &mut stdio, &mut history, &setting)?;
+        mode_command(&mut state, &mut stdio, &setting)?;
     }
 
     if let Some(file_path) = get_history_log_path() {
-        upload_history_log(&mut history, file_path.as_str(), false)?;
+        upload_history_log(state.history(), file_path.as_str(), false)?;
     }
 
     Ok(())

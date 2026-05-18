@@ -1,11 +1,13 @@
 mod terminal;
 
 use self::terminal::Input;
+use crate::history::History;
 use crate::keyboard::TerminalAction;
 
 pub struct State {
     input: Input,
     previous_action: Option<TerminalAction>,
+    history: History,
 }
 
 impl State {
@@ -13,6 +15,7 @@ impl State {
         State {
             input: Input::new(),
             previous_action: None,
+            history: History::new(),
         }
     }
 
@@ -26,5 +29,9 @@ impl State {
 
     pub fn input(&mut self) -> &mut Input {
         &mut self.input
+    }
+
+    pub fn history(&mut self) -> &mut History {
+        &mut self.history
     }
 }
