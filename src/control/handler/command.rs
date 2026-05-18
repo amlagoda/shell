@@ -20,8 +20,15 @@ pub fn handle(
         return Ok(false);
     }
 
-    let parseds = parse(input.unwrap())?.unwrap();
-    let is_exit = run(&parseds.iter().collect(), stdio, history, setting)?;
+    let parseds = parse(input.unwrap())?;
+
+    if parseds.is_none() {
+        print_newline(stdio, setting)?;
+
+        return Ok(false);
+    }
+
+    let is_exit = run(&parseds.unwrap().iter().collect(), stdio, history, setting)?;
 
     state.input().reset();
     history.reset();
