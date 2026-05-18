@@ -1,3 +1,4 @@
+use crate::fmt::new_line_raw;
 use crate::io::Stdio;
 use crate::keyboard::TerminalAction;
 use crate::session::State;
@@ -40,7 +41,13 @@ pub fn handle(
 }
 
 fn more_found(stdio: &mut Stdio, current: &str, found: Vec<&str>) -> Result<(), Error> {
-    let to_print = format!("\r\n{}\r\n$ {}", found.join("  "), current);
+    let to_print = format!(
+        "{}{}{}$ {}",
+        new_line_raw(),
+        found.join("  "),
+        new_line_raw(),
+        current
+    );
 
     write!(stdio.stdout(), "{}", to_print)?;
     stdio.stdout().flush()?;

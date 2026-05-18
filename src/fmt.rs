@@ -59,3 +59,7 @@ fn to_string(val: bool) -> String {
 pub fn bell() -> String {
     "\x07".to_string()
 }
+
+pub fn new_line_raw() -> String {
+    "\r\n".to_string()
+}

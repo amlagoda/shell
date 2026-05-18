@@ -1,4 +1,5 @@
 use crate::core::run;
+use crate::fmt::new_line_raw;
 use crate::history::History;
 use crate::io::Stdio;
 use crate::parser::parse;
@@ -42,9 +43,9 @@ pub fn handle(
 
 fn print_newline(stdio: &mut Stdio, setting: &Setting) -> Result<(), Error> {
     if setting.is_interactive_mode() {
-        write!(stdio.stdout(), "\r\n$ ")?;
+        write!(stdio.stdout(), "{}$ ", new_line_raw())?;
     } else {
-        write!(stdio.stdout(), "\r\n")?;
+        write!(stdio.stdout(), "{}", new_line_raw())?;
     }
 
     stdio.stdout().flush()?;

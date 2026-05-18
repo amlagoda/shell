@@ -1,3 +1,4 @@
+use crate::fmt::new_line_raw;
 use std::fs::File;
 use std::io::{Error, ErrorKind, Read, Write};
 use std::str::from_utf8;
@@ -66,7 +67,7 @@ fn write_lines(
             skip_first_newline = false;
             write!(target, "{}", line)?;
         } else {
-            write!(target, "\r\n{}", line)?;
+            write!(target, "{}{}", new_line_raw(), line)?;
         }
 
         target.flush()?;
