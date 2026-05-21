@@ -18,7 +18,7 @@ pub fn to_cloned_file(file_descriptor: u32) -> Result<File, Error> {
         return Err(Error::other("dup error"));
     }
 
-    Ok(unsafe { File::from_raw_fd(c_dup(file_descriptor as i32)) })
+    Ok(unsafe { File::from_raw_fd(file_descriptor) })
 }
 
 pub fn to_nonblock_file(file_descriptor: i32) -> Result<File, Error> {
