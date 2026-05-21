@@ -163,38 +163,22 @@ fn run_forks(
                 let stdout = pipelines_stdout[number].write_end();
 
                 if !is_first_command {
-                    if let Err(err) = fork.set_stdin(pipelines_stdout[number - 1].read_end()) {
-                        return Err(err);
-                    }
+                    fork.set_stdin(pipelines_stdout[number - 1].read_end())?;
                 }
 
-                if let Err(err) = fork.set_stdout(stdout) {
-                    return Err(err);
-                }
-
-                if let Err(err) = fork.set_stderr(pipeline_stderr.write_end()) {
-                    return Err(err);
-                }
+                fork.set_stdout(stdout)?;
+                fork.set_stderr(pipeline_stderr.write_end())?;
 
                 if let Some(redirect) = parsed.redirect() {
                     if redirect.is_stderr() || (redirect.is_stdout() && parsed.pipeline().is_none())
                     {
-                        let file = get_write_file(redirect.path(), redirect.is_append());
+                        let file = get_write_file(redirect.path(), redirect.is_append())?;
+                        let file_descriptor = file.into_raw_fd();
 
-                        if let Err(err) = file {
-                            return Err(err);
-                        }
-
-                        let file_descriptor = file.unwrap().into_raw_fd();
-
-                        let status = if redirect.is_stdout() {
-                            fork.set_stdout(file_descriptor)
+                        if redirect.is_stdout() {
+                            fork.set_stdout(file_descriptor)?;
                         } else {
-                            fork.set_stderr(file_descriptor)
-                        };
-
-                        if let Err(err) = status {
-                            return Err(err);
+                            fork.set_stderr(file_descriptor)?;
                         }
                     }
                 }
@@ -243,19 +227,9 @@ fn run_forks(
 
                     if fork.is_child() {
                         to_group(0, group_pid)?;
-
-                        if let Err(err) = fork.set_stdin(pipelines_stdout[number - 1].read_end()) {
-                            return Err(err);
-                        }
-
-                        if let Err(err) = fork.set_stdout(pipelines_stdout[number].write_end()) {
-                            return Err(err);
-                        }
-
-                        if let Err(err) = fork.set_stderr(pipeline_stderr.write_end()) {
-                            return Err(err);
-                        }
-
+                        fork.set_stdin(pipelines_stdout[number - 1].read_end())?;
+                        fork.set_stdout(pipelines_stdout[number].write_end())?;
+                        fork.set_stderr(pipeline_stderr.write_end())?;
                         drop(pipelines_stdout);
 
                         let mut args = vec![redirect.path()];
