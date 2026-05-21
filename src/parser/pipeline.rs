@@ -1,3 +1,5 @@
+use std::cmp::PartialEq;
+
 pub fn is_pipeline(arg: &str) -> bool {
     ["|", "|&"].contains(&arg)
 }
@@ -19,13 +21,12 @@ pub enum Pipeline {
     StdoutStderr,
 }
 
-impl Pipeline {
-    #[cfg(test)]
-    pub fn is_stdout(&self) -> bool {
-        match self {
-            Pipeline::Stdout => true,
-            Pipeline::StdoutStderr => false,
-        }
+impl PartialEq for Pipeline {
+    fn eq(&self, other: &Pipeline) -> bool {
+        matches!(
+            (self, other),
+            (Pipeline::Stdout, Pipeline::Stdout) | (Pipeline::StdoutStderr, Pipeline::StdoutStderr)
+        )
     }
 }
 
@@ -40,6 +41,6 @@ mod tests {
 
     #[test]
     fn test_to_pipeline() {
-        assert!(!to_pipeline("|&").unwrap().is_stdout());
+        assert!(to_pipeline("|&").unwrap() == Pipeline::StdoutStderr);
     }
 }

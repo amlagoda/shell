@@ -201,6 +201,7 @@ fn parse_input(input: &str) -> VecDeque<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::parser::Pipeline;
 
     #[test]
     fn test_parse() -> Result<(), Error> {
@@ -237,13 +238,13 @@ mod tests {
         assert!(!p1.redirect().unwrap().is_stderr());
         assert!(!p1.redirect().unwrap().is_append());
         assert_eq!("path", p1.redirect().unwrap().path());
-        assert!(p1.pipeline().unwrap().is_stdout());
+        assert!(p1.pipeline().unwrap() == &Pipeline::Stdout);
 
         let p2 = parseds.next().unwrap();
         assert_eq!("cmd2", p2.command());
         assert!(p2.args().is_none());
         assert!(p2.redirect().is_none());
-        assert!(p2.pipeline().unwrap().is_stdout());
+        assert!(p2.pipeline().unwrap() == &Pipeline::Stdout);
 
         let p3 = parseds.next().unwrap();
         assert_eq!("cmd3", p3.command());
