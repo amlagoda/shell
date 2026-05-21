@@ -1,3 +1,5 @@
+use std::cmp::PartialEq;
+
 pub fn is_redirect(arg: &str) -> bool {
     [">", "1>", "2>", ">>", "1>>", "2>>"].contains(&arg)
 }
@@ -24,15 +26,15 @@ impl Redirect {
     }
 
     pub fn is_stderr(&self) -> bool {
-        self.flow.is_stderr()
+        self.flow == RedirectFlow::Stderr
     }
 
     pub fn is_stdout(&self) -> bool {
-        self.flow.is_stdout()
+        self.flow == RedirectFlow::Stdout
     }
 
     pub fn is_append(&self) -> bool {
-        self.mode.is_append()
+        self.mode == RedirectMode::Append
     }
 
     pub fn path(&self) -> &str {
@@ -45,19 +47,13 @@ enum RedirectFlow {
     Stderr,
 }
 
-impl RedirectFlow {
-    fn is_stderr(&self) -> bool {
-        match self {
-            RedirectFlow::Stdout => false,
-            RedirectFlow::Stderr => true,
-        }
-    }
-
-    fn is_stdout(&self) -> bool {
-        match self {
-            RedirectFlow::Stdout => true,
-            RedirectFlow::Stderr => false,
-        }
+impl PartialEq for RedirectFlow {
+    fn eq(&self, other: &RedirectFlow) -> bool {
+        matches!(
+            (self, other),
+            (RedirectFlow::Stdout, RedirectFlow::Stdout)
+                | (RedirectFlow::Stderr, RedirectFlow::Stderr)
+        )
     }
 }
 
@@ -66,12 +62,13 @@ enum RedirectMode {
     Append,
 }
 
-impl RedirectMode {
-    fn is_append(&self) -> bool {
-        match self {
-            RedirectMode::Rewrite => false,
-            RedirectMode::Append => true,
-        }
+impl PartialEq for RedirectMode {
+    fn eq(&self, other: &RedirectMode) -> bool {
+        matches!(
+            (self, other),
+            (RedirectMode::Rewrite, RedirectMode::Rewrite)
+                | (RedirectMode::Append, RedirectMode::Append)
+        )
     }
 }
 
@@ -132,8 +129,7 @@ mod tests {
     fn test_parse_redirect() {
         let (flow, mode) = parse_redirect("2>>");
 
-        assert!(flow.is_stderr());
-
-        assert!(mode.is_append());
+        assert!(flow == RedirectFlow::Stderr);
+        assert!(mode == RedirectMode::Append);
     }
 }
