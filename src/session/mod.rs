@@ -4,6 +4,7 @@ use self::terminal::Input;
 use crate::history::History;
 use crate::keyboard::TerminalAction;
 
+#[derive(Default)]
 pub struct State {
     input: Input,
     previous_action: Option<TerminalAction>,
@@ -11,14 +12,6 @@ pub struct State {
 }
 
 impl State {
-    pub fn new() -> State {
-        State {
-            input: Input::new(),
-            previous_action: None,
-            history: History::new(),
-        }
-    }
-
     pub fn previous_action(&self) -> Option<&TerminalAction> {
         self.previous_action.as_ref()
     }

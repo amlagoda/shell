@@ -1,16 +1,10 @@
+#[derive(Default)]
 pub struct Input {
     data: String,
     has_user_typing: bool,
 }
 
 impl Input {
-    pub fn new() -> Input {
-        Input {
-            data: String::new(),
-            has_user_typing: false,
-        }
-    }
-
     pub fn get(&self) -> Option<&str> {
         if self.data.is_empty() {
             None
@@ -59,7 +53,7 @@ mod tests {
 
     #[test]
     fn test_input() {
-        let mut input = Input::new();
+        let mut input = Input::default();
 
         input.push_as_system("a");
         assert_eq!(Some("a"), input.get());

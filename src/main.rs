@@ -27,9 +27,9 @@ mod setting;
 mod structure;
 
 fn main() -> Result<(), Error> {
-    let mut stdio = Stdio::new();
-    let mut state = State::new();
-    let mut new_line = NewLine::new();
+    let mut stdio = Stdio::default();
+    let mut state = State::default();
+    let mut new_line = NewLine::default();
 
     let current_dir = get_current_dir()?;
     let bin_paths = get_bin_paths()?;

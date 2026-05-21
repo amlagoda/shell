@@ -10,6 +10,7 @@ pub fn parse(input: &str) -> ParsedsResult {
     to_parsed(parse_input(input))
 }
 
+#[derive(Default)]
 pub struct Parsed {
     command: String,
     args: Option<Vec<String>>,
@@ -18,20 +19,6 @@ pub struct Parsed {
 }
 
 impl Parsed {
-    fn from(
-        command: String,
-        args: Option<Vec<String>>,
-        redirect: Option<Redirect>,
-        pipeline: Option<Pipeline>,
-    ) -> Parsed {
-        Parsed {
-            command,
-            args,
-            redirect,
-            pipeline,
-        }
-    }
-
     pub fn command(&self) -> &str {
         self.command.as_str()
     }
@@ -54,7 +41,7 @@ impl Parsed {
 fn to_parsed(mut args: VecDeque<String>) -> ParsedsResult {
     let err = Error::other("parse error");
     let mut previous: Option<String> = None;
-    let mut parsed = Parsed::from(String::new(), None, None, None);
+    let mut parsed = Parsed::default();
     let mut parseds: Vec<Parsed> = vec![];
     let mut command_mode = false;
     let mut redirect_mode = false;
@@ -79,7 +66,7 @@ fn to_parsed(mut args: VecDeque<String>) -> ParsedsResult {
         if is_command(current.as_str(), prev) {
             if pipeline_mode {
                 parseds.push(parsed);
-                parsed = Parsed::from(String::new(), None, None, None);
+                parsed = Parsed::default();
             }
 
             command_mode = true;

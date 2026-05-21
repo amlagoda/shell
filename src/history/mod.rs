@@ -4,6 +4,7 @@ pub use load::{download, upload};
 
 use crate::structure::KeyValue;
 use crate::structure::RevIter;
+use std::default::Default;
 
 pub struct History {
     data: Vec<String>,
@@ -11,15 +12,17 @@ pub struct History {
     uploads: KeyValue,
 }
 
-impl History {
-    pub fn new() -> History {
+impl Default for History {
+    fn default() -> History {
         History {
             data: Vec::with_capacity(50),
-            navigator: RevIter::from(0),
-            uploads: KeyValue::new(),
+            navigator: RevIter::default(),
+            uploads: KeyValue::default(),
         }
     }
+}
 
+impl History {
     pub fn add(&mut self, mut values: Vec<String>) {
         self.data.append(&mut values);
 
@@ -105,7 +108,7 @@ mod tests {
 
     #[test]
     fn test_lasts() {
-        let mut log = History::new();
+        let mut log = History::default();
 
         let (mut iter, len) = log.lasts(None);
         assert_eq!(None, iter.next());

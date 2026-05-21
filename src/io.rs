@@ -1,3 +1,4 @@
+use std::default::Default;
 use std::fs::File;
 use std::os::fd::FromRawFd;
 
@@ -7,8 +8,8 @@ pub struct Stdio {
     stderr: File,
 }
 
-impl Stdio {
-    pub fn new() -> Stdio {
+impl Default for Stdio {
+    fn default() -> Stdio {
         unsafe {
             Stdio {
                 stdin: File::from_raw_fd(0),
@@ -17,7 +18,9 @@ impl Stdio {
             }
         }
     }
+}
 
+impl Stdio {
     pub fn from(stdin: File, stdout: File, stderr: File) -> Stdio {
         Stdio {
             stdin,

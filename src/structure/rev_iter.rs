@@ -1,3 +1,4 @@
+#[derive(Default)]
 pub struct RevIter {
     current: usize,
     last: usize,
@@ -43,7 +44,7 @@ mod tests {
 
     #[test]
     fn test_rev_iter() {
-        let mut rev_iter = RevIter::from(0);
+        let mut rev_iter = RevIter::default();
         assert_eq!(None, rev_iter.prev());
         assert_eq!(Some(0), rev_iter.next());
         assert_eq!(None, rev_iter.next());

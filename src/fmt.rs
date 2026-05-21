@@ -1,3 +1,4 @@
+#[derive(Default)]
 pub struct NewLine {
     stdout_start: bool,
     stdout_end: bool,
@@ -6,15 +7,6 @@ pub struct NewLine {
 }
 
 impl NewLine {
-    pub fn new() -> NewLine {
-        NewLine {
-            stdout_start: false,
-            stdout_end: false,
-            stderr_start: false,
-            stderr_end: false,
-        }
-    }
-
     pub fn stdout_start(&self) -> String {
         to_string(self.stdout_start)
     }

@@ -1,15 +1,19 @@
+use std::default::Default;
+
 // for small, rarely used collection
 pub struct KeyValue {
     data: Vec<(String, usize)>,
 }
 
-impl KeyValue {
-    pub fn new() -> KeyValue {
+impl Default for KeyValue {
+    fn default() -> KeyValue {
         KeyValue {
             data: Vec::with_capacity(50),
         }
     }
+}
 
+impl KeyValue {
     pub fn get(&self, key: &str) -> Option<usize> {
         for (inkey, value) in self.data.iter() {
             if inkey == key {
@@ -38,7 +42,7 @@ mod tests {
 
     #[test]
     fn test_key_value() {
-        let mut key_value = KeyValue::new();
+        let mut key_value = KeyValue::default();
 
         key_value.set("key", 1);
         assert_eq!(1, key_value.get("key").unwrap());

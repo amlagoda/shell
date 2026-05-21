@@ -97,7 +97,7 @@ fn run_native(
         let stdin = (*stdio.stdin()).try_clone()?;
         let mut stdout = (*stdio.stdout()).try_clone()?;
         let mut stderr = (*stdio.stderr()).try_clone()?;
-        let mut newline = NewLine::new();
+        let mut newline = NewLine::default();
 
         if redirect.is_stderr() {
             stderr = file;
@@ -187,8 +187,8 @@ fn run_forks(
                 drop(pipeline_stderr);
 
                 if let Some(builtin) = to_builtin(command) {
-                    let mut stdio = Stdio::new();
-                    let mut newline = NewLine::new();
+                    let mut stdio = Stdio::default();
+                    let mut newline = NewLine::default();
                     newline.set_stdout_end(true);
                     newline.set_stderr_end(true);
 
