@@ -78,15 +78,18 @@ impl Pipeline {
         }
 
         if unsafe { c_grantpt(read_end) == -1 } {
+            unsafe { c_close(read_end) };
             return Err(Error::other("grantpt error"));
         }
 
         if unsafe { c_unlockpt(read_end) == -1 } {
+            unsafe { c_close(read_end) };
             return Err(Error::other("unlockpt error"));
         }
 
         let name_ptr = unsafe { c_ptsname(read_end) };
         if name_ptr.is_null() {
+            unsafe { c_close(read_end) };
             return Err(Error::other("ptsname error"));
         }
 
@@ -96,6 +99,7 @@ impl Pipeline {
 
         let write_end = unsafe { c_open(name.as_ptr() as *const _, O_RDWR) };
         if write_end == -1 {
+            unsafe { c_close(read_end) };
             return Err(Error::other("open error"));
         }
 
