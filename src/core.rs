@@ -6,7 +6,7 @@ use crate::fs::{to_cloned_file, to_nonblock_file, transfer_data};
 use crate::history::History;
 use crate::io::Stdio;
 use crate::parser::Parsed;
-use crate::pipeline::{create_pipe, mass_create_pipes};
+use crate::pipeline::{create_pipe, mass_create_pipes, PipelinesResult};
 use crate::process::{kill_forks, pid, to_group, Fork};
 use crate::setting::Setting;
 use std::fs::File;
@@ -131,8 +131,13 @@ fn run_forks(
     newline: &NewLine,
     bin_paths: &Vec<&str>,
 ) -> Result<Exit, Error> {
+    let mut pipelines_stdout = match mass_create_pipes(count_pipes(parseds)) {
+        PipelinesResult::Err(err) => return Err(err),
+        PipelinesResult::None => return Err(Error::other("empty parseds")),
+        PipelinesResult::Some(pipes) => pipes,
+    };
+
     let mut pipeline_stderr = create_pipe()?;
-    let mut pipelines_stdout = mass_create_pipes(count_pipes(parseds))?;
     let mut forks: Vec<Fork> = vec![];
     let group_pid = pid();
     let mut number = 0;

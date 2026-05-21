@@ -6,7 +6,11 @@ use std::io::Error;
 use std::ops::Drop;
 
 // last pipeline is pty, others - pipe
-pub fn mass_create_pipes(count: usize) -> Result<Vec<Pipeline>, Error> {
+pub fn mass_create_pipes(count: usize) -> PipelinesResult {
+    if count == 0 {
+        return PipelinesResult::None;
+    }
+
     let mut pipelines: Vec<Pipeline> = vec![];
 
     for num in 0..count {
@@ -17,7 +21,7 @@ pub fn mass_create_pipes(count: usize) -> Result<Vec<Pipeline>, Error> {
         });
 
         if let Err(err) = pipeline {
-            return Err(err);
+            return PipelinesResult::Err(err);
         }
 
         pipelines.push(pipeline.unwrap());
@@ -25,7 +29,13 @@ pub fn mass_create_pipes(count: usize) -> Result<Vec<Pipeline>, Error> {
 
     pipelines.reverse();
 
-    Ok(pipelines)
+    PipelinesResult::Some(pipelines)
+}
+
+pub enum PipelinesResult {
+    Some(Vec<Pipeline>),
+    None,
+    Err(Error),
 }
 
 pub fn create_pipe() -> Result<Pipeline, Error> {
