@@ -26,13 +26,13 @@ pub fn to_nonblock_file(file_descriptor: i32) -> Result<File, Error> {
         return Err(Error::other("incorrect file descriptor"));
     }
 
-    let status = unsafe { c_fcntl(file_descriptor as i32, F_SETFL, O_NONBLOCK) };
+    let status = unsafe { c_fcntl(file_descriptor, F_SETFL, O_NONBLOCK) };
 
     if status == -1 {
         return Err(Error::other("fcntl error"));
     }
 
-    let file = unsafe { File::from_raw_fd(file_descriptor as i32) };
+    let file = unsafe { File::from_raw_fd(file_descriptor) };
 
     Ok(file)
 }

@@ -104,8 +104,8 @@ impl Pipeline {
         }
 
         let pipeline = Pipeline {
-            read_end: read_end,
-            write_end: write_end,
+            read_end,
+            write_end,
         };
 
         Ok(pipeline)
