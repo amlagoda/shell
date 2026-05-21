@@ -24,7 +24,7 @@ pub fn handle(stdio: &mut Stdio, state: &mut State, setting: &Setting) -> Result
     state.input().reset();
     state.history().reset();
 
-    if matches!(exit, Exit::No) {
+    if exit == Exit::No {
         print_newline(stdio, setting)?;
     }
 

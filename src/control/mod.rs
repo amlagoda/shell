@@ -9,6 +9,7 @@ use crate::session::State;
 use crate::setting::Setting;
 use crossterm::event::read as get_pressed_key;
 use crossterm::terminal::{disable_raw_mode, enable_raw_mode};
+use std::cmp::PartialEq;
 use std::io::{Error, Write};
 
 pub fn mode_interactive(
@@ -40,7 +41,7 @@ pub fn mode_interactive(
 
         state.set_previous_action(action);
 
-        if matches!(exit, Exit::Yes) {
+        if exit == Exit::Yes {
             break;
         }
     }
@@ -88,4 +89,14 @@ fn run_handler(
 pub enum Exit {
     Yes,
     No,
+}
+
+impl PartialEq for Exit {
+    fn eq(&self, other: &Exit) -> bool {
+        match (self, other) {
+            (Exit::Yes, Exit::Yes) => true,
+            (Exit::No, Exit::No) => true,
+            _ => false,
+        }
+    }
 }
