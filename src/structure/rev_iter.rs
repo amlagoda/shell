@@ -5,7 +5,7 @@ pub struct RevIter {
 }
 
 impl RevIter {
-    pub fn new(last: usize) -> RevIter {
+    pub fn from(last: usize) -> RevIter {
         RevIter {
             current: last,
             last,
@@ -43,13 +43,13 @@ mod tests {
 
     #[test]
     fn test_rev_iter() {
-        let mut rev_iter = RevIter::new(0);
+        let mut rev_iter = RevIter::from(0);
         assert_eq!(None, rev_iter.prev());
         assert_eq!(Some(0), rev_iter.next());
         assert_eq!(None, rev_iter.next());
         assert_eq!(None, rev_iter.prev());
 
-        let mut rev_iter = RevIter::new(2);
+        let mut rev_iter = RevIter::from(2);
         assert_eq!(None, rev_iter.prev());
         assert_eq!(Some(2), rev_iter.next());
         assert_eq!(Some(1), rev_iter.next());

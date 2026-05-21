@@ -15,7 +15,7 @@ impl History {
     pub fn new() -> History {
         History {
             data: Vec::with_capacity(50),
-            navigator: RevIter::new(0),
+            navigator: RevIter::from(0),
             uploads: KeyValue::new(),
         }
     }
@@ -24,7 +24,7 @@ impl History {
         self.data.append(&mut values);
 
         if !self.data.is_empty() {
-            self.navigator = RevIter::new(self.data.len() - 1);
+            self.navigator = RevIter::from(self.data.len() - 1);
         }
     }
 
@@ -78,7 +78,7 @@ impl History {
             last_index = self.data.len() - 1;
         }
 
-        self.navigator = RevIter::new(last_index);
+        self.navigator = RevIter::from(last_index);
     }
 
     pub fn len(&self) -> usize {

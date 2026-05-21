@@ -9,7 +9,7 @@ pub fn to_redirect(redirect: &str, path: &str) -> Option<Redirect> {
 
     let (flow, mode) = parse_redirect(normalize_redirect(redirect).as_str());
 
-    Some(Redirect::new(flow, mode, path.to_string()))
+    Some(Redirect::from(flow, mode, path.to_string()))
 }
 
 pub struct Redirect {
@@ -19,7 +19,7 @@ pub struct Redirect {
 }
 
 impl Redirect {
-    fn new(flow: RedirectFlow, mode: RedirectMode, path: String) -> Redirect {
+    fn from(flow: RedirectFlow, mode: RedirectMode, path: String) -> Redirect {
         Redirect { flow, mode, path }
     }
 

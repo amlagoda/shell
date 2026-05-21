@@ -18,7 +18,7 @@ pub struct Parsed {
 }
 
 impl Parsed {
-    fn new(
+    fn from(
         command: String,
         args: Option<Vec<String>>,
         redirect: Option<Redirect>,
@@ -54,7 +54,7 @@ impl Parsed {
 fn to_parsed(mut args: VecDeque<String>) -> ParsedsResult {
     let err = Error::other("parse error");
     let mut previous: Option<String> = None;
-    let mut parsed = Parsed::new(String::new(), None, None, None);
+    let mut parsed = Parsed::from(String::new(), None, None, None);
     let mut parseds: Vec<Parsed> = vec![];
     let mut command_mode = false;
     let mut redirect_mode = false;
@@ -79,7 +79,7 @@ fn to_parsed(mut args: VecDeque<String>) -> ParsedsResult {
         if is_command(current.as_str(), prev) {
             if pipeline_mode {
                 parseds.push(parsed);
-                parsed = Parsed::new(String::new(), None, None, None);
+                parsed = Parsed::from(String::new(), None, None, None);
             }
 
             command_mode = true;

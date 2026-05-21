@@ -13,7 +13,7 @@ pub fn validate(args: Option<&Vec<&str>>) -> Result<Validated, Error> {
     let mut count: Option<usize> = None;
 
     if args.is_none() {
-        return Ok(Validated::new(count, loaders));
+        return Ok(Validated::from(count, loaders));
     }
 
     let mut iter = args.unwrap().iter();
@@ -50,7 +50,7 @@ pub fn validate(args: Option<&Vec<&str>>) -> Result<Validated, Error> {
         }
     }
 
-    Ok(Validated::new(count, loaders))
+    Ok(Validated::from(count, loaders))
 }
 
 pub struct Validated {
@@ -59,7 +59,7 @@ pub struct Validated {
 }
 
 impl Validated {
-    fn new(count: Option<usize>, loaders: Option<Vec<Loader>>) -> Validated {
+    fn from(count: Option<usize>, loaders: Option<Vec<Loader>>) -> Validated {
         Validated { count, loaders }
     }
 
