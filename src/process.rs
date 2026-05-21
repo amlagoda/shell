@@ -7,8 +7,14 @@ use std::ptr::{null, null_mut};
 use std::thread::sleep;
 use std::time::{Duration, Instant};
 
-pub fn to_group(member_pid: u32, group_pid: u32) {
-    unsafe { c_setpgid(member_pid as i32, group_pid as i32) };
+pub fn to_group(member_pid: u32, group_pid: u32) -> Result<(), Error> {
+    let status = unsafe { c_setpgid(member_pid as i32, group_pid as i32) };
+
+    if status == -1 {
+        Err(Error::other("setpgid error"))
+    } else {
+        Ok(())
+    }
 }
 
 pub fn pid() -> u32 {

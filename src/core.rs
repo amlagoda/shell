@@ -158,7 +158,7 @@ fn run_forks(
             let fork = fork.unwrap();
 
             if fork.is_child() {
-                to_group(0, group_pid);
+                to_group(0, group_pid)?;
                 let is_first_command = number == 0;
                 let stdout = pipelines_stdout[number].write_end();
 
@@ -242,7 +242,7 @@ fn run_forks(
                     let fork = fork.unwrap();
 
                     if fork.is_child() {
-                        to_group(0, group_pid);
+                        to_group(0, group_pid)?;
 
                         if let Err(err) = fork.set_stdin(pipelines_stdout[number - 1].read_end()) {
                             return Err(err);
