@@ -1,4 +1,5 @@
 use crate::fmt::NewLine;
+use std::cmp::PartialEq;
 
 pub struct Setting {
     mode: ProgramMode,
@@ -42,11 +43,21 @@ impl Setting {
     }
 
     pub fn is_interactive_mode(&self) -> bool {
-        matches!(self.mode, ProgramMode::Interactive)
+        self.mode == ProgramMode::Interactive
     }
 }
 
 pub enum ProgramMode {
     Interactive,
     Command,
+}
+
+impl PartialEq for ProgramMode {
+    fn eq(&self, other: &ProgramMode) -> bool {
+        matches!(
+            (self, other),
+            (ProgramMode::Interactive, ProgramMode::Interactive)
+                | (ProgramMode::Command, ProgramMode::Command)
+        )
+    }
 }
