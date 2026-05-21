@@ -93,10 +93,6 @@ pub enum Exit {
 
 impl PartialEq for Exit {
     fn eq(&self, other: &Exit) -> bool {
-        match (self, other) {
-            (Exit::Yes, Exit::Yes) => true,
-            (Exit::No, Exit::No) => true,
-            _ => false,
-        }
+        matches!((self, other), (Exit::Yes, Exit::Yes) | (Exit::No, Exit::No))
     }
 }

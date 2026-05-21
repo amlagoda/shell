@@ -62,10 +62,9 @@ enum UploadMode {
 
 impl PartialEq for UploadMode {
     fn eq(&self, other: &UploadMode) -> bool {
-        match (self, other) {
-            (UploadMode::Rewrite, UploadMode::Rewrite) => true,
-            (UploadMode::Append, UploadMode::Append) => true,
-            _ => false,
-        }
+        matches!(
+            (self, other),
+            (UploadMode::Rewrite, UploadMode::Rewrite) | (UploadMode::Append, UploadMode::Append)
+        )
     }
 }

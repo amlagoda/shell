@@ -27,16 +27,16 @@ pub enum Builtin {
 
 impl PartialEq for Builtin {
     fn eq(&self, other: &Builtin) -> bool {
-        match (self, other) {
-            (Builtin::Cd, Builtin::Cd) => true,
-            (Builtin::Echo, Builtin::Echo) => true,
-            (Builtin::History, Builtin::History) => true,
-            (Builtin::Exit, Builtin::Exit) => true,
-            (Builtin::Pwd, Builtin::Pwd) => true,
-            (Builtin::Type, Builtin::Type) => true,
-            (Builtin::Yes, Builtin::Yes) => true,
-            _ => false,
-        }
+        matches!(
+            (self, other),
+            (Builtin::Cd, Builtin::Cd)
+                | (Builtin::Echo, Builtin::Echo)
+                | (Builtin::History, Builtin::History)
+                | (Builtin::Exit, Builtin::Exit)
+                | (Builtin::Pwd, Builtin::Pwd)
+                | (Builtin::Type, Builtin::Type)
+                | (Builtin::Yes, Builtin::Yes)
+        )
     }
 }
 
