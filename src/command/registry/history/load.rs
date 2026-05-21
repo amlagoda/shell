@@ -1,3 +1,4 @@
+use std::cmp::PartialEq;
 use std::io::Error;
 
 pub struct Loader {
@@ -20,17 +21,27 @@ impl Loader {
     }
 
     pub fn is_download(&self) -> bool {
-        matches!(self.operation, Operation::Download)
+        self.operation == Operation::Download
     }
 
     pub fn is_upload_append(&self) -> bool {
-        matches!(self.operation, Operation::Upload(UploadMode::Append))
+        self.operation == Operation::Upload(UploadMode::Append)
     }
 }
 
 enum Operation {
     Download,
     Upload(UploadMode),
+}
+
+impl PartialEq for Operation {
+    fn eq(&self, other: &Operation) -> bool {
+        match (self, other) {
+            (Operation::Download, Operation::Download) => true,
+            (Operation::Upload(a), Operation::Upload(b)) => a == b,
+            _ => false,
+        }
+    }
 }
 
 impl Operation {
@@ -47,4 +58,14 @@ impl Operation {
 enum UploadMode {
     Rewrite,
     Append,
+}
+
+impl PartialEq for UploadMode {
+    fn eq(&self, other: &UploadMode) -> bool {
+        match (self, other) {
+            (UploadMode::Rewrite, UploadMode::Rewrite) => true,
+            (UploadMode::Append, UploadMode::Append) => true,
+            _ => false,
+        }
+    }
 }
