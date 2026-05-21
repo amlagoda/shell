@@ -10,31 +10,38 @@ use std::path::Path;
 pub use find::{find_file, find_files};
 pub use write::transfer_data;
 
-// clone descriptor
-pub fn to_cloned_file(file_descriptor: u32) -> Result<File, Error> {
-    let file_descriptor = unsafe { c_dup(file_descriptor as i32) };
-
-    if file_descriptor == -1 {
-        return Err(Error::other("dup error"));
-    }
-
-    Ok(unsafe { File::from_raw_fd(file_descriptor) })
-}
-
-pub fn to_nonblock_file(file_descriptor: i32) -> Result<File, Error> {
+pub fn clone_descriptor_as_file(file_descriptor: i32) -> Result<File, Error> {
     if file_descriptor < 0 {
         return Err(Error::other("incorrect file descriptor"));
     }
 
-    let status = unsafe { c_fcntl(file_descriptor, F_SETFL, O_NONBLOCK) };
+    let cloned = unsafe { c_dup(file_descriptor) };
+
+    if cloned == -1 {
+        return Err(Error::other("dup error"));
+    }
+
+    Ok(unsafe { File::from_raw_fd(cloned) })
+}
+
+pub fn clone_descriptor_as_nonblock_file(file_descriptor: i32) -> Result<File, Error> {
+    if file_descriptor < 0 {
+        return Err(Error::other("incorrect file descriptor"));
+    }
+
+    let cloned = unsafe { c_dup(file_descriptor) };
+
+    if cloned == -1 {
+        return Err(Error::other("dup error"));
+    }
+
+    let status = unsafe { c_fcntl(cloned, F_SETFL, O_NONBLOCK) };
 
     if status == -1 {
         return Err(Error::other("fcntl error"));
     }
 
-    let file = unsafe { File::from_raw_fd(file_descriptor) };
-
-    Ok(file)
+    Ok(unsafe { File::from_raw_fd(cloned) })
 }
 
 pub fn get_read_file(path: &str) -> Result<File, Error> {

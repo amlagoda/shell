@@ -1,8 +1,8 @@
 use crate::command::{run_command as run_builtin, to_command as to_builtin};
 use crate::control::Exit;
 use crate::fmt::NewLine;
+use crate::fs::{clone_descriptor_as_file, clone_descriptor_as_nonblock_file, transfer_data};
 use crate::fs::{find_file, get_write_file};
-use crate::fs::{to_cloned_file, to_nonblock_file, transfer_data};
 use crate::history::History;
 use crate::io::Stdio;
 use crate::parser::Parsed;
@@ -304,17 +304,18 @@ fn run_forks(
     Ok(Exit::No)
 }
 
+// clone stdout/stderr/stdio.stdout/stdio.stderr
 fn transfer_datasets(
     stdout: i32,
     stderr: i32,
     stdio: &mut Stdio,
     proceed: &Arc<AtomicBool>,
 ) -> Result<[(File, File, Arc<AtomicBool>); 2], Error> {
-    let stdout_from = to_nonblock_file(stdout)?;
-    let stderr_from = to_nonblock_file(stderr)?;
+    let stdout_from = clone_descriptor_as_nonblock_file(stdout)?;
+    let stderr_from = clone_descriptor_as_nonblock_file(stderr)?;
 
-    let stdout_to = to_cloned_file(stdio.stdout().as_raw_fd() as u32)?;
-    let stderr_to = to_cloned_file(stdio.stderr().as_raw_fd() as u32)?;
+    let stdout_to = clone_descriptor_as_file(stdio.stdout().as_raw_fd())?;
+    let stderr_to = clone_descriptor_as_file(stdio.stderr().as_raw_fd())?;
 
     let (stdout_proceed, stderr_proceed) = (Arc::clone(proceed), Arc::clone(proceed));
 
