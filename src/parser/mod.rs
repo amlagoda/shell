@@ -6,7 +6,7 @@ use self::redirect::{is_redirect, to_redirect, Redirect};
 use std::collections::VecDeque;
 use std::io::Error;
 
-pub fn parse(input: &str) -> Result<Option<Vec<Parsed>>, Error> {
+pub fn parse(input: &str) -> ParsedsResult {
     to_parsed(parse_input(input))
 }
 
@@ -51,7 +51,7 @@ impl Parsed {
     }
 }
 
-fn to_parsed(mut args: VecDeque<String>) -> Result<Option<Vec<Parsed>>, Error> {
+fn to_parsed(mut args: VecDeque<String>) -> ParsedsResult {
     let err = Error::other("parse error");
     let mut previous: Option<String> = None;
     let mut parsed = Parsed::new(String::new(), None, None, None);
@@ -65,15 +65,15 @@ fn to_parsed(mut args: VecDeque<String>) -> Result<Option<Vec<Parsed>>, Error> {
         let prev = previous.as_deref();
 
         if !command_mode && !is_command(current.as_str(), prev) {
-            return Err(err);
+            return ParsedsResult::Err(err);
         }
 
         if redirect_mode && !is_redirect_path(current.as_str(), prev) {
-            return Err(err);
+            return ParsedsResult::Err(err);
         }
 
         if pipeline_mode && !is_command(current.as_str(), prev) {
-            return Err(err);
+            return ParsedsResult::Err(err);
         }
 
         if is_command(current.as_str(), prev) {
@@ -109,7 +109,7 @@ fn to_parsed(mut args: VecDeque<String>) -> Result<Option<Vec<Parsed>>, Error> {
     }
 
     if redirect_mode || pipeline_mode {
-        return Err(err);
+        return ParsedsResult::Err(err);
     }
 
     if !parsed.command().is_empty() {
@@ -117,10 +117,16 @@ fn to_parsed(mut args: VecDeque<String>) -> Result<Option<Vec<Parsed>>, Error> {
     }
 
     if !parseds.is_empty() {
-        Ok(Some(parseds))
+        ParsedsResult::Some(parseds)
     } else {
-        Ok(None)
+        ParsedsResult::None
     }
+}
+
+pub enum ParsedsResult {
+    Err(Error),
+    None,
+    Some(Vec<Parsed>),
 }
 
 fn is_command(current: &str, previous: Option<&str>) -> bool {
@@ -211,26 +217,32 @@ mod tests {
 
     #[test]
     fn test_parse() -> Result<(), Error> {
-        assert!(parse(">").is_err());
-        assert!(parse("cmd >").is_err());
-        assert!(parse("> path").is_err());
-        assert!(parse("> > path").is_err());
-        assert!(parse("| > path").is_err());
-        assert!(parse("cmd > >").is_err());
-        assert!(parse("cmd > |").is_err());
+        let err = Error::other("parse error");
 
-        assert!(parse("|").is_err());
-        assert!(parse("cmd |").is_err());
-        assert!(parse("| cmd").is_err());
-        assert!(parse("> | cmd").is_err());
-        assert!(parse("| | cmd").is_err());
-        assert!(parse("cmd | |").is_err());
-        assert!(parse("cmd | >").is_err());
+        assert!(matches!(parse(">"), ParsedsResult::Err(_)));
+        assert!(matches!(parse("cmd >"), ParsedsResult::Err(_)));
+        assert!(matches!(parse("> path"), ParsedsResult::Err(_)));
+        assert!(matches!(parse("> > path"), ParsedsResult::Err(_)));
+        assert!(matches!(parse("| > path"), ParsedsResult::Err(_)));
+        assert!(matches!(parse("cmd > >"), ParsedsResult::Err(_)));
+        assert!(matches!(parse("cmd > |"), ParsedsResult::Err(_)));
 
-        assert!(parse("")?.is_none());
+        assert!(matches!(parse("|"), ParsedsResult::Err(_)));
+        assert!(matches!(parse("cmd |"), ParsedsResult::Err(_)));
+        assert!(matches!(parse("| cmd"), ParsedsResult::Err(_)));
+        assert!(matches!(parse("> | cmd"), ParsedsResult::Err(_)));
+        assert!(matches!(parse("| | cmd"), ParsedsResult::Err(_)));
+        assert!(matches!(parse("cmd | |"), ParsedsResult::Err(_)));
+        assert!(matches!(parse("cmd | >"), ParsedsResult::Err(_)));
+
+        assert!(matches!(parse(""), ParsedsResult::None));
 
         let r = "cmd1 arg1 arg2 > path | cmd2 | cmd3 arg > path1";
-        let mut parseds = parse(r)?.unwrap().into_iter();
+        let mut parseds = match parse(r) {
+            ParsedsResult::Err(err) => return Err(err),
+            ParsedsResult::None => return Err(err),
+            ParsedsResult::Some(parseds) => parseds.into_iter(),
+        };
 
         let p1 = parseds.next().unwrap();
         assert_eq!("cmd1", p1.command());
