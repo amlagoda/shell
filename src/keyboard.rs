@@ -1,4 +1,5 @@
 use crossterm::event::{KeyCode, KeyEvent, KeyModifiers};
+use std::cmp::PartialEq;
 
 pub fn to_action(key: &KeyEvent) -> Option<TerminalAction> {
     let action = match key.code {
@@ -32,4 +33,19 @@ pub enum TerminalAction {
     InputAdd(char),
     InputSub,
     InputComplete,
+}
+
+impl PartialEq for TerminalAction {
+    fn eq(&self, other: &TerminalAction) -> bool {
+        match (self, other) {
+            (TerminalAction::Command, TerminalAction::Command) => true,
+            (TerminalAction::Exit, TerminalAction::Exit) => true,
+            (TerminalAction::HistoryNext, TerminalAction::HistoryNext) => true,
+            (TerminalAction::HistoryPrev, TerminalAction::HistoryPrev) => true,
+            (TerminalAction::InputAdd(a), TerminalAction::InputAdd(b)) => a == b,
+            (TerminalAction::InputSub, TerminalAction::InputSub) => true,
+            (TerminalAction::InputComplete, TerminalAction::InputComplete) => true,
+            _ => false,
+        }
+    }
 }

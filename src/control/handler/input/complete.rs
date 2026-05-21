@@ -31,7 +31,7 @@ pub fn handle(
     }
 
     if let Some(previous_action) = state.previous_action() {
-        if matches!(previous_action, TerminalAction::InputComplete) {
+        if previous_action == &TerminalAction::InputComplete {
             let input = state.input().get();
             return more_found(stdio, input.unwrap(), variants.unwrap());
         }
