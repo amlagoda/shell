@@ -12,6 +12,7 @@ pub use pwd::run_command as pwd;
 pub use r#type::run_command as r#type;
 pub use yes::run_command as yes;
 
+use std::cmp::PartialEq;
 use std::fmt::{Display, Error, Formatter};
 
 pub enum Builtin {
@@ -22,6 +23,21 @@ pub enum Builtin {
     Pwd,
     Type,
     Yes,
+}
+
+impl PartialEq for Builtin {
+    fn eq(&self, other: &Builtin) -> bool {
+        match (self, other) {
+            (Builtin::Cd, Builtin::Cd) => true,
+            (Builtin::Echo, Builtin::Echo) => true,
+            (Builtin::History, Builtin::History) => true,
+            (Builtin::Exit, Builtin::Exit) => true,
+            (Builtin::Pwd, Builtin::Pwd) => true,
+            (Builtin::Type, Builtin::Type) => true,
+            (Builtin::Yes, Builtin::Yes) => true,
+            _ => false,
+        }
+    }
 }
 
 impl Builtin {
@@ -40,11 +56,11 @@ impl Builtin {
 
     // is_blocking - commands that block the program (like "yes")
     pub fn is_blocking(&self) -> bool {
-        matches!(self, Builtin::Yes)
+        self == &Builtin::Yes
     }
 
     pub fn is_exit(&self) -> bool {
-        matches!(self, Builtin::Exit)
+        self == &Builtin::Exit
     }
 
     fn list() -> Vec<Builtin> {
