@@ -2,14 +2,66 @@ use crate::{fs::find_files, setting::Setting};
 
 pub fn complete_input(input: &str, setting: &Setting) -> Option<Completion> {
     let args: Vec<&str> = input.split(" ").collect();
+    let last = args.last();
     let len = args.len();
 
     if len == 1 {
-        complete_command(args[0], &setting.available_commands(), &setting.bin_paths())
-    } else if len == 2 {
-        complete_file(args[1], setting.current_dir())
+        complete_command(
+            last.unwrap(),
+            &setting.available_commands(),
+            &setting.bin_paths(),
+        )
+    } else if len > 1 {
+        let file_search_data = get_file_search_data(last.unwrap(), setting.current_dir());
+        let search_path = file_search_data.path();
+        let file_prefix = file_search_data.file_prefix().unwrap_or("");
+
+        complete_file(file_prefix, search_path)
     } else {
         None
+    }
+}
+
+fn get_file_search_data(input: &str, current_dir: &str) -> FileSearchData {
+    if !input.contains("/") {
+        let input = if input.len() > 0 {
+            Some(input.to_string())
+        } else {
+            None
+        };
+
+        return FileSearchData::from(current_dir.to_string(), input);
+    }
+
+    let input: Vec<&str> = input.split("/").collect();
+    let file_prefix = input.last().unwrap();
+
+    if file_prefix == &"" {
+        FileSearchData::from(input.join("/"), None)
+    } else {
+        FileSearchData::from(
+            format!("{}/", input[0..input.len() - 1].join("/")),
+            Some(file_prefix.to_string()),
+        )
+    }
+}
+
+struct FileSearchData {
+    path: String,
+    file_prefix: Option<String>,
+}
+
+impl FileSearchData {
+    fn from(path: String, file_prefix: Option<String>) -> FileSearchData {
+        FileSearchData { path, file_prefix }
+    }
+
+    fn path(&self) -> &str {
+        self.path.as_str()
+    }
+
+    fn file_prefix(&self) -> Option<&str> {
+        self.file_prefix.as_deref()
     }
 }
 
@@ -105,7 +157,7 @@ fn complete_file(input: &str, path: &str) -> Option<Completion> {
 }
 
 fn complete(input: &str, variants: &Vec<&str>) -> Option<Completion> {
-    if input.is_empty() || variants.is_empty() {
+    if variants.is_empty() {
         return None;
     }
 
