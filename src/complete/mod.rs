@@ -1,4 +1,6 @@
-use crate::{fs::find_files, setting::Setting};
+use crate::fs::{find_bins_starts_with, find_files_starts_with, FindFilesResult};
+use crate::rule::Equal;
+use crate::setting::Setting;
 
 pub fn complete_input(input: &str, setting: &Setting) -> Option<Completion> {
     let args: Vec<&str> = input.split(" ").collect();
@@ -79,8 +81,7 @@ fn complete_command(input: &str, commands: &Vec<&str>, paths: &Vec<&str>) -> Opt
             .map(|v| v.iter().map(|s| s.to_string()).collect());
     }
 
-    let only_executable = true;
-    if let Some(r) = find_files(input, paths, only_executable) {
+    if let FindFilesResult::Some(r) = find_bins_starts_with(input, paths) {
         let r = r.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
         let r = paths_to_names(&r);
         let names = r.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
@@ -118,9 +119,8 @@ fn complete_command(input: &str, commands: &Vec<&str>, paths: &Vec<&str>) -> Opt
 
 fn complete_file(input: &str, path: &str) -> Option<Completion> {
     let mut variants: Option<Vec<String>> = None;
-    let only_executable = false;
 
-    if let Some(r) = find_files(input, &vec![path], only_executable) {
+    if let FindFilesResult::Some(r) = find_files_starts_with(input, &vec![path]) {
         let r = r.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
         let r = paths_to_names(&r);
         let names = r.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
@@ -164,7 +164,7 @@ fn complete(input: &str, variants: &Vec<&str>) -> Option<Completion> {
     let mut matches: Vec<String> = vec![];
 
     for r in variants {
-        if r.starts_with(input) && r != &input {
+        if Equal::StartsWithNotExac(r.to_string()).assert(input) {
             matches.push(r.to_string());
         }
     }
@@ -188,7 +188,7 @@ fn complete(input: &str, variants: &Vec<&str>) -> Option<Completion> {
     let is_chain = matches
         .iter()
         .filter(|&r| r != short)
-        .all(|r| r.starts_with(short.as_str()));
+        .all(|r| Equal::StartsWith(r.to_string()).assert(short.as_str()));
 
     if is_chain {
         let selected = short.replacen(input, "", 1);

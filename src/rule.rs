@@ -1,15 +1,23 @@
-pub enum Equal {
-    Exac(String),
-    StartsWith(String),
-    StartsWithNotExac(String),
+pub enum Comprasion {
+    Equal(String),
+    PatternStartsWith(String),
+    PatternStartsWithNotEqual(String),
+    AssertedStartsWith(String),
+    // AssertedStartsWithNotEqual(String),
 }
 
-impl Equal {
-    pub fn assert(&self, value: &str) -> bool {
+impl Comprasion {
+    pub fn assert(&self, asserted: &str) -> bool {
         match self {
-            Equal::Exac(r) => r == value,
-            Equal::StartsWith(r) => value.starts_with(r),
-            Equal::StartsWithNotExac(r) => value.starts_with(r) && value != r,
+            Comprasion::Equal(pattern) => pattern == asserted,
+            Comprasion::PatternStartsWith(pattern) => pattern.starts_with(asserted),
+            Comprasion::PatternStartsWithNotEqual(pattern) => {
+                pattern.starts_with(asserted) && pattern != asserted
+            }
+            Comprasion::AssertedStartsWith(pattern) => asserted.starts_with(pattern),
+            // Comprasion::AssertedStartsWithNotEqual(pattern) => {
+            //     asserted.starts_with(pattern) && asserted != pattern
+            // }
         }
     }
 }
@@ -20,24 +28,34 @@ mod tests {
     use std::io::Error;
 
     #[test]
-    fn test_equal() -> Result<(), Error> {
-        let equal = Equal::Exac("foo".to_string());
-        assert!(equal.assert("foo"));
-        assert!(!equal.assert("bar"));
-        assert!(!equal.assert("fo"));
-        assert!(!equal.assert("fooo"));
+    fn test_comprasion() -> Result<(), Error> {
+        let rule = Comprasion::Equal("foo".to_string());
+        assert!(rule.assert("foo"));
+        assert!(!rule.assert("fo"));
 
-        let equal = Equal::StartsWith("foo".to_string());
-        assert!(equal.assert("foo"));
-        assert!(!equal.assert("fo"));
-        assert!(!equal.assert("f"));
-        assert!(!equal.assert(""));
-        assert!(equal.assert("fooo"));
-        assert!(!equal.assert("o"));
+        let rule = Comprasion::PatternStartsWith("foo".to_string());
+        assert!(rule.assert("foo"));
+        assert!(rule.assert("fo"));
+        assert!(rule.assert("f"));
+        assert!(rule.assert(""));
+        assert!(!rule.assert("fooo"));
 
-        let equal = Equal::StartsWithNotExac("foo".to_string());
-        assert!(!equal.assert("foo"));
-        assert!(equal.assert("fooo"));
+        let rule = Comprasion::PatternStartsWithNotEqual("foo".to_string());
+        assert!(!rule.assert("foo"));
+        assert!(rule.assert("fo"));
+        assert!(rule.assert("f"));
+        assert!(rule.assert(""));
+        assert!(!rule.assert("fooo"));
+
+        let rule = Comprasion::AssertedStartsWith("foo".to_string());
+        assert!(rule.assert("fooo"));
+        assert!(rule.assert("foo"));
+        assert!(!rule.assert("fo"));
+
+        // let rule = Comprasion::AssertedStartsWithNotEqual("foo".to_string());
+        // assert!(rule.assert("fooo"));
+        // assert!(!rule.assert("foo"));
+        // assert!(!rule.assert("fo"));
 
         Ok(())
     }
