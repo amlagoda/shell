@@ -7,7 +7,8 @@ use std::io::Error;
 use std::os::fd::FromRawFd;
 use std::path::Path;
 
-pub use find::{find_file, find_files};
+pub use find::FindFilesResult;
+pub use find::{find_bins_by_name, find_bins_starts_with, find_files_starts_with};
 pub use write::transfer_data;
 
 pub fn clone_descriptor_as_file(file_descriptor: i32) -> Result<File, Error> {

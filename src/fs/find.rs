@@ -1,101 +1,31 @@
-use std::fs::{read_dir, DirEntry, ReadDir};
+use crate::rule::Comprasion;
+use std::cmp::PartialEq;
+use std::fs::{read_dir, DirEntry, Metadata};
 use std::io::Error;
 use std::os::unix::fs::PermissionsExt;
 
-pub fn find_file(name: &str, paths: &Vec<&str>, only_executable: bool) -> Option<String> {
-    // errors remains here
-    // because we need to go down the list
-    for path in paths {
-        if let Ok(dir) = read_dir(path) {
-            if let Some(found_path) = find_file_in_dir(name, dir, only_executable) {
-                return Some(found_path);
-            }
-        }
-    }
+pub fn find_bins_by_name(name: &str, paths: &Vec<&str>) -> FindFilesResult {
+    let rule = Comprasion::Equal(name.to_string());
 
-    None
+    find_files(paths, Some(&vec![&FileType::Executable]), Some(&rule), true)
 }
 
-pub fn find_files(
-    starts_with: &str,
-    paths: &Vec<&str>,
-    only_executable: bool,
-) -> Option<Vec<String>> {
-    // errors remains here
-    // because we need to go down the list
-    let mut found_paths = Vec::with_capacity(10);
+pub fn find_bins_starts_with(starts_with: &str, paths: &Vec<&str>) -> FindFilesResult {
+    let rule = Comprasion::AssertedStartsWith(starts_with.to_string());
 
-    for path in paths {
-        if let Ok(dir) = read_dir(path) {
-            if let Some(mut r) = find_files_in_dir(starts_with, dir, only_executable) {
-                found_paths.append(&mut r);
-            }
-        }
-    }
+    find_files(paths, Some(&vec![&FileType::Executable]), Some(&rule), true)
+}
 
-    if found_paths.is_empty() {
+pub fn find_files_starts_with(starts_with: &str, paths: &Vec<&str>) -> FindFilesResult {
+    let rule = Comprasion::AssertedStartsWith(starts_with.to_string());
+
+    let rrule = if starts_with.is_empty() {
         None
     } else {
-        Some(found_paths)
-    }
-}
+        Some(&rule)
+    };
 
-fn find_file_in_dir(name: &str, dir: ReadDir, only_executable: bool) -> Option<String> {
-    // errors remains here
-    // because we need to go down the list
-    for entry in dir.flatten() {
-        let current_name = get_name(&entry);
-
-        if current_name.is_none() {
-            continue;
-        }
-
-        if name != current_name.unwrap() {
-            continue;
-        }
-
-        if is_file(&entry, only_executable).is_ok_and(|s| s) {
-            if let Some(path) = get_path(&entry) {
-                return Some(path);
-            }
-        }
-    }
-
-    None
-}
-
-fn find_files_in_dir(
-    starts_with: &str,
-    dir: ReadDir,
-    only_executable: bool,
-) -> Option<Vec<String>> {
-    // errors remains here
-    // because we need to go down the list
-    let mut paths = Vec::with_capacity(10);
-
-    for entry in dir.flatten() {
-        let name = get_name(&entry);
-
-        if name.is_none() {
-            continue;
-        }
-
-        if !name.unwrap().starts_with(starts_with) {
-            continue;
-        }
-
-        if is_file(&entry, only_executable).is_ok_and(|s| s) {
-            if let Some(path) = get_path(&entry) {
-                paths.push(path);
-            }
-        }
-    }
-
-    if paths.is_empty() {
-        None
-    } else {
-        Some(paths)
-    }
+    find_files(paths, Some(&vec![&FileType::File]), rrule, true)
 }
 
 fn get_name(entry: &DirEntry) -> Option<String> {
@@ -106,17 +36,130 @@ fn get_path(entry: &DirEntry) -> Option<String> {
     entry.path().to_str().map(|r| Some(r.to_string()))?
 }
 
-fn is_file(entry: &DirEntry, is_executable: bool) -> Result<bool, Error> {
-    let metadata = entry.metadata()?;
-
-    if metadata.is_dir() {
-        return Ok(false);
+// ignore_errors
+// - search path is not a directory
+// - reading file metadata (permissions, etc)
+fn find_files(
+    search_paths: &Vec<&str>,
+    only_types: Option<&Vec<&FileType>>,
+    name_rule: Option<&Comprasion>,
+    ignore_errors: bool,
+) -> FindFilesResult {
+    if search_paths.is_empty() {
+        return FindFilesResult::Err(Error::other("search paths is empty"));
     }
 
-    if is_executable {
-        Ok(metadata.permissions().mode() & 0o111 != 0) // windows no
+    let mut found = vec![];
+
+    for path in search_paths {
+        let dir = read_dir(path);
+
+        if dir.is_err() {
+            if ignore_errors {
+                continue;
+            } else {
+                let msg = format!("{}: dir is invalid", path);
+                return FindFilesResult::Err(Error::other(msg));
+            }
+        }
+
+        for file in dir.unwrap().flatten() {
+            let name = get_name(&file);
+            if name.is_none() {
+                continue; // temporary file
+            }
+
+            let name = name.unwrap();
+            if let Some(name_rule) = name_rule {
+                if !name_rule.assert(name.as_str()) {
+                    continue;
+                }
+            }
+
+            let metadata = file.metadata();
+            if metadata.is_err() {
+                if ignore_errors {
+                    continue;
+                } else {
+                    let msg = format!("{}: metadata reading error", name);
+                    return FindFilesResult::Err(Error::other(msg));
+                }
+            }
+            let metadata = metadata.unwrap();
+
+            if let Some(only_types) = only_types {
+                if !only_types.iter().any(|r| r.assert(&metadata)) {
+                    continue;
+                }
+            }
+
+            if let Some(path) = get_path(&file) {
+                if metadata.is_dir() {
+                    found.push(format!("{}/", path));
+                } else {
+                    found.push(path);
+                }
+            }
+        }
+    }
+
+    if found.is_empty() {
+        FindFilesResult::None
     } else {
-        Ok(true)
+        FindFilesResult::Some(found)
+    }
+}
+
+#[derive(Debug)]
+pub enum FindFilesResult {
+    Err(Error),
+    None,
+    Some(Vec<String>),
+}
+
+impl FindFilesResult {
+    pub fn unwrap(self) -> Vec<String> {
+        match self {
+            FindFilesResult::None => panic!("called unwrap on None"),
+            FindFilesResult::Err(_) => panic!("called unwrap on Err"),
+            FindFilesResult::Some(r) => r,
+        }
+    }
+
+    pub fn is_some(&self) -> bool {
+        matches!(self, FindFilesResult::Some(_))
+    }
+}
+
+impl PartialEq for FindFilesResult {
+    fn eq(&self, other: &FindFilesResult) -> bool {
+        match (self, other) {
+            (FindFilesResult::None, FindFilesResult::None) => true,
+            (FindFilesResult::Err(a), FindFilesResult::Err(b)) => a.to_string() == b.to_string(),
+            (FindFilesResult::Some(a), FindFilesResult::Some(b)) => a == b,
+            _ => false,
+        }
+    }
+}
+
+enum FileType {
+    File,
+    SymLink,
+    Executable,
+    Dir,
+}
+
+impl FileType {
+    fn assert(&self, metadata: &Metadata) -> bool {
+        match self {
+            FileType::File => metadata.is_file(),
+            FileType::SymLink => metadata.is_symlink(),
+            FileType::Executable => {
+                metadata.is_file() && (metadata.permissions().mode() & 0o111 != 0)
+                // windows no
+            }
+            FileType::Dir => metadata.is_dir(),
+        }
     }
 }
 
@@ -126,35 +169,66 @@ mod tests {
     use crate::env::get_current_dir;
 
     #[test]
-    fn test_find_file() -> Result<(), Error> {
-        let r = get_fixture_dir()?;
-        let paths = vec![r.as_str()];
-        let only_executable = true;
+    fn test_find() -> Result<(), Error> {
+        let fixture_dir = get_fixture_dir()?;
+        let search_paths = vec![fixture_dir.as_str()];
 
-        let r = find_file("exe", &paths, only_executable).unwrap();
-        assert_eq!(format!("{}exe", get_fixture_dir()?), r);
+        let symlink = format!("{}exe_symlink", fixture_dir.as_str());
+        let dir = format!("{}dir/", fixture_dir.as_str());
+        let file = format!("{}not_exe", fixture_dir.as_str());
+        let executable = format!("{}exe", fixture_dir.as_str());
 
-        let r = find_file("not_exe", &paths, only_executable);
-        assert!(r.is_none());
+        let files = find_files(&search_paths, None, None, false).unwrap();
+        assert!(files.contains(&symlink));
+        assert!(files.contains(&dir));
+        assert!(files.contains(&file));
+        assert!(files.contains(&executable));
 
-        let r = find_file("not_exists", &paths, only_executable);
-        assert!(r.is_none());
+        let only_types = vec![&FileType::Dir];
+        let files = find_files(&search_paths, Some(&only_types), None, false).unwrap();
 
-        Ok(())
-    }
+        assert!(!files.contains(&symlink));
+        assert!(files.contains(&dir));
+        assert!(!files.contains(&file));
+        assert!(!files.contains(&executable));
 
-    #[test]
-    fn test_find_files() -> Result<(), Error> {
-        let r = get_fixture_dir()?;
-        let paths = vec![r.as_str()];
-        let only_executable = true;
+        let only_types = vec![&FileType::SymLink];
+        let files = find_files(&search_paths, Some(&only_types), None, false).unwrap();
 
-        let r = find_files("ex", &paths, only_executable).unwrap();
-        let f = vec![format!("{}exe", get_fixture_dir()?)];
-        assert_eq!(f, r);
+        assert!(files.contains(&symlink));
+        assert!(!files.contains(&dir));
+        assert!(!files.contains(&file));
+        assert!(!files.contains(&executable));
 
-        let r = find_files("not", &paths, only_executable);
-        assert!(r.is_none());
+        let only_types = vec![&FileType::Executable];
+        let files = find_files(&search_paths, Some(&only_types), None, false).unwrap();
+
+        assert!(!files.contains(&symlink));
+        assert!(!files.contains(&dir));
+        assert!(!files.contains(&file));
+        assert!(files.contains(&executable));
+
+        let only_types = vec![&FileType::File];
+        let files = find_files(&search_paths, Some(&only_types), None, false).unwrap();
+
+        assert!(!files.contains(&symlink));
+        assert!(!files.contains(&dir));
+        assert!(files.contains(&file));
+        assert!(files.contains(&executable));
+
+        let name_rule = Comprasion::Equal("dir".to_string());
+        let files = find_files(&search_paths, None, Some(&name_rule), false).unwrap();
+        assert!(!files.contains(&symlink));
+        assert!(files.contains(&dir));
+        assert!(!files.contains(&file));
+        assert!(!files.contains(&executable));
+
+        let name_rule = Comprasion::AssertedStartsWith("exe".to_string());
+        let files = find_files(&search_paths, None, Some(&name_rule), false).unwrap();
+        assert!(files.contains(&symlink));
+        assert!(!files.contains(&dir));
+        assert!(!files.contains(&file));
+        assert!(files.contains(&executable));
 
         Ok(())
     }
