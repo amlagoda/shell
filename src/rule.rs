@@ -1,6 +1,7 @@
 pub enum Equal {
     Exac(String),
     StartsWith(String),
+    StartsWithNotExac(String),
 }
 
 impl Equal {
@@ -8,6 +9,7 @@ impl Equal {
         match self {
             Equal::Exac(r) => r == value,
             Equal::StartsWith(r) => value.starts_with(r),
+            Equal::StartsWithNotExac(r) => value.starts_with(r) && value != r,
         }
     }
 }
@@ -32,6 +34,10 @@ mod tests {
         assert!(!equal.assert(""));
         assert!(equal.assert("fooo"));
         assert!(!equal.assert("o"));
+
+        let equal = Equal::StartsWithNotExac("foo".to_string());
+        assert!(!equal.assert("foo"));
+        assert!(equal.assert("fooo"));
 
         Ok(())
     }
