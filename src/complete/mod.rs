@@ -26,10 +26,10 @@ pub fn complete_input(input: &str, setting: &Setting) -> Option<Completion> {
 
 fn get_file_search_data(input: &str, current_dir: &str) -> FileSearchData {
     if !input.contains("/") {
-        let input = if input.len() > 0 {
-            Some(input.to_string())
-        } else {
+        let input = if input.is_empty() {
             None
+        } else {
+            Some(input.to_string())
         };
 
         return FileSearchData::from(current_dir.to_string(), input);
