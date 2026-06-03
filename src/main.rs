@@ -22,6 +22,7 @@ mod keyboard;
 mod parser;
 mod pipeline;
 mod process;
+mod rule;
 mod session;
 mod setting;
 mod structure;
