@@ -1,6 +1,6 @@
 use crate::command::registry::{first_or_default as get_command, Builtin};
 use crate::fmt::NewLine;
-use crate::fs::find_file;
+use crate::fs::{find_bins_by_name, FindFilesResult};
 use crate::io::Stdio;
 use std::io::{Error, Write};
 
@@ -18,10 +18,8 @@ pub fn run_command(
         msg = format!("{} is a shell builtin", command);
         to_stderr = false;
     } else if let Some(bin_paths) = bin_paths {
-        let only_executable = true;
-
-        if let Some(path) = find_file(command.as_str(), bin_paths, only_executable) {
-            msg = format!("{} is {}", command, path);
+        if let FindFilesResult::Some(paths) = find_bins_by_name(command.as_str(), bin_paths) {
+            msg = format!("{} is {}", command, paths.first().unwrap());
             to_stderr = false;
         }
     }

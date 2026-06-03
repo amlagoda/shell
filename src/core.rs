@@ -2,7 +2,7 @@ use crate::command::{run_command as run_builtin, to_command as to_builtin};
 use crate::control::Exit;
 use crate::fmt::NewLine;
 use crate::fs::{clone_descriptor_as_file, clone_descriptor_as_nonblock_file, transfer_data};
-use crate::fs::{find_file, get_write_file};
+use crate::fs::{find_bins_by_name, get_write_file};
 use crate::history::History;
 use crate::io::Stdio;
 use crate::parser::Parsed;
@@ -144,10 +144,8 @@ fn run_forks(
 
     for parsed in parseds {
         let command = parsed.command();
-        let only_executable = true;
 
-        if to_builtin(command).is_some() || find_file(command, bin_paths, only_executable).is_some()
-        {
+        if to_builtin(command).is_some() || find_bins_by_name(command, bin_paths).is_some() {
             let fork = Fork::try_new();
 
             if let Err(err) = fork {
