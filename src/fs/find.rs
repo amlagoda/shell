@@ -46,7 +46,8 @@ fn find_files(
     ignore_errors: bool,
 ) -> FindFilesResult {
     if search_paths.is_empty() {
-        return FindFilesResult::Err(Error::other("search paths is empty"));
+        let err = Error::other("search paths is empty");
+        return FindFilesResult::Err(err);
     }
 
     let mut found = vec![];
@@ -58,8 +59,8 @@ fn find_files(
             if ignore_errors {
                 continue;
             } else {
-                let msg = format!("{}: dir is invalid", path);
-                return FindFilesResult::Err(Error::other(msg));
+                let err = Error::other(format!("{}: dir is invalid", path));
+                return FindFilesResult::Err(err);
             }
         }
 
@@ -81,8 +82,8 @@ fn find_files(
                 if ignore_errors {
                     continue;
                 } else {
-                    let msg = format!("{}: metadata reading error", name);
-                    return FindFilesResult::Err(Error::other(msg));
+                    let err = Error::other(format!("{}: metadata reading error", name));
+                    return FindFilesResult::Err(err);
                 }
             }
             let metadata = metadata.unwrap();
