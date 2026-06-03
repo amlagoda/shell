@@ -65,45 +65,19 @@ fn find_files(
         }
 
         for file in dir.unwrap().flatten() {
-            let name = get_name(&file);
-
-            if name.is_none() {
-                continue; // temporary file
-            }
-
-            let name = name.unwrap();
-
-            if let Some(name_rule) = name_rule {
-                if !name_rule.assert(name.as_str()) {
-                    continue;
+            match match_file(&file, name_rule, only_types) {
+                FindFilesResult::None => continue,
+                FindFilesResult::Err(err) => {
+                    if ignore_errors {
+                        continue;
+                    } else {
+                        return FindFilesResult::Err(err);
+                    }
                 }
-            }
-
-            let metadata = file.metadata();
-
-            if metadata.is_err() {
-                if ignore_errors {
-                    continue;
+                FindFilesResult::Some(paths) => {
+                    let path = paths.first().unwrap().to_string();
+                    found.push(path)
                 }
-
-                let msg = format!("{}: metadata reading error", name);
-                return FindFilesResult::Err(Error::other(msg));
-            }
-
-            let metadata = metadata.unwrap();
-
-            if let Some(only_types) = only_types {
-                if !only_types.iter().any(|r| r.assert(&metadata)) {
-                    continue;
-                }
-            }
-
-            if let Some(mut path) = get_path(&file) {
-                if metadata.is_dir() {
-                    path = format!("{}/", path);
-                }
-
-                found.push(path);
             }
         }
     }
@@ -113,6 +87,51 @@ fn find_files(
     } else {
         FindFilesResult::Some(found)
     }
+}
+
+fn match_file(
+    file: &DirEntry,
+    name_rule: Option<&Comprasion>,
+    only_types: Option<&Vec<&FileType>>,
+) -> FindFilesResult {
+    let name = get_name(file);
+
+    if name.is_none() {
+        return FindFilesResult::None; // temporary file
+    }
+
+    let name = name.unwrap();
+
+    if let Some(name_rule) = name_rule {
+        if !name_rule.assert(name.as_str()) {
+            return FindFilesResult::None;
+        }
+    }
+
+    let metadata = file.metadata();
+
+    if metadata.is_err() {
+        let msg = format!("{}: metadata reading error", name);
+        return FindFilesResult::Err(Error::other(msg));
+    }
+
+    let metadata = metadata.unwrap();
+
+    if let Some(only_types) = only_types {
+        if !only_types.iter().any(|r| r.assert(&metadata)) {
+            return FindFilesResult::None;
+        }
+    }
+
+    if let Some(mut path) = get_path(file) {
+        if metadata.is_dir() {
+            path = format!("{}/", path);
+        }
+
+        return FindFilesResult::Some(vec![path]);
+    }
+
+    FindFilesResult::None
 }
 
 #[derive(Debug)]
