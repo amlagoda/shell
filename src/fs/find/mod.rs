@@ -1,8 +1,11 @@
+mod structure;
+
+use self::structure::FileType;
 use crate::rule::Comprasion;
-use std::cmp::PartialEq;
-use std::fs::{read_dir, DirEntry, Metadata};
+use std::fs::{read_dir, DirEntry};
 use std::io::Error;
-use std::os::unix::fs::PermissionsExt;
+
+pub use structure::FindFilesResult;
 
 pub fn find_bins_by_name(name: &str, paths: &Vec<&str>) -> FindFilesResult {
     let rule = Comprasion::Equal(name.to_string());
@@ -132,59 +135,6 @@ fn match_file(
     }
 
     FindFilesResult::None
-}
-
-#[derive(Debug)]
-pub enum FindFilesResult {
-    Err(Error),
-    None,
-    Some(Vec<String>),
-}
-
-impl FindFilesResult {
-    pub fn unwrap(self) -> Vec<String> {
-        match self {
-            FindFilesResult::None => panic!("called unwrap on None"),
-            FindFilesResult::Err(_) => panic!("called unwrap on Err"),
-            FindFilesResult::Some(r) => r,
-        }
-    }
-
-    pub fn is_some(&self) -> bool {
-        matches!(self, FindFilesResult::Some(_))
-    }
-}
-
-impl PartialEq for FindFilesResult {
-    fn eq(&self, other: &FindFilesResult) -> bool {
-        match (self, other) {
-            (FindFilesResult::None, FindFilesResult::None) => true,
-            (FindFilesResult::Err(a), FindFilesResult::Err(b)) => a.to_string() == b.to_string(),
-            (FindFilesResult::Some(a), FindFilesResult::Some(b)) => a == b,
-            _ => false,
-        }
-    }
-}
-
-enum FileType {
-    File,
-    SymLink,
-    Executable,
-    Dir,
-}
-
-impl FileType {
-    fn assert(&self, metadata: &Metadata) -> bool {
-        match self {
-            FileType::File => metadata.is_file(),
-            FileType::SymLink => metadata.is_symlink(),
-            FileType::Executable => {
-                metadata.is_file() && (metadata.permissions().mode() & 0o111 != 0)
-                // windows no
-            }
-            FileType::Dir => metadata.is_dir(),
-        }
-    }
 }
 
 #[cfg(test)]
