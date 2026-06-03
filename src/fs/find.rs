@@ -94,12 +94,12 @@ fn find_files(
                 }
             }
 
-            if let Some(path) = get_path(&file) {
+            if let Some(mut path) = get_path(&file) {
                 if metadata.is_dir() {
-                    found.push(format!("{}/", path));
-                } else {
-                    found.push(path);
+                    path = format!("{}/", path);
                 }
+
+                found.push(path);
             }
         }
     }
