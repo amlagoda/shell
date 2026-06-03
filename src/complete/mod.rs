@@ -1,5 +1,5 @@
 use crate::fs::{find_bins_starts_with, find_files_starts_with, FindFilesResult};
-use crate::rule::Equal;
+use crate::rule::Comprasion;
 use crate::setting::Setting;
 
 pub fn complete_input(input: &str, setting: &Setting) -> Option<Completion> {
@@ -164,7 +164,7 @@ fn complete(input: &str, variants: &Vec<&str>) -> Option<Completion> {
     let mut matches: Vec<String> = vec![];
 
     for r in variants {
-        if Equal::StartsWithNotExac(r.to_string()).assert(input) {
+        if Comprasion::PatternStartsWithNotEqual(r.to_string()).assert(input) {
             matches.push(r.to_string());
         }
     }
@@ -188,7 +188,7 @@ fn complete(input: &str, variants: &Vec<&str>) -> Option<Completion> {
     let is_chain = matches
         .iter()
         .filter(|&r| r != short)
-        .all(|r| Equal::StartsWith(r.to_string()).assert(short.as_str()));
+        .all(|r| Comprasion::PatternStartsWith(r.to_string()).assert(short.as_str()));
 
     if is_chain {
         let selected = short.replacen(input, "", 1);
