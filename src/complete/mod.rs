@@ -47,13 +47,11 @@ fn to_find_data(input: &str, default_path: &str) -> FileFindData {
     let input: Vec<&str> = input.split("/").collect();
     let file_prefix = input.last().unwrap();
 
-    if file_prefix == &"" {
+    if file_prefix.is_empty() {
         FileFindData::from(input.join("/"), None)
     } else {
-        FileFindData::from(
-            format!("{}/", input[0..input.len() - 1].join("/")),
-            Some(file_prefix.to_string()),
-        )
+        let find_path = format!("{}/", input[0..input.len() - 1].join("/"));
+        FileFindData::from(find_path, Some(file_prefix.to_string()))
     }
 }
 
