@@ -1,3 +1,6 @@
+mod structure;
+
+use self::structure::{Completion, FileFindData};
 use crate::fs::{find_bins_starts_with, find_files_starts_with, FindFilesResult};
 use crate::rule::Comprasion;
 use crate::setting::Setting;
@@ -15,7 +18,7 @@ pub fn complete_input(input: &str, setting: &Setting) -> Option<Completion> {
         )
     } else if len > 1 {
         let file_search_data = get_file_search_data(last.unwrap(), setting.current_dir());
-        let search_path = file_search_data.path();
+        let search_path = file_search_data.find_path();
         let file_prefix = file_search_data.file_prefix().unwrap_or("");
 
         complete_file(file_prefix, search_path)
@@ -24,7 +27,7 @@ pub fn complete_input(input: &str, setting: &Setting) -> Option<Completion> {
     }
 }
 
-fn get_file_search_data(input: &str, current_dir: &str) -> FileSearchData {
+fn get_file_search_data(input: &str, current_dir: &str) -> FileFindData {
     if !input.contains("/") {
         let input = if input.is_empty() {
             None
@@ -32,38 +35,19 @@ fn get_file_search_data(input: &str, current_dir: &str) -> FileSearchData {
             Some(input.to_string())
         };
 
-        return FileSearchData::from(current_dir.to_string(), input);
+        return FileFindData::from(current_dir.to_string(), input);
     }
 
     let input: Vec<&str> = input.split("/").collect();
     let file_prefix = input.last().unwrap();
 
     if file_prefix == &"" {
-        FileSearchData::from(input.join("/"), None)
+        FileFindData::from(input.join("/"), None)
     } else {
-        FileSearchData::from(
+        FileFindData::from(
             format!("{}/", input[0..input.len() - 1].join("/")),
             Some(file_prefix.to_string()),
         )
-    }
-}
-
-struct FileSearchData {
-    path: String,
-    file_prefix: Option<String>,
-}
-
-impl FileSearchData {
-    fn from(path: String, file_prefix: Option<String>) -> FileSearchData {
-        FileSearchData { path, file_prefix }
-    }
-
-    fn path(&self) -> &str {
-        self.path.as_str()
-    }
-
-    fn file_prefix(&self) -> Option<&str> {
-        self.file_prefix.as_deref()
     }
 }
 
@@ -111,7 +95,7 @@ fn complete_command(input: &str, commands: &Vec<&str>, paths: &Vec<&str>) -> Opt
 
         let r = r.iter().map(|s| s.to_string()).collect();
 
-        Some(Completion::new_variants(r))
+        Some(Completion::from_variants(r))
     } else {
         None
     }
@@ -150,7 +134,7 @@ fn complete_file(input: &str, path: &str) -> Option<Completion> {
 
         let r = r.iter().map(|s| s.to_string()).collect();
 
-        Some(Completion::new_variants(r))
+        Some(Completion::from_variants(r))
     } else {
         None
     }
@@ -182,7 +166,7 @@ fn complete(input: &str, variants: &Vec<&str>) -> Option<Completion> {
 
     if len == 1 {
         let selected = format!("{} ", short.replacen(input, "", 1));
-        return Some(Completion::new_selected(selected));
+        return Some(Completion::from_selected(selected));
     }
 
     let is_chain = matches
@@ -192,9 +176,9 @@ fn complete(input: &str, variants: &Vec<&str>) -> Option<Completion> {
 
     if is_chain {
         let selected = short.replacen(input, "", 1);
-        Some(Completion::new_selected(selected))
+        Some(Completion::from_selected(selected))
     } else {
-        Some(Completion::new_variants(matches))
+        Some(Completion::from_variants(matches))
     }
 }
 
@@ -203,42 +187,6 @@ fn paths_to_names(paths: &Vec<&str>) -> Vec<String> {
         .iter()
         .map(|r| r.split("/").last().unwrap().to_string())
         .collect::<Vec<String>>()
-}
-
-#[derive(Debug, PartialEq)]
-pub struct Completion {
-    selected: Option<String>,
-    variants: Option<Vec<String>>,
-}
-
-impl Completion {
-    fn new_selected(selected: String) -> Completion {
-        Completion {
-            selected: Some(selected),
-            variants: None,
-        }
-    }
-
-    fn new_variants(variants: Vec<String>) -> Completion {
-        Completion {
-            selected: None,
-            variants: Some(variants),
-        }
-    }
-
-    pub fn is_selected(&self) -> bool {
-        self.selected.is_some()
-    }
-
-    pub fn get_selected(&self) -> Option<&str> {
-        self.selected.as_deref()
-    }
-
-    pub fn get_variants(&self) -> Option<Vec<&str>> {
-        self.variants
-            .as_ref()
-            .map(|v| v.iter().map(|s| s.as_str()).collect())
-    }
 }
 
 // #[cfg(test)]
