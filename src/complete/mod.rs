@@ -17,11 +17,11 @@ pub fn complete_input(input: &str, setting: &Setting) -> Option<Completion> {
             &setting.bin_paths(),
         )
     } else if len > 1 {
-        let file_search_data = to_find_data(last.unwrap(), setting.current_dir());
-        let search_path = file_search_data.find_path();
-        let file_prefix = file_search_data.file_prefix().unwrap_or("");
+        let find_data = to_find_data(last.unwrap(), setting.current_dir());
+        let find_path = find_data.find_path();
+        let file_prefix = find_data.file_prefix().unwrap_or("");
 
-        complete_file(file_prefix, search_path)
+        complete_file(file_prefix, find_path)
     } else {
         None
     }
