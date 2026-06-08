@@ -17,7 +17,7 @@ pub fn complete_input(input: &str, setting: &Setting) -> Option<Completion> {
             &setting.bin_paths(),
         )
     } else if len > 1 {
-        let file_search_data = get_file_search_data(last.unwrap(), setting.current_dir());
+        let file_search_data = to_find_data(last.unwrap(), setting.current_dir());
         let search_path = file_search_data.find_path();
         let file_prefix = file_search_data.file_prefix().unwrap_or("");
 
@@ -27,15 +27,21 @@ pub fn complete_input(input: &str, setting: &Setting) -> Option<Completion> {
     }
 }
 
-fn get_file_search_data(input: &str, current_dir: &str) -> FileFindData {
-    if !input.contains("/") {
-        let input = if input.is_empty() {
-            None
-        } else {
-            Some(input.to_string())
-        };
+fn to_find_data(input: &str, default_path: &str) -> FileFindData {
+    let input = input.trim();
 
-        return FileFindData::from(current_dir.to_string(), input);
+    let default_path = if !default_path.trim().ends_with("/") {
+        format!("{}/", default_path.trim())
+    } else {
+        default_path.trim().to_string()
+    };
+
+    if input.is_empty() {
+        return FileFindData::from(default_path, None);
+    }
+
+    if !input.contains("/") {
+        return FileFindData::from(default_path, Some(input.to_string()));
     }
 
     let input: Vec<&str> = input.split("/").collect();
@@ -187,6 +193,53 @@ fn paths_to_names(paths: &Vec<&str>) -> Vec<String> {
         .iter()
         .map(|r| r.split("/").last().unwrap().to_string())
         .collect::<Vec<String>>()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Error;
+
+    #[test]
+    fn test_to_find_data() -> Result<(), Error> {
+        let data = to_find_data("", "");
+        assert_eq!("/", data.find_path());
+        assert_eq!(None, data.file_prefix());
+
+        let data = to_find_data(" ", " ");
+        assert_eq!("/", data.find_path());
+        assert_eq!(None, data.file_prefix());
+
+        let data = to_find_data("f", "d");
+        assert_eq!("d/", data.find_path());
+        assert_eq!(Some("f"), data.file_prefix());
+
+        let data = to_find_data("/f", "/d");
+        assert_eq!("/", data.find_path());
+        assert_eq!(Some("f"), data.file_prefix());
+
+        let data = to_find_data("f/", "d/");
+        assert_eq!("f/", data.find_path());
+        assert_eq!(None, data.file_prefix());
+
+        let data = to_find_data("/f/", "/d/");
+        assert_eq!("/f/", data.find_path());
+        assert_eq!(None, data.file_prefix());
+
+        let data = to_find_data("f/b", "d");
+        assert_eq!("f/", data.find_path());
+        assert_eq!(Some("b"), data.file_prefix());
+
+        let data = to_find_data("/f/b", "d");
+        assert_eq!("/f/", data.find_path());
+        assert_eq!(Some("b"), data.file_prefix());
+
+        let data = to_find_data("/f/b/", "d");
+        assert_eq!("/f/b/", data.find_path());
+        assert_eq!(None, data.file_prefix());
+
+        Ok(())
+    }
 }
 
 // #[cfg(test)]
