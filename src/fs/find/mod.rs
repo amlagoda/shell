@@ -7,18 +7,21 @@ use std::io::Error;
 
 pub use structure::FindFilesResult;
 
+// ignores errors of invalid paths and access rights
 pub fn find_bins_by_name(name: &str, paths: &Vec<&str>) -> FindFilesResult {
     let rule = Comprasion::Equal(name.to_string());
 
     find_files(paths, Some(&vec![&FileType::Executable]), Some(&rule), true)
 }
 
+// ignores errors of invalid paths and access rights
 pub fn find_bins_starts_with(starts_with: &str, paths: &Vec<&str>) -> FindFilesResult {
     let rule = Comprasion::AssertedStartsWith(starts_with.to_string());
 
     find_files(paths, Some(&vec![&FileType::Executable]), Some(&rule), true)
 }
 
+// ignores errors of invalid paths and access rights
 pub fn find_files_starts_with(starts_with: &str, paths: &Vec<&str>) -> FindFilesResult {
     let rule = Comprasion::AssertedStartsWith(starts_with.to_string());
 
