@@ -129,13 +129,20 @@ fn complete_path(find_data: &FileFindData) -> Option<Completion> {
 
     let found = found.unwrap();
     let found = found.iter().map(|r| r.as_str()).collect();
-    let found = paths_to_names(&found);
+    let found: Vec<String> = paths_to_names(&found)
+        .into_iter()
+        .filter(|r| r != starts_with)
+        .collect();
+    let len = found.len();
 
-    if found.len() == 1 {
-        let selected: String = found[0].to_string();
+    if len == 1 {
+        let selected = found[0].to_string();
+        let selected = selected.replacen(starts_with, "", 1);
         Some(Completion::from_selected(selected))
-    } else {
+    } else if len > 1 {
         Some(Completion::from_variants(found))
+    } else {
+        None
     }
 }
 
