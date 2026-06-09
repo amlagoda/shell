@@ -22,7 +22,7 @@ pub fn find_bins_starts_with(starts_with: &str, paths: &Vec<&str>) -> FindFilesR
 }
 
 // ignores errors of invalid paths and access rights
-pub fn find_files_starts_with(starts_with: &str, paths: &Vec<&str>) -> FindFilesResult {
+pub fn find_all_starts_with(starts_with: &str, paths: &Vec<&str>) -> FindFilesResult {
     let rule = Comprasion::AssertedStartsWith(starts_with.to_string());
 
     let rrule = if starts_with.is_empty() {
@@ -31,7 +31,7 @@ pub fn find_files_starts_with(starts_with: &str, paths: &Vec<&str>) -> FindFiles
         Some(&rule)
     };
 
-    find_files(paths, Some(&vec![&FileType::File]), rrule, true)
+    find_files(paths, None, rrule, true)
 }
 
 fn get_name(entry: &DirEntry) -> Option<String> {
