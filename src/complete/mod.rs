@@ -1,7 +1,7 @@
 mod structure;
 
 use self::structure::{Completion, FileFindData};
-use crate::fs::{find_bins_starts_with, find_files_starts_with, FindFilesResult};
+use crate::fs::{find_all_starts_with, find_bins_starts_with, FindFilesResult};
 use crate::rule::Comprasion;
 use crate::setting::Setting;
 
@@ -24,6 +24,29 @@ pub fn complete_input(input: &str, setting: &Setting) -> Option<Completion> {
         complete_file(file_prefix, find_path)
     } else {
         None
+    }
+}
+
+fn complete_path(find_data: &FileFindData) -> Option<Completion> {
+    let starts_with = find_data.file_prefix().unwrap_or("");
+    let paths = vec![find_data.find_path()];
+
+    let found = find_all_starts_with(starts_with, &paths);
+
+    // ignore errors
+    if !found.is_some() {
+        return None;
+    }
+
+    let found = found.unwrap();
+    let found = found.iter().map(|r| r.as_str()).collect();
+    let found = paths_to_names(&found);
+
+    if found.len() == 1 {
+        let selected: String = found[0].to_string();
+        Some(Completion::from_selected(selected))
+    } else {
+        Some(Completion::from_variants(found))
     }
 }
 
@@ -108,7 +131,7 @@ fn complete_command(input: &str, commands: &Vec<&str>, paths: &Vec<&str>) -> Opt
 fn complete_file(input: &str, path: &str) -> Option<Completion> {
     let mut variants: Option<Vec<String>> = None;
 
-    if let FindFilesResult::Some(r) = find_files_starts_with(input, &vec![path]) {
+    if let FindFilesResult::Some(r) = find_all_starts_with(input, &vec![path]) {
         let r = r.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
         let r = paths_to_names(&r);
         let names = r.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
@@ -187,16 +210,73 @@ fn complete(input: &str, variants: &Vec<&str>) -> Option<Completion> {
 }
 
 fn paths_to_names(paths: &Vec<&str>) -> Vec<String> {
-    paths
-        .iter()
-        .map(|r| r.split("/").last().unwrap().to_string())
-        .collect::<Vec<String>>()
+    let mut names = vec![];
+
+    for path in paths {
+        let name = if path.ends_with("/") {
+            let name = path.trim_end_matches(|r| r == '/');
+            format!("{}/", name.split("/").last().unwrap())
+        } else {
+            path.split("/").last().unwrap().to_string()
+        };
+
+        names.push(name);
+    }
+
+    names
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::env::get_current_dir;
     use std::io::Error;
+
+    #[test]
+    fn test_complete_path() -> Result<(), Error> {
+        let fixture_dir = get_fixture_dir()?;
+
+        let find_data = FileFindData::from("".to_string(), None);
+        assert!(complete_path(&find_data).is_none());
+
+        let find_data = FileFindData::from(fixture_dir.to_string(), None);
+        let completion = complete_path(&find_data).unwrap();
+        let variants = completion.get_variants().unwrap();
+        assert!(variants.len() == 5);
+        assert!(variants.contains(&"fo/"));
+        assert!(variants.contains(&"foo/"));
+        assert!(variants.contains(&"b"));
+        assert!(variants.contains(&"f"));
+        assert!(variants.contains(&"f.txt"));
+        assert!(completion.get_selected().is_none());
+
+        let find_data = FileFindData::from(fixture_dir.to_string(), Some("f".to_string()));
+        let completion = complete_path(&find_data).unwrap();
+        let variants = completion.get_variants().unwrap();
+        assert!(variants.len() == 4);
+        assert!(variants.contains(&"fo/"));
+        assert!(variants.contains(&"foo/"));
+        assert!(variants.contains(&"f"));
+        assert!(variants.contains(&"f.txt"));
+        assert!(completion.get_selected().is_none());
+
+        let find_data = FileFindData::from(fixture_dir.to_string(), Some("foo".to_string()));
+        let completion = complete_path(&find_data).unwrap();
+        let selected = completion.get_selected().unwrap();
+        assert!("foo/" == selected);
+        assert!(completion.get_variants().is_none());
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_paths_to_names() -> Result<(), Error> {
+        let paths = vec!["/f/b/c.txt", "f/b/c", "/f/b/z/"];
+        let names = vec!["c.txt", "c", "z/"];
+        assert_eq!(names, paths_to_names(&paths));
+
+        Ok(())
+    }
 
     #[test]
     fn test_to_find_data() -> Result<(), Error> {
@@ -238,94 +318,9 @@ mod tests {
 
         Ok(())
     }
+
+    fn get_fixture_dir() -> Result<String, Error> {
+        // ends with a slash
+        Ok(format!("{}/test/fixture/complete/", get_current_dir()?))
+    }
 }
-
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//     use crate::env::get_current_dir;
-//     use crate::fmt::NewLine;
-
-//     #[test]
-//     fn test_complete_input() {
-//         let setting = Setting::from(NewLine::new(), vec![get_fixture_dir()], "".to_string())
-//         let path = get_fixture_dir();
-//         let current_path = "";
-
-//         let r = complete_input(
-//             "f",
-//             &vec!["bar"],
-//             &vec![format!("{}1/", path).as_str()],
-//             current_path,
-//         );
-//         let f = Completion::new_selected("oo ".to_string());
-//         assert_eq!(Some(f), r);
-
-//         let r = complete_input(
-//             "f",
-//             &vec!["fooo"],
-//             &vec![format!("{}1/", path).as_str()],
-//             current_path,
-//         );
-//         let f = Completion::new_selected("ooo ".to_string());
-//         assert_eq!(Some(f), r);
-
-//         let r = complete_input(
-//             "f",
-//             &vec!["foo", "fii"],
-//             &vec![format!("{}2/", path).as_str()],
-//             current_path,
-//         );
-//         let m = vec!["fii", "foo", "fyy"]
-//             .iter()
-//             .map(|r| r.to_string())
-//             .collect::<Vec<String>>();
-//         let f = Completion::new_variants(m);
-//         assert_eq!(Some(f), r);
-//     }
-
-//     #[test]
-//     fn test_paths_to_names() {
-//         let paths = vec!["foo/bar", "/baz/maz", "/vaz/gaz/"];
-//         let r = vec!["bar".to_string(), "maz".to_string(), "".to_string()];
-//         assert_eq!(r, paths_to_names(&paths));
-//     }
-
-//     #[test]
-//     fn test_complete() {
-//         assert_eq!(None, complete("foo", &vec!("foo")));
-
-//         assert_eq!(None, complete("foo", &vec!("bar")));
-
-//         assert_eq!(None, complete("foo", &vec!("foo", "foo")));
-
-//         let r = complete("f", &vec!["fo", "foo", "fooo"]);
-//         let f = Completion::new_selected("o".to_string());
-//         assert_eq!(Some(f), r);
-
-//         let r = complete("f", &vec!["fo", "foo"]);
-//         let f = Completion::new_selected("o".to_string());
-//         assert_eq!(Some(f), r);
-
-//         let r = complete("f", &vec!["foo", "foo"]);
-//         let f = Completion::new_selected("oo ".to_string());
-//         assert_eq!(Some(f), r);
-
-//         let r = complete("f", &vec!["foo"]);
-//         let f = Completion::new_selected("oo ".to_string());
-//         assert_eq!(Some(f), r);
-
-//         let r = complete("f", &vec!["fo", "foo", "fi", "fii"]);
-//         let m = vec!["fi", "fii", "fo", "foo"]
-//             .iter()
-//             .map(|r| r.to_string())
-//             .collect::<Vec<String>>();
-//         let f = Completion::new_variants(m);
-//         assert_eq!(Some(f), r);
-//     }
-
-//     fn get_fixture_dir() -> String {
-//         // ends with a slash
-//         format!("{}/test/fixture/keyboard/", get_current_dir())
-//     }
-// }

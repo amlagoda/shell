@@ -1,3 +1,4 @@
+#[derive(Debug)]
 pub struct FileFindData {
     find_path: String,
     file_prefix: Option<String>,
