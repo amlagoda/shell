@@ -191,6 +191,25 @@ fn paths_to_names(paths: &Vec<&str>) -> Vec<String> {
     names
 }
 
+fn get_prefixed_variant(variants: Vec<&str>) -> Option<String> {
+    if variants.is_empty() {
+        return None;
+    }
+
+    let short = variants.iter().min_by_key(|r| r.len()).unwrap();
+
+    let is_chain = variants
+        .iter()
+        .filter(|&r| r != short)
+        .all(|r| Comprasion::PatternStartsWith(r.to_string()).assert(short));
+
+    if is_chain {
+        Some(short.to_string())
+    } else {
+        None
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -239,6 +258,29 @@ mod tests {
         let selected = completion.get_selected().unwrap();
         assert!("b" == selected);
         assert!(completion.get_variants().is_none());
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_get_prefixed_variant() -> Result<(), Error> {
+        let variants = vec![];
+        assert!(get_prefixed_variant(variants).is_none());
+
+        let variants = vec!["f"];
+        assert_eq!("f", get_prefixed_variant(variants).unwrap());
+
+        let variants = vec!["foo", "fo", "f"];
+        assert_eq!("f", get_prefixed_variant(variants).unwrap());
+
+        let variants = vec!["fo", "ff", "f"];
+        assert_eq!("f", get_prefixed_variant(variants).unwrap());
+
+        let variants = vec!["foo", "foy", "fo"];
+        assert_eq!("fo", get_prefixed_variant(variants).unwrap());
+
+        let variants = vec!["bzm", "bz", "f"];
+        assert!(get_prefixed_variant(variants).is_none());
 
         Ok(())
     }
