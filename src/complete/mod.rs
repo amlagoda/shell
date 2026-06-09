@@ -73,7 +73,7 @@ fn complete_to_variants(starts_with: &str, variants: &Vec<&str>) -> Option<Compl
     }
 
     if starts_with.is_empty() {
-        let variants = variants.into_iter().map(|r| r.to_string()).collect();
+        let variants = variants.iter().map(|r| r.to_string()).collect();
         return Some(Completion::from_variants(variants));
     }
 
@@ -180,7 +180,7 @@ fn paths_to_names(paths: &Vec<&str>) -> Vec<String> {
 
     for path in paths {
         let name = if path.ends_with("/") {
-            let name = path.trim_end_matches(|r| r == '/');
+            let name = path.trim_end_matches(['/']);
             format!("{}/", name.split("/").last().unwrap())
         } else {
             path.split("/").last().unwrap().to_string()
