@@ -24,54 +24,47 @@ pub fn complete_input(input: &str, setting: &Setting) -> Option<Completion> {
     }
 }
 
-fn complete_command(input: &str, commands: &Vec<&str>, paths: &Vec<&str>) -> Option<Completion> {
-    let mut variants: Option<Vec<String>> = None;
+fn complete_command(
+    starts_with: &str,
+    commands: &Vec<&str>,
+    paths: &Vec<&str>,
+) -> Option<Completion> {
+    let mut variants = vec![];
 
-    if let Some(completion) = complete_to_variants(input, commands) {
+    if let Some(completion) = complete_to_variants(starts_with, commands) {
         if completion.is_selected() {
             return Some(completion);
         }
 
-        variants = completion
-            .get_variants()
-            .as_ref()
-            .map(|v| v.iter().map(|s| s.to_string()).collect());
+        let found = completion.get_variants().unwrap();
+        let found = found.iter().map(|r| r.to_string()).collect();
+        variants = found;
     }
 
-    if let FindFilesResult::Some(r) = find_bins_starts_with(input, paths) {
-        let r = r.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
-        let r = paths_to_names(&r);
-        let names = r.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
+    if let FindFilesResult::Some(paths) = find_bins_starts_with(starts_with, paths) {
+        let paths = paths.iter().map(|r| r.as_str()).collect();
+        let names = paths_to_names(&paths);
+        let names = names.iter().map(|r| r.as_str()).collect();
 
-        if let Some(completion) = complete_to_variants(input, &names) {
+        if let Some(completion) = complete_to_variants(starts_with, &names) {
             if completion.is_selected() {
                 return Some(completion);
             }
 
-            let f = completion
-                .get_variants()
-                .as_ref()
-                .map(|v| v.iter().map(|s| s.to_string()).collect());
-
-            if let Some(mut r) = variants {
-                r.append(&mut f.unwrap());
-                variants = Some(r);
-            } else {
-                variants = f;
-            }
+            let found = completion.get_variants().unwrap();
+            let mut found = found.iter().map(|r| r.to_string()).collect();
+            variants.append(&mut found);
         }
     }
 
-    if let Some(mut r) = variants {
-        r.sort_unstable();
-        r.dedup();
+    variants.sort_unstable();
+    variants.dedup();
 
-        let r = r.iter().map(|s| s.to_string()).collect();
-
-        Some(Completion::from_variants(r))
-    } else {
-        None
+    if variants.is_empty() {
+        return None;
     }
+
+    Some(Completion::from_variants(variants))
 }
 
 fn complete_to_variants(starts_with: &str, variants: &Vec<&str>) -> Option<Completion> {
