@@ -27,7 +27,7 @@ pub fn complete_input(input: &str, setting: &Setting) -> Option<Completion> {
 fn complete_command(input: &str, commands: &Vec<&str>, paths: &Vec<&str>) -> Option<Completion> {
     let mut variants: Option<Vec<String>> = None;
 
-    if let Some(completion) = complete(input, commands) {
+    if let Some(completion) = complete_to_variants(input, commands) {
         if completion.is_selected() {
             return Some(completion);
         }
@@ -43,7 +43,7 @@ fn complete_command(input: &str, commands: &Vec<&str>, paths: &Vec<&str>) -> Opt
         let r = paths_to_names(&r);
         let names = r.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
 
-        if let Some(completion) = complete(input, &names) {
+        if let Some(completion) = complete_to_variants(input, &names) {
             if completion.is_selected() {
                 return Some(completion);
             }
@@ -74,45 +74,44 @@ fn complete_command(input: &str, commands: &Vec<&str>, paths: &Vec<&str>) -> Opt
     }
 }
 
-fn complete(input: &str, variants: &Vec<&str>) -> Option<Completion> {
+fn complete_to_variants(starts_with: &str, variants: &Vec<&str>) -> Option<Completion> {
     if variants.is_empty() {
         return None;
     }
 
-    let mut matches: Vec<String> = vec![];
+    if starts_with.is_empty() {
+        let variants = variants.into_iter().map(|r| r.to_string()).collect();
+        return Some(Completion::from_variants(variants));
+    }
 
-    for r in variants {
-        if Comprasion::PatternStartsWithNotEqual(r.to_string()).assert(input) {
-            matches.push(r.to_string());
+    let mut found = vec![];
+
+    for variant in variants {
+        if Comprasion::PatternStartsWithNotEqual(variant.to_string()).assert(starts_with) {
+            found.push(variant.to_string());
         }
     }
 
-    matches.sort_unstable();
-    matches.dedup();
-
-    let len = matches.len();
+    let len = found.len();
 
     if len == 0 {
         return None;
     }
 
-    let short = matches.iter().min_by_key(|r| r.len()).unwrap();
+    let short = found.iter().min_by_key(|r| r.len()).unwrap();
 
     if len == 1 {
-        let selected = format!("{} ", short.replacen(input, "", 1));
+        let selected = format!("{} ", short.replacen(starts_with, "", 1));
         return Some(Completion::from_selected(selected));
     }
 
-    let is_chain = matches
-        .iter()
-        .filter(|&r| r != short)
-        .all(|r| Comprasion::PatternStartsWith(r.to_string()).assert(short.as_str()));
+    let variants = found.iter().map(|r| r.as_str()).collect();
 
-    if is_chain {
-        let selected = short.replacen(input, "", 1);
+    if let Some(prefixed) = get_prefixed_variant(&variants) {
+        let selected = prefixed.replacen(starts_with, "", 1);
         Some(Completion::from_selected(selected))
     } else {
-        Some(Completion::from_variants(matches))
+        Some(Completion::from_variants(found))
     }
 }
 
@@ -147,7 +146,7 @@ fn complete_path(find_data: &FileFindData) -> Option<Completion> {
 
     let variants = found.iter().map(|r| r.as_str()).collect();
 
-    if let Some(prefixed) = get_prefixed_variant(variants) {
+    if let Some(prefixed) = get_prefixed_variant(&variants) {
         let selected = prefixed.replacen(starts_with, "", 1);
         Some(Completion::from_selected(selected))
     } else {
@@ -200,7 +199,7 @@ fn paths_to_names(paths: &Vec<&str>) -> Vec<String> {
     names
 }
 
-fn get_prefixed_variant(variants: Vec<&str>) -> Option<String> {
+fn get_prefixed_variant(variants: &Vec<&str>) -> Option<String> {
     if variants.is_empty() {
         return None;
     }
@@ -224,6 +223,37 @@ mod tests {
     use super::*;
     use crate::env::get_current_dir;
     use std::io::Error;
+
+    #[test]
+    fn test_complete_to_variants() -> Result<(), Error> {
+        let variants = vec![];
+        assert!(complete_to_variants("", &variants).is_none());
+
+        let variants = vec!["f", "b"];
+        let variants = complete_to_variants("", &variants).unwrap();
+        let variants = variants.get_variants().unwrap();
+        assert_eq!(vec!["f", "b"], variants);
+
+        let variants = vec!["f", "b"];
+        assert!(complete_to_variants("c", &variants).is_none());
+
+        let variants = vec!["fo", "b"];
+        let selected = complete_to_variants("f", &variants).unwrap();
+        let selected = selected.get_selected().unwrap();
+        assert_eq!("o ", selected);
+
+        let variants = vec!["fo", "fy"];
+        let variants = complete_to_variants("f", &variants).unwrap();
+        let variants = variants.get_variants().unwrap();
+        assert_eq!(vec!["fo", "fy"], variants);
+
+        let variants = vec!["fo", "foo"];
+        let selected = complete_to_variants("f", &variants).unwrap();
+        let selected = selected.get_selected().unwrap();
+        assert_eq!("o", selected);
+
+        Ok(())
+    }
 
     #[test]
     fn test_complete_path() -> Result<(), Error> {
@@ -289,22 +319,22 @@ mod tests {
     #[test]
     fn test_get_prefixed_variant() -> Result<(), Error> {
         let variants = vec![];
-        assert!(get_prefixed_variant(variants).is_none());
+        assert!(get_prefixed_variant(&variants).is_none());
 
         let variants = vec!["f"];
-        assert_eq!("f", get_prefixed_variant(variants).unwrap());
+        assert_eq!("f", get_prefixed_variant(&variants).unwrap());
 
         let variants = vec!["foo", "fo", "f"];
-        assert_eq!("f", get_prefixed_variant(variants).unwrap());
+        assert_eq!("f", get_prefixed_variant(&variants).unwrap());
 
         let variants = vec!["fo", "ff", "f"];
-        assert_eq!("f", get_prefixed_variant(variants).unwrap());
+        assert_eq!("f", get_prefixed_variant(&variants).unwrap());
 
         let variants = vec!["foo", "foy", "fo"];
-        assert_eq!("fo", get_prefixed_variant(variants).unwrap());
+        assert_eq!("fo", get_prefixed_variant(&variants).unwrap());
 
         let variants = vec!["bzm", "bz", "f"];
-        assert!(get_prefixed_variant(variants).is_none());
+        assert!(get_prefixed_variant(&variants).is_none());
 
         Ok(())
     }
