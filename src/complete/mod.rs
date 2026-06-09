@@ -24,57 +24,6 @@ pub fn complete_input(input: &str, setting: &Setting) -> Option<Completion> {
     }
 }
 
-fn complete_path(find_data: &FileFindData) -> Option<Completion> {
-    let starts_with = find_data.file_prefix().unwrap_or("");
-    let paths = vec![find_data.find_path()];
-
-    let found = find_all_starts_with(starts_with, &paths);
-
-    // ignore errors
-    if !found.is_some() {
-        return None;
-    }
-
-    let found = found.unwrap();
-    let found = found.iter().map(|r| r.as_str()).collect();
-    let found = paths_to_names(&found);
-
-    if found.len() == 1 {
-        let selected: String = found[0].to_string();
-        Some(Completion::from_selected(selected))
-    } else {
-        Some(Completion::from_variants(found))
-    }
-}
-
-fn to_find_data(input: &str, default_path: &str) -> FileFindData {
-    let input = input.trim();
-
-    let default_path = if !default_path.trim().ends_with("/") {
-        format!("{}/", default_path.trim())
-    } else {
-        default_path.trim().to_string()
-    };
-
-    if input.is_empty() {
-        return FileFindData::from(default_path, None);
-    }
-
-    if !input.contains("/") {
-        return FileFindData::from(default_path, Some(input.to_string()));
-    }
-
-    let input: Vec<&str> = input.split("/").collect();
-    let file_prefix = input.last().unwrap();
-
-    if file_prefix.is_empty() {
-        FileFindData::from(input.join("/"), None)
-    } else {
-        let find_path = format!("{}/", input[0..input.len() - 1].join("/"));
-        FileFindData::from(find_path, Some(file_prefix.to_string()))
-    }
-}
-
 fn complete_command(input: &str, commands: &Vec<&str>, paths: &Vec<&str>) -> Option<Completion> {
     let mut variants: Option<Vec<String>> = None;
 
@@ -164,6 +113,57 @@ fn complete(input: &str, variants: &Vec<&str>) -> Option<Completion> {
         Some(Completion::from_selected(selected))
     } else {
         Some(Completion::from_variants(matches))
+    }
+}
+
+fn complete_path(find_data: &FileFindData) -> Option<Completion> {
+    let starts_with = find_data.file_prefix().unwrap_or("");
+    let paths = vec![find_data.find_path()];
+
+    let found = find_all_starts_with(starts_with, &paths);
+
+    // ignore errors
+    if !found.is_some() {
+        return None;
+    }
+
+    let found = found.unwrap();
+    let found = found.iter().map(|r| r.as_str()).collect();
+    let found = paths_to_names(&found);
+
+    if found.len() == 1 {
+        let selected: String = found[0].to_string();
+        Some(Completion::from_selected(selected))
+    } else {
+        Some(Completion::from_variants(found))
+    }
+}
+
+fn to_find_data(input: &str, default_path: &str) -> FileFindData {
+    let input = input.trim();
+
+    let default_path = if !default_path.trim().ends_with("/") {
+        format!("{}/", default_path.trim())
+    } else {
+        default_path.trim().to_string()
+    };
+
+    if input.is_empty() {
+        return FileFindData::from(default_path, None);
+    }
+
+    if !input.contains("/") {
+        return FileFindData::from(default_path, Some(input.to_string()));
+    }
+
+    let input: Vec<&str> = input.split("/").collect();
+    let file_prefix = input.last().unwrap();
+
+    if file_prefix.is_empty() {
+        FileFindData::from(input.join("/"), None)
+    } else {
+        let find_path = format!("{}/", input[0..input.len() - 1].join("/"));
+        FileFindData::from(find_path, Some(file_prefix.to_string()))
     }
 }
 
