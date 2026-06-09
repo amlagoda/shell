@@ -18,10 +18,7 @@ pub fn complete_input(input: &str, setting: &Setting) -> Option<Completion> {
         )
     } else if len > 1 {
         let find_data = to_find_data(last.unwrap(), setting.current_dir());
-        let find_path = find_data.find_path();
-        let file_prefix = find_data.file_prefix().unwrap_or("");
-
-        complete_file(file_prefix, find_path)
+        complete_path(&find_data)
     } else {
         None
     }
@@ -93,45 +90,6 @@ fn complete_command(input: &str, commands: &Vec<&str>, paths: &Vec<&str>) -> Opt
     }
 
     if let FindFilesResult::Some(r) = find_bins_starts_with(input, paths) {
-        let r = r.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
-        let r = paths_to_names(&r);
-        let names = r.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
-
-        if let Some(completion) = complete(input, &names) {
-            if completion.is_selected() {
-                return Some(completion);
-            }
-
-            let f = completion
-                .get_variants()
-                .as_ref()
-                .map(|v| v.iter().map(|s| s.to_string()).collect());
-
-            if let Some(mut r) = variants {
-                r.append(&mut f.unwrap());
-                variants = Some(r);
-            } else {
-                variants = f;
-            }
-        }
-    }
-
-    if let Some(mut r) = variants {
-        r.sort_unstable();
-        r.dedup();
-
-        let r = r.iter().map(|s| s.to_string()).collect();
-
-        Some(Completion::from_variants(r))
-    } else {
-        None
-    }
-}
-
-fn complete_file(input: &str, path: &str) -> Option<Completion> {
-    let mut variants: Option<Vec<String>> = None;
-
-    if let FindFilesResult::Some(r) = find_all_starts_with(input, &vec![path]) {
         let r = r.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
         let r = paths_to_names(&r);
         let names = r.iter().map(|r| r.as_str()).collect::<Vec<&str>>();
