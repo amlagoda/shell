@@ -119,7 +119,6 @@ fn complete(input: &str, variants: &Vec<&str>) -> Option<Completion> {
 fn complete_path(find_data: &FileFindData) -> Option<Completion> {
     let starts_with = find_data.file_prefix().unwrap_or("");
     let paths = vec![find_data.find_path()];
-
     let found = find_all_starts_with(starts_with, &paths);
 
     // ignore errors
@@ -135,14 +134,24 @@ fn complete_path(find_data: &FileFindData) -> Option<Completion> {
         .collect();
     let len = found.len();
 
+    if len == 0 {
+        return None;
+    }
+
     if len == 1 {
         let selected = found[0].to_string();
         let selected = selected.replacen(starts_with, "", 1);
+
+        return Some(Completion::from_selected(selected));
+    }
+
+    let variants = found.iter().map(|r| r.as_str()).collect();
+
+    if let Some(prefixed) = get_prefixed_variant(variants) {
+        let selected = prefixed.replacen(starts_with, "", 1);
         Some(Completion::from_selected(selected))
-    } else if len > 1 {
-        Some(Completion::from_variants(found))
     } else {
-        None
+        Some(Completion::from_variants(found))
     }
 }
 
@@ -226,9 +235,10 @@ mod tests {
         let find_data = FileFindData::from(fixture_dir.to_string(), None);
         let completion = complete_path(&find_data).unwrap();
         let variants = completion.get_variants().unwrap();
-        assert!(variants.len() == 5);
+        assert!(variants.len() == 6);
         assert!(variants.contains(&"fo/"));
         assert!(variants.contains(&"foo/"));
+        assert!(variants.contains(&"bar/"));
         assert!(variants.contains(&"b"));
         assert!(variants.contains(&"f"));
         assert!(variants.contains(&"f.txt"));
@@ -257,6 +267,20 @@ mod tests {
         let completion = complete_path(&find_data).unwrap();
         let selected = completion.get_selected().unwrap();
         assert!("b" == selected);
+        assert!(completion.get_variants().is_none());
+
+        let path = format!("{}foo/", fixture_dir.to_string());
+        let find_data = FileFindData::from(path, Some("f".to_string()));
+        let completion = complete_path(&find_data).unwrap();
+        let selected = completion.get_selected().unwrap();
+        assert!("o" == selected);
+        assert!(completion.get_variants().is_none());
+
+        let path = format!("{}foo/", fixture_dir.to_string());
+        let find_data = FileFindData::from(path, None);
+        let completion = complete_path(&find_data).unwrap();
+        let selected = completion.get_selected().unwrap();
+        assert!("fo" == selected);
         assert!(completion.get_variants().is_none());
 
         Ok(())
