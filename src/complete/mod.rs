@@ -133,6 +133,7 @@ fn complete_path(find_data: &FileFindData) -> Option<Completion> {
     if len == 1 {
         let selected = found[0].to_string();
         let selected = selected.replacen(starts_with, "", 1);
+        let selected = whitespace_if_file(selected);
 
         return Some(Completion::from_selected(selected));
     }
@@ -141,9 +142,19 @@ fn complete_path(find_data: &FileFindData) -> Option<Completion> {
 
     if let Some(prefixed) = get_prefixed_variant(&variants) {
         let selected = prefixed.replacen(starts_with, "", 1);
+        let selected = whitespace_if_file(selected);
+
         Some(Completion::from_selected(selected))
     } else {
         Some(Completion::from_variants(found))
+    }
+}
+
+fn whitespace_if_file(selected: String) -> String {
+    if selected.ends_with("/") {
+        selected
+    } else {
+        format!("{} ", selected)
     }
 }
 
