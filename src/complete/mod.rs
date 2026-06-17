@@ -219,7 +219,6 @@ fn get_prefixed_variant(current: &str, mut variants: Vec<&str>) -> Option<String
         return Some(variants[0].to_string());
     }
 
-    // отсюда все варианты проверяются не учитывая /
     let short = if current.is_empty() {
         variants.iter().min_by_key(|r| r.len()).unwrap()
     } else {
