@@ -100,7 +100,7 @@ fn complete_to_variants(starts_with: &str, variants: &Vec<&str>) -> Option<Compl
 
     let variants = found.iter().map(|r| r.as_str()).collect();
 
-    if let Some(prefixed) = get_prefixed_variant(&variants) {
+    if let Some(prefixed) = get_prefixed_variant(starts_with, &variants) {
         let selected = prefixed.replacen(starts_with, "", 1);
         Some(Completion::from_selected(selected))
     } else {
@@ -140,9 +140,8 @@ fn complete_path(find_data: &FileFindData) -> Option<Completion> {
 
     let variants = found.iter().map(|r| r.as_str()).collect();
 
-    if let Some(prefixed) = get_prefixed_variant(&variants) {
+    if let Some(prefixed) = get_prefixed_variant(starts_with, &variants) {
         let selected = prefixed.replacen(starts_with, "", 1);
-        let selected = whitespace_if_file(selected);
         Some(Completion::from_selected(selected))
     } else {
         Some(Completion::from_variants(found))
@@ -202,23 +201,30 @@ fn paths_to_names(paths: &Vec<&str>) -> Vec<String> {
     names
 }
 
-fn get_prefixed_variant(variants: &Vec<&str>) -> Option<String> {
+fn get_prefixed_variant(current: &str, variants: &Vec<&str>) -> Option<String> {
     if variants.is_empty() {
         return None;
     }
 
-    let short = variants.iter().min_by_key(|r| r.len()).unwrap();
+    let mut short = variants.iter().min_by_key(|r| r.len()).unwrap();
 
     let is_chain = variants
         .iter()
-        .filter(|&r| r != short)
         .all(|r| Comprasion::PatternStartsWith(r.to_string()).assert(short));
 
-    if is_chain {
-        Some(short.to_string())
-    } else {
-        None
+    if !is_chain {
+        return None;
     }
+
+    if !current.is_empty() {
+        short = variants
+            .iter()
+            .filter(|&r| r != &current)
+            .min_by_key(|r| r.len())
+            .unwrap();
+    }
+
+    Some(short.to_string())
 }
 
 #[cfg(test)]
@@ -320,24 +326,29 @@ mod tests {
     }
 
     #[test]
+    fn test_whitespace_if_file() -> Result<(), Error> {
+        assert_eq!("dir/", whitespace_if_file("dir/".to_string()));
+        assert_eq!("file ", whitespace_if_file("file".to_string()));
+        assert_eq!("file.txt ", whitespace_if_file("file.txt".to_string()));
+
+        Ok(())
+    }
+
+    #[test]
     fn test_get_prefixed_variant() -> Result<(), Error> {
         let variants = vec![];
-        assert!(get_prefixed_variant(&variants).is_none());
+        assert!(get_prefixed_variant("", &variants).is_none());
+        assert!(get_prefixed_variant("f", &variants).is_none());
 
-        let variants = vec!["f"];
-        assert_eq!("f", get_prefixed_variant(&variants).unwrap());
+        let variants = vec!["f", "fo", "b"];
+        assert!(get_prefixed_variant("", &variants).is_none());
 
-        let variants = vec!["foo", "fo", "f"];
-        assert_eq!("f", get_prefixed_variant(&variants).unwrap());
+        let variants = vec!["fo", "foo", "fy"];
+        assert!(get_prefixed_variant("f", &variants).is_none());
 
-        let variants = vec!["fo", "ff", "f"];
-        assert_eq!("f", get_prefixed_variant(&variants).unwrap());
-
-        let variants = vec!["foo", "foy", "fo"];
-        assert_eq!("fo", get_prefixed_variant(&variants).unwrap());
-
-        let variants = vec!["bzm", "bz", "f"];
-        assert!(get_prefixed_variant(&variants).is_none());
+        let variants = vec!["fo", "fooo", "foo"];
+        assert_eq!("fo", get_prefixed_variant("", &variants).unwrap());
+        assert_eq!("foo", get_prefixed_variant("fo", &variants).unwrap());
 
         Ok(())
     }
