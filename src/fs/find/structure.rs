@@ -35,6 +35,7 @@ impl PartialEq for FindFilesResult {
     }
 }
 
+#[allow(dead_code)]
 pub enum FileType {
     File,
     SymLink,

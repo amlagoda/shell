@@ -227,7 +227,7 @@ fn get_prefixed_variant(current: &str, mut variants: Vec<&str>) -> Option<String
         variants = variants
             .iter()
             .filter(|r| r.trim_end_matches("/") != current)
-            .map(|r| *r)
+            .copied()
             .collect();
 
         variants.iter().min_by_key(|r| r.len()).unwrap()
