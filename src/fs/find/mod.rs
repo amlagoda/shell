@@ -146,7 +146,7 @@ mod tests {
     use crate::env::get_current_dir;
 
     #[test]
-    fn test_find() -> Result<(), Error> {
+    fn test_find_files() -> Result<(), Error> {
         let fixture_dir = get_fixture_dir()?;
         let search_paths = vec![fixture_dir.as_str()];
 
