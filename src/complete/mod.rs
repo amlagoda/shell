@@ -145,7 +145,9 @@ fn complete_path(find_data: &FileFindData) -> Option<Completion> {
         let selected = trim_slash_if_dir(selected);
         Some(Completion::from_selected(selected))
     } else {
-        Some(Completion::from_variants(found))
+        let mut variants = found;
+        variants.sort_unstable();
+        Some(Completion::from_variants(variants))
     }
 }
 
