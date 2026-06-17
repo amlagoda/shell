@@ -142,9 +142,18 @@ fn complete_path(find_data: &FileFindData) -> Option<Completion> {
 
     if let Some(prefixed) = get_prefixed_variant(starts_with, variants) {
         let selected = prefixed.replacen(starts_with, "", 1);
+        let selected = trim_slash_if_dir(selected);
         Some(Completion::from_selected(selected))
     } else {
         Some(Completion::from_variants(found))
+    }
+}
+
+fn trim_slash_if_dir(selected: String) -> String {
+    if selected.ends_with("/") {
+        selected.trim_end_matches("/").to_string()
+    } else {
+        selected
     }
 }
 
@@ -210,12 +219,13 @@ fn get_prefixed_variant(current: &str, mut variants: Vec<&str>) -> Option<String
         return Some(variants[0].to_string());
     }
 
+    // отсюда все варианты проверяются не учитывая /
     let short = if current.is_empty() {
         variants.iter().min_by_key(|r| r.len()).unwrap()
     } else {
         variants = variants
             .iter()
-            .filter(|r| **r != current)
+            .filter(|r| r.trim_end_matches("/") != current)
             .map(|r| *r)
             .collect();
 
@@ -224,7 +234,7 @@ fn get_prefixed_variant(current: &str, mut variants: Vec<&str>) -> Option<String
 
     let is_chain = variants
         .iter()
-        .all(|r| Comprasion::PatternStartsWith(r.to_string()).assert(short));
+        .all(|r| Comprasion::PatternStartsWith(r.to_string()).assert(short.trim_end_matches("/")));
 
     if !is_chain {
         return None;
@@ -348,6 +358,15 @@ mod tests {
     }
 
     #[test]
+    fn test_trim_slash_if_dir() -> Result<(), Error> {
+        assert_eq!("dir", trim_slash_if_dir("dir/".to_string()));
+        assert_eq!("file", trim_slash_if_dir("file".to_string()));
+        assert_eq!("file.txt", trim_slash_if_dir("file.txt".to_string()));
+
+        Ok(())
+    }
+
+    #[test]
     fn test_get_prefixed_variant() -> Result<(), Error> {
         let variants = vec![];
         assert!(get_prefixed_variant("", variants).is_none());
@@ -372,6 +391,9 @@ mod tests {
 
         let variants = vec!["f", "fo", "foo"];
         assert_eq!("fo", get_prefixed_variant("f", variants).unwrap());
+
+        let variants = vec!["fbzn.txt", "fbz/", "fb/"];
+        assert_eq!("fb/", get_prefixed_variant("f", variants).unwrap());
 
         Ok(())
     }
