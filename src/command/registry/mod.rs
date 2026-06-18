@@ -1,6 +1,7 @@
 mod cd;
 mod echo;
 mod history;
+mod jobs;
 mod pwd;
 mod r#type;
 mod yes;
@@ -8,6 +9,7 @@ mod yes;
 pub use cd::run_command as cd;
 pub use echo::run_command as echo;
 pub use history::run_command as history;
+pub use jobs::run_command as jobs;
 pub use pwd::run_command as pwd;
 pub use r#type::run_command as r#type;
 pub use yes::run_command as yes;
@@ -19,6 +21,7 @@ pub enum Builtin {
     Cd,
     Echo,
     History,
+    Jobs,
     Exit,
     Pwd,
     Type,
@@ -32,6 +35,7 @@ impl PartialEq for Builtin {
             (Builtin::Cd, Builtin::Cd)
                 | (Builtin::Echo, Builtin::Echo)
                 | (Builtin::History, Builtin::History)
+                | (Builtin::Jobs, Builtin::Jobs)
                 | (Builtin::Exit, Builtin::Exit)
                 | (Builtin::Pwd, Builtin::Pwd)
                 | (Builtin::Type, Builtin::Type)
@@ -68,6 +72,7 @@ impl Builtin {
             Builtin::Cd,
             Builtin::Echo,
             Builtin::History,
+            Builtin::Jobs,
             Builtin::Exit,
             Builtin::Pwd,
             Builtin::Type,
@@ -82,6 +87,7 @@ impl Display for Builtin {
             Builtin::Cd => "cd",
             Builtin::Echo => "echo",
             Builtin::History => "history",
+            Builtin::Jobs => "jobs",
             Builtin::Exit => "exit",
             Builtin::Pwd => "pwd",
             Builtin::Type => "type",

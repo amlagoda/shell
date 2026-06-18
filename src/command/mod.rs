@@ -3,6 +3,7 @@ mod registry;
 use self::registry::cd as run_command_cd;
 use self::registry::echo as run_command_echo;
 use self::registry::history as run_command_history;
+use self::registry::jobs as run_command_jobs;
 use self::registry::pwd as run_command_pwd;
 use self::registry::r#type as run_command_type;
 use self::registry::yes as run_command_yes;
@@ -28,6 +29,7 @@ pub fn run_command(
         Builtin::Cd => run_command_cd(stdio, newline, args),
         Builtin::Echo => run_command_echo(stdio, newline, args),
         Builtin::History => run_command_history(stdio, newline, history, args),
+        Builtin::Jobs => run_command_jobs(stdio, newline, args),
         Builtin::Exit => Ok(()),
         Builtin::Pwd => run_command_pwd(stdio, newline),
         Builtin::Type => run_command_type(stdio, newline, bin_paths, args),
