@@ -92,15 +92,15 @@ impl Fork {
             }
         }
 
-        let bin = args[0].clone();
+        let bin = args[0].as_ptr();
 
-        let args: Vec<*const c_char> = args
+        let pointers: Vec<*const c_char> = args
             .iter()
             .map(|arg| arg.as_ptr())
             .chain(once(null()))
             .collect();
 
-        unsafe { c_execvp(bin.as_ptr(), args.as_ptr()) };
+        unsafe { c_execvp(bin, pointers.as_ptr()) };
 
         Error::other("execvp error")
     }
