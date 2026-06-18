@@ -1,5 +1,6 @@
 use libc::{c_char, dup2 as c_dup2, execvp as c_execvp, fork as c_fork, waitpid as c_waitpid};
-use libc::{getpid as c_getpid, kill as c_kill, setpgid as c_setpgid, SIGKILL, WNOHANG};
+use libc::{getpid as c_getpid, kill as c_kill, setpgid as c_setpgid};
+use libc::{SIGKILL, SIGPIPE, SIG_DFL, WNOHANG};
 use std::ffi::CString;
 use std::io::Error;
 use std::iter::once;
@@ -108,6 +109,12 @@ impl Fork {
     pub fn blocking_waiting(&mut self) {
         unsafe { c_waitpid(self.pid as i32, null_mut(), 0) };
         self.reaped = true;
+    }
+
+    pub fn default_sigpipe(&self) {
+        unsafe {
+            libc::signal(SIGPIPE, SIG_DFL);
+        }
     }
 
     fn kill(&mut self) {

@@ -150,6 +150,7 @@ fn run_forks(
 
             if fork.is_child() {
                 to_group(0, group_pid)?;
+                fork.default_sigpipe();
                 let is_first_command = number == 0;
                 let stdout = pipelines_stdout[number].write_end();
 
