@@ -3,6 +3,7 @@ use libc::{getpid as c_getpid, kill as c_kill, setpgid as c_setpgid, SIGKILL, WN
 use std::ffi::CString;
 use std::io::Error;
 use std::iter::once;
+use std::ops::Drop;
 use std::ptr::{null, null_mut};
 use std::thread::sleep;
 use std::time::{Duration, Instant};
@@ -21,14 +22,9 @@ pub fn pid() -> u32 {
     unsafe { c_getpid() as u32 }
 }
 
-pub fn kill_forks(forks: Vec<Fork>) {
-    for fork in forks {
-        fork.kill();
-    }
-}
-
 pub struct Fork {
     pid: u32,
+    reaped: bool,
 }
 
 impl Fork {
@@ -36,7 +32,10 @@ impl Fork {
         let pid = unsafe { c_fork() };
 
         if pid >= 0 {
-            Ok(Fork { pid: pid as u32 })
+            Ok(Fork {
+                pid: pid as u32,
+                reaped: false,
+            })
         } else {
             Err(Error::other("fork error"))
         }
@@ -44,6 +43,10 @@ impl Fork {
 
     pub fn is_child(&self) -> bool {
         self.pid == 0
+    }
+
+    fn is_parent(&self) -> bool {
+        self.pid > 0
     }
 
     pub fn set_stdin(&self, file_descriptor: i32) -> Result<(), Error> {
@@ -102,11 +105,16 @@ impl Fork {
         Error::other("execvp error")
     }
 
-    pub fn blocking_waiting(&self) {
+    pub fn blocking_waiting(&mut self) {
         unsafe { c_waitpid(self.pid as i32, null_mut(), 0) };
+        self.reaped = true;
     }
 
-    pub fn kill(&self) {
+    fn kill(&mut self) {
+        if self.reaped {
+            return;
+        }
+
         unsafe {
             c_kill(self.pid as i32, SIGKILL);
 
@@ -116,14 +124,27 @@ impl Fork {
             loop {
                 let status = c_waitpid(self.pid as i32, null_mut(), WNOHANG);
 
-                // success wait or D-state process
-                if status == self.pid as i32 || start.elapsed() > timeout {
+                // success wait
+                if status == self.pid as i32 {
+                    self.reaped = true;
+                    break;
+                }
+                // not ours child or D-state process
+                if status == -1 || status == 0 || start.elapsed() > timeout {
                     break;
                 }
 
                 sleep(Duration::from_millis(10));
             }
         };
+    }
+}
+
+impl Drop for Fork {
+    fn drop(&mut self) {
+        if self.is_parent() {
+            self.kill();
+        }
     }
 }
 

@@ -7,7 +7,7 @@ use crate::history::History;
 use crate::io::Stdio;
 use crate::parser::Parsed;
 use crate::pipeline::{create_pipe, mass_create_pipes, PipelinesResult};
-use crate::process::{kill_forks, pid, to_group, Fork};
+use crate::process::{pid, to_group, Fork};
 use crate::setting::Setting;
 use std::fs::File;
 use std::io::{Error, Write};
@@ -146,14 +146,7 @@ fn run_forks(
         let command = parsed.command();
 
         if to_builtin(command).is_some() || find_bins_by_name(command, bin_paths).is_some() {
-            let fork = Fork::try_new();
-
-            if let Err(err) = fork {
-                kill_forks(forks);
-                return Err(err);
-            }
-
-            let fork = fork.unwrap();
+            let fork = Fork::try_new()?;
 
             if fork.is_child() {
                 to_group(0, group_pid)?;
@@ -214,14 +207,7 @@ fn run_forks(
 
                 if redirect.is_stdout() {
                     number += 1;
-                    let fork = Fork::try_new();
-
-                    if let Err(err) = fork {
-                        kill_forks(forks);
-                        return Err(err);
-                    }
-
-                    let fork = fork.unwrap();
+                    let fork = Fork::try_new()?;
 
                     if fork.is_child() {
                         to_group(0, group_pid)?;
@@ -269,18 +255,14 @@ fn run_forks(
         pipeline_stderr.read_end(),
         stdio,
         &proceed,
-    );
-
-    if let Err(err) = datasets {
-        kill_forks(forks);
-        return Err(err);
-    }
+    )?;
 
     let memory_ordering = Ordering::Relaxed;
     let mut handlers: Vec<JoinHandle<Result<(), Error>>> = vec![];
     let skip_first_newline = newline.stdout_start().is_empty();
 
-    for (from, to, proceed) in datasets.unwrap() {
+    for (from, to, proceed) in datasets {
+        // for (from, to, proceed) in datasets.unwrap() {
         // required transfer ownership
         handlers.push(spawn(move || {
             transfer_data(from, to, proceed, skip_first_newline, memory_ordering)
@@ -288,7 +270,6 @@ fn run_forks(
     }
 
     forks.pop().unwrap().blocking_waiting();
-    kill_forks(forks);
     proceed.store(false, memory_ordering);
 
     for handler in handlers {
