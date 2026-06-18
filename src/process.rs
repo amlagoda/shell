@@ -130,7 +130,7 @@ impl Fork {
                     break;
                 }
                 // not ours child or D-state process
-                if status == -1 || status == 0 || start.elapsed() > timeout {
+                if status == -1 || start.elapsed() > timeout {
                     break;
                 }
 
