@@ -6,7 +6,7 @@ use crate::fs::{find_bins_by_name, get_write_file};
 use crate::history::History;
 use crate::io::Stdio;
 use crate::parser::Parsed;
-use crate::pipeline::{create_pipe, mass_create_pipes, PipelinesResult};
+use crate::pipeline::{create_pipe, mass_create_pipes, Pipeline, PipelinesResult};
 use crate::process::{pid, to_group, Fork};
 use crate::setting::Setting;
 use std::fs::File;
@@ -146,34 +146,19 @@ fn run_forks(
         let command = parsed.command();
 
         if to_builtin(command).is_some() || find_bins_by_name(command, bin_paths).is_some() {
-            let fork = Fork::try_new()?;
+            let mut fork = Fork::try_new()?;
 
             if fork.is_child() {
                 to_group(0, group_pid)?;
                 fork.default_sigpipe();
-                let is_first_command = number == 0;
-                let stdout = pipelines_stdout[number].write_end();
 
-                if !is_first_command {
-                    fork.set_stdin(pipelines_stdout[number - 1].read_end())?;
-                }
-
-                fork.set_stdout(stdout)?;
-                fork.set_stderr(pipeline_stderr.write_end())?;
-
-                if let Some(redirect) = parsed.redirect() {
-                    if redirect.is_stderr() || (redirect.is_stdout() && parsed.pipeline().is_none())
-                    {
-                        let file = get_write_file(redirect.path(), redirect.is_append())?;
-                        let file_descriptor = file.into_raw_fd();
-
-                        if redirect.is_stdout() {
-                            fork.set_stdout(file_descriptor)?;
-                        } else {
-                            fork.set_stderr(file_descriptor)?;
-                        }
-                    }
-                }
+                set_fork_stdio(
+                    &mut fork,
+                    number,
+                    &pipelines_stdout.iter().collect(),
+                    &pipeline_stderr,
+                    &parsed,
+                )?;
 
                 drop(pipelines_stdout);
                 drop(pipeline_stderr);
@@ -283,6 +268,94 @@ fn run_forks(
 
     Ok(Exit::No)
 }
+
+fn set_fork_stdio(
+    fork: &mut Fork,
+    fork_number: usize,
+    pipes_stdout: &Vec<&Pipeline>,
+    pipe_stderr: &Pipeline,
+    parsed: &Parsed,
+) -> Result<(), Error> {
+    let is_first_command = fork_number == 0;
+    let stdout = pipes_stdout[fork_number].write_end();
+
+    if !is_first_command {
+        fork.set_stdin(pipes_stdout[fork_number - 1].read_end())?;
+    }
+
+    fork.set_stdout(stdout)?;
+    fork.set_stderr(pipe_stderr.write_end())?;
+
+    let redirect = parsed.redirect();
+
+    if redirect.is_none() {
+        return Ok(());
+    }
+
+    let redirect = redirect.unwrap();
+
+    if redirect.is_stderr() || (redirect.is_stdout() && parsed.pipeline().is_none()) {
+        let file = get_write_file(redirect.path(), redirect.is_append())?;
+        let file_descriptor = file.into_raw_fd();
+
+        if redirect.is_stdout() {
+            fork.set_stdout(file_descriptor)?;
+        } else {
+            fork.set_stderr(file_descriptor)?;
+        }
+    }
+
+    Ok(())
+}
+
+// fn child1() {
+//     to_group(0, group_pid)?;
+//     fork.default_sigpipe();
+
+//     drop(pipelines_stdout);
+//     drop(pipeline_stderr);
+
+//     if let Some(builtin) = to_builtin(command) {
+//         let mut stdio = Stdio::default();
+//         let mut newline = NewLine::default();
+//         newline.set_stdout_end(true);
+//         newline.set_stderr_end(true);
+
+//         run_builtin(
+//             &builtin,
+//             parsed.args().as_ref(),
+//             &mut stdio,
+//             history,
+//             &newline,
+//             Some(bin_paths),
+//         )?;
+
+//         //always return exit=true after the fork is completed
+//         return Ok(Exit::Yes);
+//     } else {
+//         // any return value is a error, which is equivalent to exit=true
+//         return Err(fork.hot_reload_bin(parsed.command(), parsed.args()));
+//     }
+// }
+
+// fn child2() {
+//     to_group(0, group_pid)?;
+//     fork.set_stdin(pipelines_stdout[number - 1].read_end())?;
+//     fork.set_stdout(pipelines_stdout[number].write_end())?;
+//     fork.set_stderr(pipeline_stderr.write_end())?;
+//     drop(pipelines_stdout);
+
+//     let mut args = vec![redirect.path()];
+
+//     if redirect.is_append() {
+//         args.push("-a");
+//     }
+
+//     args.reverse(); // required
+
+//     // any return value is a error, which is equivalent to exit=true
+//     return Err(fork.hot_reload_bin("tee", Some(args)));
+// }
 
 // clone stdout/stderr/stdio.stdout/stdio.stderr
 fn transfer_datasets(
