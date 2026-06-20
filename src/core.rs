@@ -308,55 +308,6 @@ fn set_fork_stdio(
     Ok(())
 }
 
-// fn child1() {
-//     to_group(0, group_pid)?;
-//     fork.default_sigpipe();
-
-//     drop(pipelines_stdout);
-//     drop(pipeline_stderr);
-
-//     if let Some(builtin) = to_builtin(command) {
-//         let mut stdio = Stdio::default();
-//         let mut newline = NewLine::default();
-//         newline.set_stdout_end(true);
-//         newline.set_stderr_end(true);
-
-//         run_builtin(
-//             &builtin,
-//             parsed.args().as_ref(),
-//             &mut stdio,
-//             history,
-//             &newline,
-//             Some(bin_paths),
-//         )?;
-
-//         //always return exit=true after the fork is completed
-//         return Ok(Exit::Yes);
-//     } else {
-//         // any return value is a error, which is equivalent to exit=true
-//         return Err(fork.hot_reload_bin(parsed.command(), parsed.args()));
-//     }
-// }
-
-// fn child2() {
-//     to_group(0, group_pid)?;
-//     fork.set_stdin(pipelines_stdout[number - 1].read_end())?;
-//     fork.set_stdout(pipelines_stdout[number].write_end())?;
-//     fork.set_stderr(pipeline_stderr.write_end())?;
-//     drop(pipelines_stdout);
-
-//     let mut args = vec![redirect.path()];
-
-//     if redirect.is_append() {
-//         args.push("-a");
-//     }
-
-//     args.reverse(); // required
-
-//     // any return value is a error, which is equivalent to exit=true
-//     return Err(fork.hot_reload_bin("tee", Some(args)));
-// }
-
 // clone stdout/stderr/stdio.stdout/stdio.stderr
 fn transfer_datasets(
     stdout: i32,
