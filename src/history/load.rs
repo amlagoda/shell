@@ -37,7 +37,8 @@ pub fn upload(history: &mut History, file_path: &str, append: bool) -> Result<()
     }
 
     let (records, _) = history.lasts(count);
-    let mut file = get_write_file(file_path, append)?;
+    let err = Error::new(ErrorKind::NotFound, "No such file or directory");
+    let mut file = get_write_file(file_path, append).map_err(|_| err)?;
     let mut buffer = BufWriter::with_capacity(4096, &mut file);
 
     for record in records {
