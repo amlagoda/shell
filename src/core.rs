@@ -131,13 +131,13 @@ fn run_forks(
     newline: &NewLine,
     bin_paths: &Vec<&str>,
 ) -> Result<Exit, Error> {
-    let mut pipelines_stdout = match mass_create_pipes(count_pipes(parseds)) {
+    let mut pipes_stdout = match mass_create_pipes(count_pipes(parseds)) {
         PipelinesResult::Err(err) => return Err(err),
         PipelinesResult::None => return Err(Error::other("empty parseds")),
         PipelinesResult::Some(pipes) => pipes,
     };
 
-    let mut pipeline_stderr = create_pipe()?;
+    let mut pipe_stderr = create_pipe()?;
     let mut forks: Vec<Fork> = vec![];
     let group_pid = pid();
     let mut number = 0;
@@ -155,13 +155,13 @@ fn run_forks(
                 set_fork_stdio(
                     &mut fork,
                     number,
-                    &pipelines_stdout.iter().collect(),
-                    &pipeline_stderr,
+                    &pipes_stdout.iter().collect(),
+                    &pipe_stderr,
                     &parsed,
                 )?;
 
-                drop(pipelines_stdout);
-                drop(pipeline_stderr);
+                drop(pipes_stdout);
+                drop(pipe_stderr);
 
                 if let Some(builtin) = to_builtin(command) {
                     let mut stdio = Stdio::default();
@@ -197,10 +197,10 @@ fn run_forks(
 
                     if fork.is_child() {
                         to_group(0, group_pid)?;
-                        fork.set_stdin(pipelines_stdout[number - 1].read_end())?;
-                        fork.set_stdout(pipelines_stdout[number].write_end())?;
-                        fork.set_stderr(pipeline_stderr.write_end())?;
-                        drop(pipelines_stdout);
+                        fork.set_stdin(pipes_stdout[number - 1].read_end())?;
+                        fork.set_stdout(pipes_stdout[number].write_end())?;
+                        fork.set_stderr(pipe_stderr.write_end())?;
+                        drop(pipes_stdout);
 
                         let mut args = vec![redirect.path()];
 
@@ -230,15 +230,15 @@ fn run_forks(
         return Ok(Exit::No);
     }
 
-    pipeline_stderr.close_write_end();
-    for pipeline_stdout in pipelines_stdout.iter_mut() {
+    pipe_stderr.close_write_end();
+    for pipeline_stdout in pipes_stdout.iter_mut() {
         pipeline_stdout.close_write_end();
     }
 
     let proceed = Arc::new(AtomicBool::new(true));
     let datasets = transfer_datasets(
-        pipelines_stdout.last().unwrap().read_end(),
-        pipeline_stderr.read_end(),
+        pipes_stdout.last().unwrap().read_end(),
+        pipe_stderr.read_end(),
         stdio,
         &proceed,
     )?;
