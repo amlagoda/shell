@@ -45,7 +45,8 @@ pub fn transfer_data(
 
                 // when running the tests uncategorized error
                 // not reproducible locally
-                return Ok(());
+                // return Ok(());
+                return Err(err);
             }
         }
     }
