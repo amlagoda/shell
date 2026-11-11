@@ -1,9 +1,9 @@
 mod file;
 mod variant;
 
-use self::file::{paths_to_names, to_find_data, FileFindData};
+use self::file::{find_bins_starts_with_as_names, paths_to_names, to_find_data, FileFindData};
 use self::variant::{complete_to_variants, get_prefixed_variant, Completion};
-use crate::fs::{find_all_starts_with, find_bins_starts_with, FindFilesResult};
+use crate::fs::find_all_starts_with;
 use crate::setting::Setting;
 
 pub fn complete_input(input: &str, setting: &Setting) -> Option<Completion> {
@@ -42,10 +42,8 @@ fn complete_command(
         variants = found;
     }
 
-    if let FindFilesResult::Some(paths) = find_bins_starts_with(starts_with, paths) {
-        let paths = paths.iter().map(|r| r.as_str()).collect();
-        let names = paths_to_names(&paths);
-        let names = names.iter().map(|r| r.as_str()).collect();
+    if let Some(names) = find_bins_starts_with_as_names(starts_with, paths) {
+        let names = names.iter().map(|s| s.as_str()).collect();
 
         if let Some(completion) = complete_to_variants(starts_with, &names) {
             if completion.is_selected() {

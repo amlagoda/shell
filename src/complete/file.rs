@@ -1,3 +1,14 @@
+use crate::fs::{find_all_starts_with, find_bins_starts_with, FindFilesResult};
+
+pub fn find_bins_starts_with_as_names(starts_with: &str, paths: &Vec<&str>) -> Option<Vec<String>> {
+    if let FindFilesResult::Some(paths) = find_bins_starts_with(starts_with, paths) {
+        let paths = paths.iter().map(|r| r.as_str()).collect();
+        Some(paths_to_names(&paths))
+    } else {
+        None
+    }
+}
+
 pub fn to_find_data(input: &str, default_path: &str) -> FileFindData {
     let input = input.trim();
 
