@@ -1,8 +1,9 @@
-mod structure;
+mod file;
+mod variant;
 
-use self::structure::{Completion, FileFindData};
+use self::file::{paths_to_names, to_find_data, FileFindData};
+use self::variant::{complete_to_variants, get_prefixed_variant, Completion};
 use crate::fs::{find_all_starts_with, find_bins_starts_with, FindFilesResult};
-use crate::rule::Comprasion;
 use crate::setting::Setting;
 
 pub fn complete_input(input: &str, setting: &Setting) -> Option<Completion> {
@@ -67,47 +68,6 @@ fn complete_command(
     Some(Completion::from_variants(variants))
 }
 
-fn complete_to_variants(starts_with: &str, variants: &Vec<&str>) -> Option<Completion> {
-    if variants.is_empty() {
-        return None;
-    }
-
-    if starts_with.is_empty() {
-        let variants = variants.iter().map(|r| r.to_string()).collect();
-        return Some(Completion::from_variants(variants));
-    }
-
-    let mut found = vec![];
-
-    for variant in variants {
-        if Comprasion::PatternStartsWithNotEqual(variant.to_string()).assert(starts_with) {
-            found.push(variant.to_string());
-        }
-    }
-
-    let len = found.len();
-
-    if len == 0 {
-        return None;
-    }
-
-    let short = found.iter().min_by_key(|r| r.len()).unwrap();
-
-    if len == 1 {
-        let selected = format!("{} ", short.replacen(starts_with, "", 1));
-        return Some(Completion::from_selected(selected));
-    }
-
-    let variants = found.iter().map(|r| r.as_str()).collect();
-
-    if let Some(prefixed) = get_prefixed_variant(starts_with, variants) {
-        let selected = prefixed.replacen(starts_with, "", 1);
-        Some(Completion::from_selected(selected))
-    } else {
-        Some(Completion::from_variants(found))
-    }
-}
-
 fn complete_path(find_data: &FileFindData) -> Option<Completion> {
     let starts_with = find_data.file_prefix().unwrap_or("");
     let paths = vec![find_data.find_path()];
@@ -165,83 +125,6 @@ fn whitespace_if_file(selected: String) -> String {
     } else {
         format!("{} ", selected)
     }
-}
-
-fn to_find_data(input: &str, default_path: &str) -> FileFindData {
-    let input = input.trim();
-
-    let default_path = if !default_path.trim().ends_with("/") {
-        format!("{}/", default_path.trim())
-    } else {
-        default_path.trim().to_string()
-    };
-
-    if input.is_empty() {
-        return FileFindData::from(default_path, None);
-    }
-
-    if !input.contains("/") {
-        return FileFindData::from(default_path, Some(input.to_string()));
-    }
-
-    let input: Vec<&str> = input.split("/").collect();
-    let file_prefix = input.last().unwrap();
-
-    if file_prefix.is_empty() {
-        FileFindData::from(input.join("/"), None)
-    } else {
-        let find_path = format!("{}/", input[0..input.len() - 1].join("/"));
-        FileFindData::from(find_path, Some(file_prefix.to_string()))
-    }
-}
-
-fn paths_to_names(paths: &Vec<&str>) -> Vec<String> {
-    let mut names = vec![];
-
-    for path in paths {
-        let name = if path.ends_with("/") {
-            let name = path.trim_end_matches(['/']);
-            format!("{}/", name.split("/").last().unwrap())
-        } else {
-            path.split("/").last().unwrap().to_string()
-        };
-
-        names.push(name);
-    }
-
-    names
-}
-
-fn get_prefixed_variant(current: &str, mut variants: Vec<&str>) -> Option<String> {
-    if variants.is_empty() {
-        return None;
-    }
-
-    if variants.len() == 1 {
-        return Some(variants[0].to_string());
-    }
-
-    let short = if current.is_empty() {
-        variants.iter().min_by_key(|r| r.len()).unwrap()
-    } else {
-        variants = variants
-            .iter()
-            .filter(|r| r.trim_end_matches("/") != current)
-            .copied()
-            .collect();
-
-        variants.iter().min_by_key(|r| r.len()).unwrap()
-    };
-
-    let is_chain = variants
-        .iter()
-        .all(|r| Comprasion::PatternStartsWith(r.to_string()).assert(short.trim_end_matches("/")));
-
-    if !is_chain {
-        return None;
-    }
-
-    Some(short.to_string())
 }
 
 #[cfg(test)]
