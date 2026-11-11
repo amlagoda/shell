@@ -1,9 +1,9 @@
 mod file;
 mod variant;
 
-use self::file::{find_bins_starts_with_as_names, paths_to_names, to_find_data, FileFindData};
+use self::file::{find_all_starts_with_as_names, find_bins_starts_with_as_names};
+use self::file::{paths_to_names, to_find_data, FileFindData};
 use self::variant::{complete_to_variants, get_prefixed_variant, Completion};
-use crate::fs::find_all_starts_with;
 use crate::setting::Setting;
 
 pub fn complete_input(input: &str, setting: &Setting) -> Option<Completion> {
@@ -67,15 +67,13 @@ fn complete_command(
 }
 
 fn complete_path(find_data: &FileFindData) -> Option<Completion> {
-    let starts_with = find_data.file_prefix().unwrap_or("");
-    let paths = vec![find_data.find_path()];
-    let found = find_all_starts_with(starts_with, &paths);
+    let found = find_all_starts_with_as_names(find_data);
 
-    // ignore errors
-    if !found.is_some() {
+    if found.is_none() {
         return None;
     }
 
+    let starts_with = find_data.file_prefix().unwrap_or("");
     let found = found.unwrap();
     let found = found.iter().map(|r| r.as_str()).collect();
     let found: Vec<String> = paths_to_names(&found)
