@@ -3,7 +3,7 @@ mod variant;
 
 use self::fs::{find_all_starts_with_as_names, find_bins_starts_with_as_names};
 use self::variant::{complete_to_variants, get_prefixed_variant, Completion};
-use crate::complete::fs::to_find_data;
+use crate::complete::fs::to_file_find_data;
 use crate::setting::Setting;
 
 pub fn complete_input(input: &str, setting: &Setting) -> Option<Completion> {
@@ -18,7 +18,7 @@ pub fn complete_input(input: &str, setting: &Setting) -> Option<Completion> {
             &setting.bin_paths(),
         )
     } else if len > 1 {
-        let find_data = to_find_data(last.unwrap(), setting.current_dir());
+        let find_data = to_file_find_data(last.unwrap(), setting.current_dir());
         complete_path(find_data.file_prefix().unwrap_or(""), find_data.find_path())
     } else {
         None
@@ -164,12 +164,12 @@ mod tests {
     fn test_complete_path() -> Result<(), Error> {
         let fixture_dir = get_fixture_dir()?;
 
-        let find_data = to_find_data("", "");
+        let find_data = to_file_find_data("", "");
         let input = find_data.file_prefix().unwrap_or("");
         let path = find_data.find_path();
         assert!(complete_path(input, path).is_some());
 
-        let find_data = to_find_data("", fixture_dir.as_str());
+        let find_data = to_file_find_data("", fixture_dir.as_str());
         let input = find_data.file_prefix().unwrap_or("");
         let path = find_data.find_path();
         let completion = complete_path(input, path).unwrap();
@@ -183,7 +183,7 @@ mod tests {
         assert!(variants.contains(&"f.txt"));
         assert!(completion.get_selected().is_none());
 
-        let find_data = to_find_data("f", fixture_dir.as_str());
+        let find_data = to_file_find_data("f", fixture_dir.as_str());
         let input = find_data.file_prefix().unwrap_or("");
         let path = find_data.find_path();
         let completion = complete_path(input, path).unwrap();
@@ -194,7 +194,7 @@ mod tests {
         assert!(variants.contains(&"f.txt"));
         assert!(completion.get_selected().is_none());
 
-        let find_data = to_find_data("foo", fixture_dir.as_str());
+        let find_data = to_file_find_data("foo", fixture_dir.as_str());
         let input = find_data.file_prefix().unwrap_or("");
         let path = find_data.find_path();
         let completion = complete_path(input, path).unwrap();
@@ -202,13 +202,13 @@ mod tests {
         assert_eq!("/", selected);
         assert!(completion.get_variants().is_none());
 
-        let find_data = to_find_data("foo/", fixture_dir.as_str());
+        let find_data = to_file_find_data("foo/", fixture_dir.as_str());
         let input = find_data.file_prefix().unwrap_or("");
         let path = find_data.find_path();
         assert!(complete_path(input, path).is_none());
 
         let fixture_path = format!("{}fo/", fixture_dir.to_string());
-        let find_data = to_find_data("", fixture_path.as_str());
+        let find_data = to_file_find_data("", fixture_path.as_str());
         let input = find_data.file_prefix().unwrap_or("");
         let path = find_data.find_path();
         let completion = complete_path(input, path).unwrap();
@@ -217,7 +217,7 @@ mod tests {
         assert!(completion.get_variants().is_none());
 
         let fixture_path = format!("{}foo/", fixture_dir.to_string());
-        let find_data = to_find_data("f", fixture_path.as_str());
+        let find_data = to_file_find_data("f", fixture_path.as_str());
         let input = find_data.file_prefix().unwrap_or("");
         let path = find_data.find_path();
         let completion = complete_path(input, path).unwrap();
@@ -226,7 +226,7 @@ mod tests {
         assert!(completion.get_variants().is_none());
 
         let fixture_path = format!("{}foo/", fixture_dir.to_string());
-        let find_data = to_find_data("", fixture_path.as_str());
+        let find_data = to_file_find_data("", fixture_path.as_str());
         let input = find_data.file_prefix().unwrap_or("");
         let path = find_data.find_path();
         let completion = complete_path(input, path).unwrap();
@@ -235,7 +235,7 @@ mod tests {
         assert!(completion.get_variants().is_none());
 
         let fixture_path = format!("{}foo/", fixture_dir.to_string());
-        let find_data = to_find_data("foo", fixture_path.as_str());
+        let find_data = to_file_find_data("foo", fixture_path.as_str());
         let input = find_data.file_prefix().unwrap_or("");
         let path = find_data.find_path();
         let completion = complete_path(input, path).unwrap();

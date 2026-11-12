@@ -18,21 +18,21 @@ pub fn find_all_starts_with_as_names(starts_with: &str, paths: &Vec<&str>) -> Op
     }
 }
 
-pub fn to_find_data(input: &str, default_path: &str) -> FileFindData {
+pub fn to_file_find_data(input: &str, path: &str) -> FileFindData {
     let input = input.trim();
 
-    let default_path = if !default_path.trim().ends_with("/") {
-        format!("{}/", default_path.trim())
+    let path = if !path.trim().ends_with("/") {
+        format!("{}/", path.trim())
     } else {
-        default_path.trim().to_string()
+        path.trim().to_string()
     };
 
     if input.is_empty() {
-        return FileFindData::from(default_path, None);
+        return FileFindData::from(path, None);
     }
 
     if !input.contains("/") {
-        return FileFindData::from(default_path, Some(input.to_string()));
+        return FileFindData::from(path, Some(input.to_string()));
     }
 
     let input: Vec<&str> = input.split("/").collect();
@@ -92,40 +92,40 @@ mod tests {
     use std::io::Error;
 
     #[test]
-    fn test_to_find_data() -> Result<(), Error> {
-        let data = to_find_data("", "");
+    fn test_to_file_find_data() -> Result<(), Error> {
+        let data = to_file_find_data("", "");
         assert_eq!("/", data.find_path());
         assert_eq!(None, data.file_prefix());
 
-        let data = to_find_data(" ", " ");
+        let data = to_file_find_data(" ", " ");
         assert_eq!("/", data.find_path());
         assert_eq!(None, data.file_prefix());
 
-        let data = to_find_data("f", "d");
+        let data = to_file_find_data("f", "d");
         assert_eq!("d/", data.find_path());
         assert_eq!(Some("f"), data.file_prefix());
 
-        let data = to_find_data("/f", "/d");
+        let data = to_file_find_data("/f", "/d");
         assert_eq!("/", data.find_path());
         assert_eq!(Some("f"), data.file_prefix());
 
-        let data = to_find_data("f/", "d/");
+        let data = to_file_find_data("f/", "d/");
         assert_eq!("f/", data.find_path());
         assert_eq!(None, data.file_prefix());
 
-        let data = to_find_data("/f/", "/d/");
+        let data = to_file_find_data("/f/", "/d/");
         assert_eq!("/f/", data.find_path());
         assert_eq!(None, data.file_prefix());
 
-        let data = to_find_data("f/b", "d");
+        let data = to_file_find_data("f/b", "d");
         assert_eq!("f/", data.find_path());
         assert_eq!(Some("b"), data.file_prefix());
 
-        let data = to_find_data("/f/b", "d");
+        let data = to_file_find_data("/f/b", "d");
         assert_eq!("/f/", data.find_path());
         assert_eq!(Some("b"), data.file_prefix());
 
-        let data = to_find_data("/f/b/", "d");
+        let data = to_file_find_data("/f/b/", "d");
         assert_eq!("/f/b/", data.find_path());
         assert_eq!(None, data.file_prefix());
 
