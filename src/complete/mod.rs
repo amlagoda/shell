@@ -1,7 +1,6 @@
 mod fs;
 mod variant;
 
-use self::fs::paths_to_names;
 use self::fs::{find_all_starts_with_as_names, find_bins_starts_with_as_names};
 use self::variant::{complete_to_variants, get_prefixed_variant, Completion};
 use crate::complete::fs::to_find_data;
