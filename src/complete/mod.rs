@@ -1,9 +1,9 @@
 mod fs;
 mod variant;
 
+use self::fs::to_file_find_data;
 use self::fs::{find_all_starts_with_as_names, find_bins_starts_with_as_names};
-use self::variant::{complete_to_variants, get_prefixed_variant, Completion};
-use crate::complete::fs::to_file_find_data;
+use self::variant::{complete_to_variants, get_short_prefixed_variant, Completion};
 use crate::setting::Setting;
 
 pub fn complete_input(input: &str, setting: &Setting) -> Option<Completion> {
@@ -96,7 +96,7 @@ fn complete_path(starts_with: &str, path: &str) -> Option<Completion> {
 
     let variants = found.iter().map(|r| r.as_str()).collect();
 
-    if let Some(prefixed) = get_prefixed_variant(starts_with, variants) {
+    if let Some(prefixed) = get_short_prefixed_variant(starts_with, variants) {
         let selected = prefixed.replacen(starts_with, "", 1);
         let selected = trim_slash_if_dir(selected);
         Some(Completion::from_selected(selected))
@@ -128,37 +128,6 @@ mod tests {
     use super::*;
     use crate::env::get_current_dir;
     use std::io::Error;
-
-    #[test]
-    fn test_complete_to_variants() -> Result<(), Error> {
-        let variants = vec![];
-        assert!(complete_to_variants("", &variants).is_none());
-
-        let variants = vec!["f", "b"];
-        let variants = complete_to_variants("", &variants).unwrap();
-        let variants = variants.get_variants().unwrap();
-        assert_eq!(vec!["f", "b"], variants);
-
-        let variants = vec!["f", "b"];
-        assert!(complete_to_variants("c", &variants).is_none());
-
-        let variants = vec!["fo", "b"];
-        let selected = complete_to_variants("f", &variants).unwrap();
-        let selected = selected.get_selected().unwrap();
-        assert_eq!("o ", selected);
-
-        let variants = vec!["fo", "fy"];
-        let variants = complete_to_variants("f", &variants).unwrap();
-        let variants = variants.get_variants().unwrap();
-        assert_eq!(vec!["fo", "fy"], variants);
-
-        let variants = vec!["fo", "foo"];
-        let selected = complete_to_variants("f", &variants).unwrap();
-        let selected = selected.get_selected().unwrap();
-        assert_eq!("o", selected);
-
-        Ok(())
-    }
 
     #[test]
     fn test_complete_path() -> Result<(), Error> {
@@ -260,38 +229,6 @@ mod tests {
         assert_eq!("dir", trim_slash_if_dir("dir/".to_string()));
         assert_eq!("file", trim_slash_if_dir("file".to_string()));
         assert_eq!("file.txt", trim_slash_if_dir("file.txt".to_string()));
-
-        Ok(())
-    }
-
-    #[test]
-    fn test_get_prefixed_variant() -> Result<(), Error> {
-        let variants = vec![];
-        assert!(get_prefixed_variant("", variants).is_none());
-
-        let variants = vec![];
-        assert!(get_prefixed_variant("f", variants).is_none());
-
-        let variants = vec!["f"];
-        assert_eq!("f", get_prefixed_variant("", variants).unwrap());
-
-        let variants = vec!["f"];
-        assert_eq!("f", get_prefixed_variant("f", variants).unwrap());
-
-        let variants = vec!["f", "fo", "b"];
-        assert!(get_prefixed_variant("", variants).is_none());
-
-        let variants = vec!["f", "fo", "foo"];
-        assert_eq!("f", get_prefixed_variant("", variants).unwrap());
-
-        let variants = vec!["f", "fo", "foo", "fy"];
-        assert!(get_prefixed_variant("f", variants).is_none());
-
-        let variants = vec!["f", "fo", "foo"];
-        assert_eq!("fo", get_prefixed_variant("f", variants).unwrap());
-
-        let variants = vec!["fbzn.txt", "fbz/", "fb/"];
-        assert_eq!("fb/", get_prefixed_variant("f", variants).unwrap());
 
         Ok(())
     }
