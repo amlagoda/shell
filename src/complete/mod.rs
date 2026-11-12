@@ -1,8 +1,8 @@
-mod file;
+mod fs;
 mod variant;
 
-use self::file::{find_all_starts_with_as_names, find_bins_starts_with_as_names};
-use self::file::{paths_to_names, to_find_data, FileFindData};
+use self::fs::{find_all_starts_with_as_names, find_bins_starts_with_as_names};
+use self::fs::{paths_to_names, to_find_data};
 use self::variant::{complete_to_variants, get_prefixed_variant, Completion};
 use crate::setting::Setting;
 
@@ -18,8 +18,7 @@ pub fn complete_input(input: &str, setting: &Setting) -> Option<Completion> {
             &setting.bin_paths(),
         )
     } else if len > 1 {
-        let find_data = to_find_data(last.unwrap(), setting.current_dir());
-        complete_path(&find_data)
+        complete_path(last.unwrap(), setting.current_dir())
     } else {
         None
     }
@@ -66,8 +65,9 @@ fn complete_command(
     Some(Completion::from_variants(variants))
 }
 
-fn complete_path(find_data: &FileFindData) -> Option<Completion> {
-    let found = find_all_starts_with_as_names(find_data);
+fn complete_path(input: &str, default_path: &str) -> Option<Completion> {
+    let find_data = to_find_data(input, default_path);
+    let found = find_all_starts_with_as_names(&find_data);
 
     if found.is_none() {
         return None;
@@ -164,11 +164,11 @@ mod tests {
     fn test_complete_path() -> Result<(), Error> {
         let fixture_dir = get_fixture_dir()?;
 
-        let find_data = FileFindData::from("".to_string(), None);
-        assert!(complete_path(&find_data).is_none());
+        let (input, default_path) = ("", "");
+        assert!(complete_path(input, &default_path).is_none());
 
-        let find_data = FileFindData::from(fixture_dir.to_string(), None);
-        let completion = complete_path(&find_data).unwrap();
+        let (input, default_path) = (fixture_dir.as_str(), "");
+        let completion = complete_path(input, default_path).unwrap();
         let variants = completion.get_variants().unwrap();
         assert_eq!(6, variants.len());
         assert!(variants.contains(&"bar/"));
@@ -179,8 +179,8 @@ mod tests {
         assert!(variants.contains(&"f.txt"));
         assert!(completion.get_selected().is_none());
 
-        let find_data = FileFindData::from(fixture_dir.to_string(), Some("f".to_string()));
-        let completion = complete_path(&find_data).unwrap();
+        let (input, default_path) = (fixture_dir.as_str(), "f");
+        let completion = complete_path(input, default_path).unwrap();
         let variants = completion.get_variants().unwrap();
         assert_eq!(3, variants.len());
         assert!(variants.contains(&"fo/"));
@@ -188,39 +188,39 @@ mod tests {
         assert!(variants.contains(&"f.txt"));
         assert!(completion.get_selected().is_none());
 
-        let find_data = FileFindData::from(fixture_dir.to_string(), Some("foo".to_string()));
-        let completion = complete_path(&find_data).unwrap();
+        let (input, default_path) = (fixture_dir.as_str(), "foo");
+        let completion = complete_path(input, default_path).unwrap();
         let selected = completion.get_selected().unwrap();
         assert_eq!("/", selected);
         assert!(completion.get_variants().is_none());
 
-        let find_data = FileFindData::from(fixture_dir.to_string(), Some("foo/".to_string()));
-        assert!(complete_path(&find_data).is_none());
+        let (input, default_path) = (fixture_dir.as_str(), "foo/");
+        assert!(complete_path(input, default_path).is_none());
 
         let path = format!("{}fo/", fixture_dir.to_string());
-        let find_data = FileFindData::from(path, None);
-        let completion = complete_path(&find_data).unwrap();
+        let (input, default_path) = (path.as_str(), "");
+        let completion = complete_path(input, default_path).unwrap();
         let selected = completion.get_selected().unwrap();
         assert_eq!("b ", selected);
         assert!(completion.get_variants().is_none());
 
         let path = format!("{}foo/", fixture_dir.to_string());
-        let find_data = FileFindData::from(path, Some("f".to_string()));
-        let completion = complete_path(&find_data).unwrap();
+        let (input, default_path) = (path.as_str(), "f");
+        let completion = complete_path(input, default_path).unwrap();
         let selected = completion.get_selected().unwrap();
         assert_eq!("o", selected);
         assert!(completion.get_variants().is_none());
 
         let path = format!("{}foo/", fixture_dir.to_string());
-        let find_data = FileFindData::from(path, None);
-        let completion = complete_path(&find_data).unwrap();
+        let (input, default_path) = (path.as_str(), "");
+        let completion = complete_path(input, default_path).unwrap();
         let selected = completion.get_selected().unwrap();
         assert_eq!("fo", selected);
         assert!(completion.get_variants().is_none());
 
         let path = format!("{}foo/", fixture_dir.to_string());
-        let find_data = FileFindData::from(path, Some("foo".to_string()));
-        let completion = complete_path(&find_data).unwrap();
+        let (input, default_path) = (path.as_str(), "foo");
+        let completion = complete_path(input, default_path).unwrap();
         let selected = completion.get_selected().unwrap();
         assert_eq!("o ", selected);
         assert!(completion.get_variants().is_none());
@@ -274,56 +274,6 @@ mod tests {
 
         let variants = vec!["fbzn.txt", "fbz/", "fb/"];
         assert_eq!("fb/", get_prefixed_variant("f", variants).unwrap());
-
-        Ok(())
-    }
-
-    #[test]
-    fn test_to_find_data() -> Result<(), Error> {
-        let data = to_find_data("", "");
-        assert_eq!("/", data.find_path());
-        assert_eq!(None, data.file_prefix());
-
-        let data = to_find_data(" ", " ");
-        assert_eq!("/", data.find_path());
-        assert_eq!(None, data.file_prefix());
-
-        let data = to_find_data("f", "d");
-        assert_eq!("d/", data.find_path());
-        assert_eq!(Some("f"), data.file_prefix());
-
-        let data = to_find_data("/f", "/d");
-        assert_eq!("/", data.find_path());
-        assert_eq!(Some("f"), data.file_prefix());
-
-        let data = to_find_data("f/", "d/");
-        assert_eq!("f/", data.find_path());
-        assert_eq!(None, data.file_prefix());
-
-        let data = to_find_data("/f/", "/d/");
-        assert_eq!("/f/", data.find_path());
-        assert_eq!(None, data.file_prefix());
-
-        let data = to_find_data("f/b", "d");
-        assert_eq!("f/", data.find_path());
-        assert_eq!(Some("b"), data.file_prefix());
-
-        let data = to_find_data("/f/b", "d");
-        assert_eq!("/f/", data.find_path());
-        assert_eq!(Some("b"), data.file_prefix());
-
-        let data = to_find_data("/f/b/", "d");
-        assert_eq!("/f/b/", data.find_path());
-        assert_eq!(None, data.file_prefix());
-
-        Ok(())
-    }
-
-    #[test]
-    fn test_paths_to_names() -> Result<(), Error> {
-        let paths = vec!["/f/b/c.txt", "f/b/c", "/f/b/z/"];
-        let names = vec!["c.txt", "c", "z/"];
-        assert_eq!(names, paths_to_names(&paths));
 
         Ok(())
     }

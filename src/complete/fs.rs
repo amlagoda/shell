@@ -88,3 +88,59 @@ impl FileFindData {
         self.file_prefix.as_deref()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Error;
+
+    #[test]
+    fn test_to_find_data() -> Result<(), Error> {
+        let data = to_find_data("", "");
+        assert_eq!("/", data.find_path());
+        assert_eq!(None, data.file_prefix());
+
+        let data = to_find_data(" ", " ");
+        assert_eq!("/", data.find_path());
+        assert_eq!(None, data.file_prefix());
+
+        let data = to_find_data("f", "d");
+        assert_eq!("d/", data.find_path());
+        assert_eq!(Some("f"), data.file_prefix());
+
+        let data = to_find_data("/f", "/d");
+        assert_eq!("/", data.find_path());
+        assert_eq!(Some("f"), data.file_prefix());
+
+        let data = to_find_data("f/", "d/");
+        assert_eq!("f/", data.find_path());
+        assert_eq!(None, data.file_prefix());
+
+        let data = to_find_data("/f/", "/d/");
+        assert_eq!("/f/", data.find_path());
+        assert_eq!(None, data.file_prefix());
+
+        let data = to_find_data("f/b", "d");
+        assert_eq!("f/", data.find_path());
+        assert_eq!(Some("b"), data.file_prefix());
+
+        let data = to_find_data("/f/b", "d");
+        assert_eq!("/f/", data.find_path());
+        assert_eq!(Some("b"), data.file_prefix());
+
+        let data = to_find_data("/f/b/", "d");
+        assert_eq!("/f/b/", data.find_path());
+        assert_eq!(None, data.file_prefix());
+
+        Ok(())
+    }
+
+    #[test]
+    fn test_paths_to_names() -> Result<(), Error> {
+        let paths = vec!["/f/b/c.txt", "f/b/c", "/f/b/z/"];
+        let names = vec!["c.txt", "c", "z/"];
+        assert_eq!(names, paths_to_names(&paths));
+
+        Ok(())
+    }
+}
