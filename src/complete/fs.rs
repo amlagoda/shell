@@ -9,11 +9,8 @@ pub fn find_bins_starts_with_as_names(starts_with: &str, paths: &Vec<&str>) -> O
     }
 }
 
-pub fn find_all_starts_with_as_names(find_data: &FileFindData) -> Option<Vec<String>> {
-    let starts_with = find_data.file_prefix().unwrap_or("");
-    let paths = vec![find_data.find_path()];
-
-    if let FindFilesResult::Some(paths) = find_all_starts_with(starts_with, &paths) {
+pub fn find_all_starts_with_as_names(starts_with: &str, paths: &Vec<&str>) -> Option<Vec<String>> {
+    if let FindFilesResult::Some(paths) = find_all_starts_with(starts_with, paths) {
         let paths = paths.iter().map(|r| r.as_str()).collect();
         Some(paths_to_names(&paths))
     } else {
