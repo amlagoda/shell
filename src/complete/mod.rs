@@ -75,12 +75,12 @@ fn complete_path(starts_with: &str, path: &str) -> Option<Completion> {
         return None;
     }
 
-    let found = found.unwrap();
-    let found = found.iter().map(|r| r.as_str()).collect();
-    let found: Vec<String> = paths_to_names(&found)
+    let found: Vec<String> = found
+        .unwrap()
         .into_iter()
-        .filter(|r| r != starts_with)
+        .filter(|r| r.as_str() != starts_with)
         .collect();
+
     let len = found.len();
 
     if len == 0 {
@@ -88,7 +88,7 @@ fn complete_path(starts_with: &str, path: &str) -> Option<Completion> {
     }
 
     if len == 1 {
-        let selected = found[0].to_string();
+        let selected = found[0].clone();
         let selected = selected.replacen(starts_with, "", 1);
         let selected = whitespace_if_file(selected);
 
