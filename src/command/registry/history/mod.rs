@@ -4,7 +4,7 @@ mod valid;
 use crate::command::registry::history::load::Loader;
 use crate::command::registry::history::valid::validate;
 use crate::fmt::NewLine;
-use crate::history::{download as download_log, upload as upload_log, History};
+use crate::history::{download_from_file as download_log, upload_to_file as upload_log, History};
 use crate::io::Stdio;
 use std::io::{BufWriter, Error, ErrorKind, Write};
 

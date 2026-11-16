@@ -1,8 +1,25 @@
 use crate::fs::{get_read_file, get_write_file};
 use crate::history::History;
+use crate::parser::Parsed;
 use std::io::{BufRead, BufReader, BufWriter, Error, ErrorKind, Write};
 
-pub fn download(history: &mut History, file_path: &str) -> Result<(), Error> {
+pub fn download_from_parseds(history: &mut History, parseds: &Vec<&Parsed>) {
+    let mut to_history = Vec::with_capacity(10);
+
+    for parsed in parseds {
+        let command = parsed.command().to_string();
+
+        let args = parsed
+            .args()
+            .map_or_else(|| "".to_string(), |args| format!(" {}", args.join(" ")));
+
+        to_history.push(format!("{}{}", command, args));
+    }
+
+    history.add(to_history);
+}
+
+pub fn download_from_file(history: &mut History, file_path: &str) -> Result<(), Error> {
     let err = Error::new(ErrorKind::NotFound, "No such file or directory");
     let file = get_read_file(file_path).map_err(|_| err)?;
     let buffer = BufReader::with_capacity(4096, file);
@@ -23,7 +40,7 @@ pub fn download(history: &mut History, file_path: &str) -> Result<(), Error> {
     Ok(())
 }
 
-pub fn upload(history: &mut History, file_path: &str, append: bool) -> Result<(), Error> {
+pub fn upload_to_file(history: &mut History, file_path: &str, append: bool) -> Result<(), Error> {
     let previous_index = if append {
         history.get_upload_index(file_path)
     } else {

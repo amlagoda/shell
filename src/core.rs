@@ -3,7 +3,7 @@ use crate::control::Exit;
 use crate::fmt::NewLine;
 use crate::fs::{clone_descriptor_as_file, clone_descriptor_as_nonblock_file, transfer_data};
 use crate::fs::{find_bins_by_name, get_write_file};
-use crate::history::History;
+use crate::history::{download_from_parseds as download_to_history, History};
 use crate::io::Stdio;
 use crate::parser::Parsed;
 use crate::pipeline::{create_pipe, mass_create_pipes, Pipeline, PipelinesResult};
@@ -29,7 +29,7 @@ pub fn run(
         return Err(Error::other("empty parseds"));
     }
 
-    to_history(parseds, history);
+    download_to_history(history, parseds);
 
     if len == 1 {
         let parsed = parseds.first().unwrap();
@@ -64,22 +64,6 @@ pub fn run(
         setting.new_line(),
         &setting.bin_paths(),
     )
-}
-
-fn to_history(parseds: &Vec<&Parsed>, history: &mut History) {
-    let mut to_history = Vec::with_capacity(10);
-
-    for parsed in parseds {
-        let command = parsed.command().to_string();
-
-        let args = parsed
-            .args()
-            .map_or_else(|| "".to_string(), |args| format!(" {}", args.join(" ")));
-
-        to_history.push(format!("{}{}", command, args));
-    }
-
-    history.add(to_history);
 }
 
 fn run_native(
