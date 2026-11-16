@@ -32,8 +32,17 @@ pub fn run_command(
 
     let validated = validated.unwrap();
 
-    if let Some(loaders) = validated.get_loaders() {
-        load_mode(stdio, newline, history, loaders)
+    if let Some(load_datasets) = validated.get_load_datasets() {
+        let mut loaders: Vec<Loader> = vec![];
+
+        for load_dataset in load_datasets {
+            loaders.push(Loader::try_new(
+                load_dataset.path().to_string(),
+                load_dataset.flag(),
+            )?);
+        }
+
+        load_mode(stdio, newline, history, loaders.iter().collect())
     } else {
         print_mode(stdio, newline, history, validated.get_count())
     }

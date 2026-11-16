@@ -1,4 +1,3 @@
-use crate::command::registry::history::load::Loader;
 use std::io::Error;
 
 pub fn validate(args: Option<&Vec<&str>>) -> Result<Validated, Error> {
@@ -9,11 +8,11 @@ pub fn validate(args: Option<&Vec<&str>>) -> Result<Validated, Error> {
     let mut mode = MODE_NOT_DEFINED;
 
     let err = Error::other("incorrect arguments");
-    let mut loaders: Option<Vec<Loader>> = None;
+    let mut load_datasets: Option<Vec<LoadDataset>> = None;
     let mut count: Option<usize> = None;
 
     if args.is_none() {
-        return Ok(Validated::from(count, loaders));
+        return Ok(Validated::from(count, load_datasets));
     }
 
     let mut iter = args.unwrap().iter();
@@ -37,37 +36,59 @@ pub fn validate(args: Option<&Vec<&str>>) -> Result<Validated, Error> {
                 return Err(err);
             }
 
-            let loader = Loader::try_new(file_path.unwrap().to_string(), arg)?;
+            let load_dataset = LoadDataset::new(file_path.unwrap().to_string(), arg.to_string());
 
-            loaders = if let Some(mut items) = loaders {
-                items.push(loader);
+            load_datasets = if let Some(mut items) = load_datasets {
+                items.push(load_dataset);
                 Some(items)
             } else {
-                Some(vec![loader])
+                Some(vec![load_dataset])
             };
         } else {
             return Err(err);
         }
     }
 
-    Ok(Validated::from(count, loaders))
+    Ok(Validated::from(count, load_datasets))
 }
 
 pub struct Validated {
     count: Option<usize>,
-    loaders: Option<Vec<Loader>>,
+    load_datasets: Option<Vec<LoadDataset>>,
 }
 
 impl Validated {
-    fn from(count: Option<usize>, loaders: Option<Vec<Loader>>) -> Validated {
-        Validated { count, loaders }
+    fn from(count: Option<usize>, load_datasets: Option<Vec<LoadDataset>>) -> Validated {
+        Validated {
+            count,
+            load_datasets,
+        }
     }
 
     pub fn get_count(&self) -> Option<usize> {
         self.count
     }
 
-    pub fn get_loaders(&self) -> Option<Vec<&Loader>> {
-        self.loaders.as_ref().map(|v| v.iter().collect())
+    pub fn get_load_datasets(&self) -> Option<Vec<&LoadDataset>> {
+        self.load_datasets.as_ref().map(|v| v.iter().collect())
+    }
+}
+
+pub struct LoadDataset {
+    path: String,
+    flag: String,
+}
+
+impl LoadDataset {
+    fn new(path: String, flag: String) -> LoadDataset {
+        LoadDataset { path, flag }
+    }
+
+    pub fn path(&self) -> &str {
+        self.path.as_str()
+    }
+
+    pub fn flag(&self) -> &str {
+        self.flag.as_str()
     }
 }
