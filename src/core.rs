@@ -136,6 +136,7 @@ fn run_forks(
                 to_group(0, group_pid)?;
                 fork.default_sigpipe();
 
+                // before: 0,1,2 in stdio linked to parent descriptors
                 set_fork_stdio(
                     &mut fork,
                     number,
@@ -143,12 +144,13 @@ fn run_forks(
                     &pipe_stderr,
                     &parsed,
                 )?;
+                // after: 0,1,2 in stdio linked to new, pipeline descriptors
+                // old (parent) descriptors automaticly closed by c_dup2
 
                 drop(pipes_stdout);
                 drop(pipe_stderr);
 
                 if let Some(builtin) = to_builtin(command) {
-                    let mut stdio = Stdio::default();
                     let mut newline = NewLine::default();
                     newline.set_stdout_end(true);
                     newline.set_stderr_end(true);
@@ -156,7 +158,7 @@ fn run_forks(
                     run_builtin(
                         &builtin,
                         parsed.args().as_ref(),
-                        &mut stdio,
+                        stdio,
                         history,
                         &newline,
                         Some(bin_paths),
