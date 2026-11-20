@@ -93,6 +93,10 @@ fn run_native(
             newline.set_stderr_start(true);
         }
 
+        // try_clone (dup) creates new descriptors with new
+        // numbers, so there is no double closing of the same
+        // descriptors when first drop the new stdio and
+        // then the main stdio
         let mut stdio = Stdio::from(stdin, stdout, stderr);
 
         return run_builtin(
